@@ -344,6 +344,7 @@ register int x,y;
 		You("%s: \"%s\".",
 		      (Blind) ? "feel the words" : "read",  et);
 		if(flags.run > 1) nomul(0);
+                if (moves > 5) check_tutorial_message(QT_T_ENGRAVING);
 	    }
 	}
 }

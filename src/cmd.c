@@ -138,6 +138,8 @@ STATIC_PTR int NDECL(wiz_show_stats);
 #  ifdef PORT_DEBUG
 STATIC_DCL int NDECL(wiz_port_debug);
 #  endif
+# else
+extern int NDECL(tutorial_redisplay);
 # endif
 STATIC_PTR int NDECL(enter_explore_mode);
 STATIC_PTR int NDECL(doattributes);
@@ -569,12 +571,13 @@ wiz_detect()
 	return 0;
 }
 
-/* ^V command - level teleport */
+/* ^V command - level teleport, or tutorial review */
 STATIC_PTR int
 wiz_level_tele()
 {
 	if (wizard)	level_tele();
-	else		pline("Unavailable command '^V'.");
+	else if(flags.tutorial)
+	    tutorial_redisplay();
 	return 0;
 }
 
@@ -1373,6 +1376,8 @@ static const struct func_tab cmdlist[] = {
 #ifdef WIZARD
 	{C('v'), TRUE, wiz_level_tele},
 	{C('w'), TRUE, wiz_wish},
+#else
+        {C('v'), TRUE, tutorial_redisplay},
 #endif
 	{C('x'), TRUE, doattributes},
 #ifdef SUSPEND
@@ -1928,6 +1933,7 @@ register char *cmd;
 
 	if (do_walk) {
 	    if (multi) flags.mv = TRUE;
+	    check_tutorial_command('m');
 	    domove();
 	    flags.forcefight = 0;
 	    return;
@@ -1937,6 +1943,7 @@ register char *cmd;
 		u.last_str_turn = 0;
 	    }
 	    flags.mv = TRUE;
+	    check_tutorial_command('G');
 	    domove();
 	    return;
 	} else if (prefix_seen && cmd[1] == '\033') {	/* <prefix><escape> */
@@ -1952,6 +1959,7 @@ register char *cmd;
 
 	    for (tlist = cmdlist; tlist->f_char; tlist++) {
 		if ((*cmd & 0xff) != (tlist->f_char & 0xff)) continue;
+		check_tutorial_command(*cmd & 0xff);
 
 		if (u.uburied && !tlist->can_if_buried) {
 		    You_cant("do that while you are buried!");

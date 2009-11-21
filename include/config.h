@@ -143,10 +143,10 @@
 
 #ifndef WIZARD		/* allow for compile-time or Makefile changes */
 # ifndef KR1ED
-#  define WIZARD  "wizard" /* the person allowed to use the -D option */
+#  define WIZARD  "ais523" /* the person allowed to use the -D option */
 # else
 #  define WIZARD
-#  define WIZARD_NAME "wizard"
+#  define WIZARD_NAME "ais523"
 # endif
 #endif
 
@@ -204,7 +204,7 @@
  * otherwise it will be the current directory.
  */
 # ifndef HACKDIR
-#  define HACKDIR "/usr/games/lib/nethackdir"
+#  define HACKDIR "/home/ais523/research/my-nethack/build/playfield"
 # endif
 
 /*

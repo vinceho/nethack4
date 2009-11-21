@@ -1784,6 +1784,7 @@ register boolean newlev;
 		    if(monstinroom(&mons[PM_ORACLE], roomno))
 			verbalize("%s, %s, welcome to Delphi!",
 					Hello((struct monst *) 0), plname);
+		    check_tutorial_message(QT_T_ORACLE);
 		    break;
 		case TEMPLE:
 		    intemple(roomno + ROOMOFFSET);

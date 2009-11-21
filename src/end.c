@@ -692,6 +692,9 @@ die:
 
 	if (have_windows) display_nhwindow(WIN_MESSAGE, FALSE);
 
+        if (how < PANICKED)
+            check_tutorial_message(QT_T_DEATH);
+
 	if (strcmp(flags.end_disclose, "none") && how != PANICKED)
 		disclose(how, taken);
 	/* finish_paybill should be called after disclosure but before bones */
