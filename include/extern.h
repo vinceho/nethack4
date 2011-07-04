@@ -1,6 +1,6 @@
 /*	SCCS Id: @(#)extern.h	3.4	2003/03/10	*/
 /* Copyright (c) Steve Creps, 1988.				  */
-/* Modified 2 Jul 2011 by Alex Smith */
+/* Modified 4 Jul 2011 by Alex Smith */
 /* NetHack may be freely redistributed.  See license for details. */
 
 #ifndef EXTERN_H
@@ -2069,6 +2069,7 @@ E boolean FDECL(obj_is_local, (struct obj *));
 E void FDECL(save_timers, (int,int,int));
 E void FDECL(restore_timers, (int,int,BOOLEAN_P,long));
 E void FDECL(relink_timers, (BOOLEAN_P));
+E void FDECL(adjust_nonlocal_timers, (long));
 #ifdef WIZARD
 E int NDECL(wiz_timeout_queue);
 E void NDECL(timer_sanity_check);
