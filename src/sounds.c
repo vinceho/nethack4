@@ -1,6 +1,6 @@
 /*	SCCS Id: @(#)sounds.c	3.4	2002/05/06	*/
 /*	Copyright (c) 1989 Janet Walz, Mike Threepoint */
-/* Modified 3 Jul 2011 by Alex Smith */
+/* Modified 4 Jul 2011 by Alex Smith */
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
@@ -557,9 +557,9 @@ register struct monst *mtmp;
 	    } else if (mtmp->mpeaceful) {
 		if (mtmp->mtame &&
 			(mtmp->mconf || mtmp->mflee || mtmp->mtrapped ||
-			 moves > EDOG(mtmp)->hungrytime || mtmp->mtame < 5))
+			 monstermoves > EDOG(mtmp)->hungrytime || mtmp->mtame < 5))
 		    pline_msg = "whines.";
-		else if (mtmp->mtame && EDOG(mtmp)->hungrytime > moves + 1000)
+		else if (mtmp->mtame && EDOG(mtmp)->hungrytime > monstermoves + 1000)
 		    pline_msg = "yips.";
 		else {
 		    if (mtmp->data != &mons[PM_DINGO])	/* dingos do not actually bark */
@@ -574,9 +574,9 @@ register struct monst *mtmp;
 		if (mtmp->mconf || mtmp->mflee || mtmp->mtrapped ||
 			mtmp->mtame < 5)
 		    pline_msg = "yowls.";
-		else if (moves > EDOG(mtmp)->hungrytime)
+		else if (monstermoves > EDOG(mtmp)->hungrytime)
 		    pline_msg = "meows.";
-		else if (EDOG(mtmp)->hungrytime > moves + 1000)
+		else if (EDOG(mtmp)->hungrytime > monstermoves + 1000)
 		    pline_msg = "purrs.";
 		else
 		    pline_msg = "mews.";
@@ -611,7 +611,7 @@ register struct monst *mtmp;
 	case MS_NEIGH:
 	    if (mtmp->mtame < 5)
 		pline_msg = "neighs.";
-	    else if (moves > EDOG(mtmp)->hungrytime)
+	    else if (monstermoves > EDOG(mtmp)->hungrytime)
 		pline_msg = "whinnies.";
 	    else
 		pline_msg = "whickers.";
@@ -697,7 +697,7 @@ register struct monst *mtmp;
 	    } else if (mtmp->mhp < mtmp->mhpmax/2)
 		pline_msg = "asks for a potion of healing.";
 	    else if (mtmp->mtame && !mtmp->isminion &&
-						moves > EDOG(mtmp)->hungrytime)
+                     monstermoves > EDOG(mtmp)->hungrytime)
 		verbl_msg = "I'm hungry.";
 	    /* Specific monsters' interests */
 	    else if (is_elf(ptr))

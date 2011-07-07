@@ -1,6 +1,6 @@
 /*	SCCS Id: @(#)cmd.c	3.4	2003/02/06	*/
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
-/* Modified 3 Jul 2011 by Alex Smith */
+/* Modified 5 Jul 2011 by Alex Smith */
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
@@ -1690,6 +1690,8 @@ int final;
 
         if (solo)
             enl_msg(You_, "are", "were", " playing solo");
+        if (iflags.multiplayer)
+            enl_msg(You_, "have", "had", " human-controlled allies.");
 
         if (putstr_or_dump == putstr) {
             display_nhwindow(en_win, TRUE);
