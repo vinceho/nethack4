@@ -1,6 +1,6 @@
 /*	SCCS Id: @(#)extern.h	3.4	2003/03/10	*/
 /* Copyright (c) Steve Creps, 1988.				  */
-/* Modified 4 Jul 2011 by Alex Smith */
+/* Modified 7 Jul 2011 by Alex Smith */
 /* NetHack may be freely redistributed.  See license for details. */
 
 #ifndef EXTERN_H
@@ -656,6 +656,7 @@ E void NDECL(set_lock_and_bones);
 E void FDECL(set_levelfile_name, (char *,int));
 E int FDECL(create_levelfile, (int,char *));
 E int FDECL(open_levelfile, (int,char *));
+E int FDECL(rename_levelfile, (int, char*, char*));
 E void FDECL(delete_levelfile, (int));
 E void NDECL(clearlocks);
 E int FDECL(create_bonesfile, (d_level*,char **, char *));
