@@ -1,6 +1,6 @@
 /*	SCCS Id: @(#)cmd.c	3.4	2003/02/06	*/
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
-/* Modified 27 Jul 2011 by Alex Smith */
+/* Modified 17 Jun 2011 by Alex Smith */
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
@@ -2722,6 +2722,9 @@ char sym;
 	return !u.dz;
 }
 
+/* Global, is set to 8 for long-distance commands. */
+int movecmdui_distance = 1;
+
 /* Like movecmd, but using user-defined keys. */
 int
 movecmdui(sym)
@@ -2729,6 +2732,8 @@ char sym;
 {
         register const struct ext_func_tab *tlist;
         int i;
+
+        movecmdui_distance = 1;
 
         /* We use replacewithkey to translate the pressed key into
            traditional vikeys, and then use the internal movecmd. */
@@ -2743,7 +2748,12 @@ char sym;
           if(tlist->ef_funct == doterrain) return movecmd('>');
           if (!tlist->replacewithkey) return 0;
           i = unmeta((unsigned char)tlist->replacewithkey);
-          if (unctrl(i)) i = unctrl(i);
+          if (unctrl(i) && unctrl(i) != i) {
+            /* i.e. not control-meta-... */
+            if (i == tlist->replacewithkey) movecmdui_distance = 3;
+            i = unctrl(i);
+          }
+          if (i != lowc(i)) movecmdui_distance = 8;
           return movecmd(lowc(i));
         }
         return 0;
