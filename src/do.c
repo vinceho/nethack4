@@ -1,6 +1,6 @@
 /*	SCCS Id: @(#)do.c	3.4	2003/12/02	*/
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
-/* Modified 16 Jul 2011 by Alex Smith */
+/* Modified 13 Sep 2011 by Alex Smith */
 /* NetHack may be freely redistributed.  See license for details. */
 
 /* Contains code for 'd', 'D' (drop), '>', '<' (up, down) */
@@ -1465,6 +1465,11 @@ boolean at_stairs, falling, portal;
 		delete_levelfile(l_idx);
 	}
 
+	assign_level(&u.uz0, &u.uz);
+	assign_level(&u.uz, newlevel);
+	assign_level(&u.utolev, newlevel);
+	u.utotype = 0;
+
         /* In multiplayer, we need careful synchronization handling
            between levels. When someone leaves a level, if anyone else
            is there, one of them should be yielded to, desynchronizing
@@ -1499,7 +1504,7 @@ boolean at_stairs, falling, portal;
 
           /* First, unlock the old level file. */
           Strcpy(lock, iflags.mp_lock_name);
-          set_levelfile_name(lock, ledger_no(&u.uz));
+          set_levelfile_name(lock, ledger_no(&u.uz0));
           unlock_file(lock);
 
           if (*yield_after) {
@@ -1612,7 +1617,7 @@ boolean at_stairs, falling, portal;
         }
 
 #ifdef REINCARNATION
-	if (Is_rogue_level(newlevel) || Is_rogue_level(&u.uz))
+	if (Is_rogue_level(newlevel) || Is_rogue_level(&u.uz0))
 		assign_rogue_graphics(Is_rogue_level(newlevel));
 #endif
 #ifdef USE_TILES
@@ -1621,12 +1626,8 @@ boolean at_stairs, falling, portal;
 	/* record this level transition as a potential seen branch unless using
 	 * some non-standard means of transportation (level teleport).
 	 */
-	if ((at_stairs || falling || portal) && (u.uz.dnum != newlevel->dnum))
-		recbranch_mapseen(&u.uz, newlevel);
-	assign_level(&u.uz0, &u.uz);
-	assign_level(&u.uz, newlevel);
-	assign_level(&u.utolev, newlevel);
-	u.utotype = 0;
+	if ((at_stairs || falling || portal) && (u.uz0.dnum != newlevel->dnum))
+		recbranch_mapseen(&u.uz0, newlevel);
 	if (dunlev_reached(&u.uz) < dunlev(&u.uz))
 		dunlev_reached(&u.uz) = dunlev(&u.uz);
 	reset_rndmonst(NON_PM);   /* u.uz change affects monster generation */
