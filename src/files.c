@@ -1,6 +1,6 @@
 /*	SCCS Id: @(#)files.c	3.4	2003/11/14	*/
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
-/* Modified 7 Jul 2011 by Alex Smith */
+/* Modified 21 Apr 2011 by Alex Smith */
 /* NetHack may be freely redistributed.  See license for details. */
 
 #include "hack.h"
@@ -8,6 +8,10 @@
 
 #ifdef TTY_GRAPHICS
 #include "wintty.h" /* more() */
+#endif
+
+#if defined(GL_GRAPHICS) || defined(SDL_GRAPHICS)
+#include "winGL.h" /* Sdlgl_parse_options */
 #endif
 
 #include <ctype.h>
@@ -962,7 +966,7 @@ char **bonesid;
 
 	*bonesid = set_bonesfile_name(bones, lev);
 	fq_bones = fqname(bones, BONESPREFIX, 0);
-	uncompress(fq_bones);	/* no effect if nonexistent */
+	nhuncompress(fq_bones);	/* no effect if nonexistent */
 #ifdef MAC
 	fd = macopen(fq_bones, O_RDONLY | O_BINARY, BONE_TYPE);
 #else
@@ -986,7 +990,7 @@ d_level *lev;
 void
 compress_bonesfile()
 {
-	compress(fqname(bones, BONESPREFIX, 0));
+	nhcompress(fqname(bones, BONESPREFIX, 0));
 }
 
 /* ----------  END BONES FILE HANDLING ----------- */
@@ -1211,7 +1215,7 @@ restore_saved_game()
 #endif /* MFLOPPY */
 	fq_save = fqname(SAVEF, SAVEPREFIX, 0);
 
-	uncompress(fq_save);
+	nhuncompress(fq_save);
 	if ((fd = open_savefile()) < 0) return fd;
 
 	if (!uptodate(fd, fq_save)) {
@@ -1235,7 +1239,7 @@ const char* filename;
 #ifdef COMPRESS_EXTENSION
     SAVEF[strlen(SAVEF)-strlen(COMPRESS_EXTENSION)] = '\0';
 #endif
-    uncompress(SAVEF);
+    nhuncompress(SAVEF);
     if ((fd = open_savefile()) >= 0) {
 	if (uptodate(fd, filename)) {
 	    char tplname[PL_NSIZ];
@@ -1244,7 +1248,7 @@ const char* filename;
 	}
 	(void) close(fd);
     }
-    compress(SAVEF);
+    nhcompress(SAVEF);
 
     return result;
 #else
@@ -1492,7 +1496,7 @@ boolean uncomp;
 
 /* compress file */
 void
-compress(filename)
+nhcompress(filename)
 const char *filename;
 {
 #ifndef COMPRESS
@@ -1507,7 +1511,7 @@ const char *filename;
 
 /* uncompress file if it exists */
 void
-uncompress(filename)
+nhuncompress(filename)
 const char *filename;
 {
 #ifndef COMPRESS
@@ -2286,6 +2290,10 @@ char		*tmp_levels;
 	} else if (match_varname(buf, "QT_COMPACT", 10)) {
 		extern int qt_compact_mode;
 		qt_compact_mode = atoi(bufp);
+#endif
+#if defined(GL_GRAPHICS) || defined(SDL_GRAPHICS)
+        } else if (match_varname(buf, "GL_OPTIONS", 10)) {
+        	Sdlgl_parse_options(bufp, TRUE, TRUE);
 #endif
 	} else
 		return 0;

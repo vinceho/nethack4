@@ -1,6 +1,6 @@
 /*	SCCS Id: @(#)extern.h	3.4	2003/03/10	*/
 /* Copyright (c) Steve Creps, 1988.				  */
-/* Modified 19 Aug 2011 by Alex Smith */
+/* Modified 1 Jul 2011 by Alex Smith */
 /* NetHack may be freely redistributed.  See license for details. */
 
 #ifndef EXTERN_H
@@ -683,10 +683,6 @@ E int NDECL(open_savefile);
 E boolean NDECL(verify_savefile);
 E int NDECL(delete_savefile);
 E int NDECL(restore_saved_game);
-E int FDECL(setup_multiplayer_pipe,(char));
-E void FDECL(teardown_multiplayer_pipe,(char));
-E int NDECL(multiplayer_pipe_fd);
-E int FDECL(other_multiplayer_pipe_fd, (const char *, char));
 E void FDECL(compress, (const char *));
 E void FDECL(uncompress, (const char *));
 E boolean FDECL(lock_file, (const char *,int,int));
