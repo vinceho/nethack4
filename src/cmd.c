@@ -3141,17 +3141,11 @@ parse()
                     break;
                 } else {	/* not a digit */
                     if (multi == 0 && !prezero) {
+                        /* TODO: This almost certainly breaks on tiles. */
 # ifdef REDO
                         if (!in_doagain)
-                          extcmd_char1 = foo;
-# else
-                        /* TODO: This almost certainly breaks on tiles.
-                           And it also breaks on multiplayer, because
-                           select() doesn't see ungetc. Perhaps just
-                           use pgetchar() as the input function no
-                           matter what? */
+# endif                      
                         ungetc(foo, stdin);
-# endif
                         foo = ecl_extcmd->binding1;
                     }
                     /* otherwise we need another # to mark an extended
