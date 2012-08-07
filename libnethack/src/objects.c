@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Copyright (c) Mike Threepoint, 1989.				  */
+/* Copyright (c) Mike Threepoint, 1989.                           */
 /* NetHack may be freely redistributed.  See license for details. */
 
 #ifndef OBJECTS_PASS_2_
@@ -23,11 +23,11 @@ struct monst {
 /* objects have symbols: ) [ = " ( % ! ? + / $ * ` 0 _ . */
 
 /*
- *	Note:  OBJ() and BITS() macros are used to avoid exceeding argument
- *	limits imposed by some compilers.  The ctnr field of BITS currently
- *	does not map into struct objclass, and is ignored in the expansion.
- *	The 0 in the expansion corresponds to oc_pre_discovered, which is
- *	set at run-time during role-specific character initialization.
+ * Note:  OBJ() and BITS() macros are used to avoid exceeding argument
+ * limits imposed by some compilers.  The ctnr field of BITS currently
+ * does not map into struct objclass, and is ignored in the expansion.
+ * The 0 in the expansion corresponds to oc_pre_discovered, which is
+ * set at run-time during role-specific character initialization.
  */
 
 #ifndef OBJECTS_PASS_2_
@@ -37,7 +37,7 @@ struct monst {
    exception of scroll labels, which are nouns */
 # define OBJ(name,desc) name,desc
 # define OBJECT(obj,bits,prp,sym,prob,dly,wt,cost,sdam,ldam,oc1,oc2,nut,color) \
-	{obj}
+             {obj}
 
 const struct objdescr obj_descr[] = {
 #else
@@ -46,8 +46,8 @@ const struct objdescr obj_descr[] = {
 # define BITS(nmkn,mrg,uskn,ctnr,mgc,chrg,uniq,nwsh,big,tuf,dir,sub,mtrl) \
         nmkn,mrg,uskn,0,mgc,chrg,uniq,nwsh,0,big,tuf,dir,mtrl,sub
 # define OBJECT(obj,bits,prp,sym,prob,dly,wt,cost,sdam,ldam,oc1,oc2,nut,color) \
-	{0, 0, NULL, bits, prp, sym, dly, COLOR_FIELD(color) \
-	 prob, wt, cost, sdam, ldam, oc1, oc2, nut}
+        {0, 0, NULL, bits, prp, sym, dly, COLOR_FIELD(color) \
+         prob, wt, cost, sdam, ldam, oc1, oc2, nut}
 # define HARDGEM(n) (n >= 8)
 
 struct objclass *objects;
@@ -61,21 +61,21 @@ const struct objclass const_objects[] = {
 
 /* weapons ... */
 #define WEAPON(name,app,kn,mg,bi,prob,wt,cost,sdam,ldam,hitbon,typ,sub,metal,color) \
-	OBJECT( \
-		OBJ(name,app), BITS(kn,mg,1,0,0,1,0,0,bi,0,typ,sub,metal), 0, \
-		WEAPON_CLASS, prob, 0, \
-		wt, cost, sdam, ldam, hitbon, 0, wt, color )
+        OBJECT( \
+            OBJ(name,app), BITS(kn,mg,1,0,0,1,0,0,bi,0,typ,sub,metal), 0, \
+            WEAPON_CLASS, prob, 0, \
+            wt, cost, sdam, ldam, hitbon, 0, wt, color )
 #define PROJECTILE(name,app,kn,prob,wt,cost,sdam,ldam,hitbon,metal,sub,color) \
-	OBJECT( \
-		OBJ(name,app), \
-		BITS(kn,1,1,0,0,1,0,0,0,0,PIERCE,sub,metal), 0, \
-		WEAPON_CLASS, prob, 0, \
-		wt, cost, sdam, ldam, hitbon, 0, wt, color )
+        OBJECT( \
+           OBJ(name,app), \
+           BITS(kn,1,1,0,0,1,0,0,0,0,PIERCE,sub,metal), 0, \
+           WEAPON_CLASS, prob, 0, \
+           wt, cost, sdam, ldam, hitbon, 0, wt, color )
 #define BOW(name,app,kn,prob,wt,cost,hitbon,metal,sub,color) \
-	OBJECT( \
-		OBJ(name,app), BITS(kn,0,1,0,0,1,0,0,0,0,0,sub,metal), 0, \
-		WEAPON_CLASS, prob, 0, \
-		wt, cost, 2, 2, hitbon, 0, wt, color )
+        OBJECT( \
+           OBJ(name,app), BITS(kn,0,1,0,0,1,0,0,0,0,0,sub,metal), 0, \
+           WEAPON_CLASS, prob, 0, \
+           wt, cost, 2, 2, hitbon, 0, wt, color )
 
 /* Note: for weapons that don't do an even die of damage (ex. 2-7 or 3-18)
  * the extra damage is added on in weapon.c, not here! */
@@ -281,20 +281,20 @@ const struct objclass const_objects[] = {
  * Some creatures are vulnerable to SILVER.
  */
 #define ARMOR(name,desc,kn,mgc,blk,power,prob,delay,wt,cost,ac,can,sub,metal,c) \
-	OBJECT( \
-		OBJ(name,desc), BITS(kn,0,1,0,mgc,1,0,0,blk,0,0,sub,metal), power, \
-		ARMOR_CLASS, prob, delay, wt, cost, \
-		0, 0, 10 - ac, can, wt, c )
+        OBJECT( \
+                OBJ(name,desc), BITS(kn,0,1,0,mgc,1,0,0,blk,0,0,sub,metal), power, \
+                ARMOR_CLASS, prob, delay, wt, cost, \
+                0, 0, 10 - ac, can, wt, c )
 #define HELM(name,desc,kn,mgc,power,prob,delay,wt,cost,ac,can,metal,c) \
-	ARMOR(name,desc,kn,mgc,0,power,prob,delay,wt,cost,ac,can,ARM_HELM,metal,c)
+        ARMOR(name,desc,kn,mgc,0,power,prob,delay,wt,cost,ac,can,ARM_HELM,metal,c)
 #define CLOAK(name,desc,kn,mgc,power,prob,delay,wt,cost,ac,can,metal,c) \
-	ARMOR(name,desc,kn,mgc,0,power,prob,delay,wt,cost,ac,can,ARM_CLOAK,metal,c)
+        ARMOR(name,desc,kn,mgc,0,power,prob,delay,wt,cost,ac,can,ARM_CLOAK,metal,c)
 #define SHIELD(name,desc,kn,mgc,blk,power,prob,delay,wt,cost,ac,can,metal,c) \
-	ARMOR(name,desc,kn,mgc,blk,power,prob,delay,wt,cost,ac,can,ARM_SHIELD,metal,c)
+        ARMOR(name,desc,kn,mgc,blk,power,prob,delay,wt,cost,ac,can,ARM_SHIELD,metal,c)
 #define GLOVES(name,desc,kn,mgc,power,prob,delay,wt,cost,ac,can,metal,c) \
-	ARMOR(name,desc,kn,mgc,0,power,prob,delay,wt,cost,ac,can,ARM_GLOVES,metal,c)
+        ARMOR(name,desc,kn,mgc,0,power,prob,delay,wt,cost,ac,can,ARM_GLOVES,metal,c)
 #define BOOTS(name,desc,kn,mgc,power,prob,delay,wt,cost,ac,can,metal,c) \
-	ARMOR(name,desc,kn,mgc,0,power,prob,delay,wt,cost,ac,can,ARM_BOOTS,metal,c)
+        ARMOR(name,desc,kn,mgc,0,power,prob,delay,wt,cost,ac,can,ARM_BOOTS,metal,c)
 
 /* helmets */
     HELM("N{N{N{helm},A{leather}},A{elven}}", "A{leather}",
@@ -327,12 +327,12 @@ const struct objclass const_objects[] = {
  * There is code in polyself.c that assumes (1) and (2).
  * There is code in obj.h, objnam.c, mon.c, read.c that assumes (2).
  *
- *	(1) The dragon scale mails and the dragon scales are together.
- *	(2) That the order of the dragon scale mail and dragon scales is the
- *	    the same defined in monst.c.
+ *      (1) The dragon scale mails and the dragon scales are together.
+ *      (2) That the order of the dragon scale mail and dragon scales is the
+ *          the same defined in monst.c.
  */
 #define DRGN_ARMR(name,mgc,power,cost,ac,color) \
-	ARMOR(name,NULL,1,mgc,1,power,0,5,40,cost,ac,0,ARM_SUIT,DRAGON_HIDE,color)
+        ARMOR(name,NULL,1,mgc,1,power,0,5,40,cost,ac,0,ARM_SUIT,DRAGON_HIDE,color)
 #define DSM(color) "N{N{N{scale mail},A{N{dragon}}},A{" #color "}}"
 #define DSMs(color) "N{*,N{N{N{scale},A{N{dragon}}},A{" #color "}}}"
 
@@ -488,9 +488,9 @@ const struct objclass const_objects[] = {
 
 /* rings ... */
 #define RING(name,power,stone,cost,mgc,spec,mohs,metal,color) OBJECT( \
-		OBJ(name,stone), \
-		BITS(0,0,spec,0,mgc,spec,0,0,0,HARDGEM(mohs),0,P_NONE,metal), \
-		power, RING_CLASS, 0, 0, 3, cost, 0, 0, 0, 0, 15, color )
+           OBJ(name,stone), \
+           BITS(0,0,spec,0,mgc,spec,0,0,0,HARDGEM(mohs),0,P_NONE,metal), \
+           power, RING_CLASS, 0, 0, 3, cost, 0, 0, 0, 0, 15, color )
     RING("N{adornment}", ADORNED, "A{wooden}", 100, 1, 1, 2, WOOD, HI_WOOD),
     RING("N{gain strength}", 0, "A{granite}", 150, 1, 1, 7, MINERAL,
          HI_MINERAL),
@@ -544,8 +544,8 @@ const struct objclass const_objects[] = {
 
 /* amulets ... - THE Amulet comes last because it is special */
 #define AMULET(name,desc,power,prob) OBJECT( \
-		OBJ(name,desc), BITS(0,0,0,0,1,0,0,0,0,0,0,P_NONE,IRON), power, \
-		AMULET_CLASS, prob, 0, 20, 150, 0, 0, 0, 0, 20, HI_METAL )
+           OBJ(name,desc), BITS(0,0,0,0,1,0,0,0,0,0,0,P_NONE,IRON), power, \
+           AMULET_CLASS, prob, 0, 20, 150, 0, 0, 0, 0, 20, HI_METAL )
 
     AMULET("N{q,N{amulet},N{ESP}}", "A{circular}", TELEPAT, 175),
     AMULET("N{q,N{amulet},N{life saving}}", "A{spherical}", LIFESAVED, 75),
@@ -570,25 +570,25 @@ const struct objclass const_objects[] = {
 /* tools ... */
 /* tools with weapon characteristics come last */
 #define TOOL(name,desc,kn,mrg,mgc,chg,prob,wt,cost,mat,color) \
-	OBJECT( OBJ(name,desc), \
-		BITS(kn,mrg,chg,0,mgc,chg,0,0,0,0,0,P_NONE,mat), \
-		0, TOOL_CLASS, prob, 0, \
-		wt, cost, 0, 0, 0, 0, wt, color )
+        OBJECT( OBJ(name,desc), \
+           BITS(kn,mrg,chg,0,mgc,chg,0,0,0,0,0,P_NONE,mat), \
+           0, TOOL_CLASS, prob, 0, \
+           wt, cost, 0, 0, 0, 0, wt, color )
 #define LIGHTSOURCE(name,desc,kn,mrg,mgc,chg,prob,wt,cost,mat,color) \
-       OBJECT( OBJ(name,desc), \
-               BITS(kn,mrg,1,0,mgc,chg,0,0,0,0,0,P_NONE,mat), \
-               0, TOOL_CLASS, prob, 0, \
-               wt, cost, 0, 0, 0, 0, wt, color )
+        OBJECT( OBJ(name,desc), \
+           BITS(kn,mrg,1,0,mgc,chg,0,0,0,0,0,P_NONE,mat), \
+           0, TOOL_CLASS, prob, 0, \
+            wt, cost, 0, 0, 0, 0, wt, color )
 #define CONTAINER(name,desc,kn,mgc,chg,prob,wt,cost,mat,color) \
-	OBJECT( OBJ(name,desc), \
-		BITS(kn,0,chg,1,mgc,chg,0,0,0,0,0,P_NONE,mat), \
-		0, TOOL_CLASS, prob, 0, \
-		wt, cost, 0, 0, 0, 0, wt, color )
+        OBJECT( OBJ(name,desc), \
+           BITS(kn,0,chg,1,mgc,chg,0,0,0,0,0,P_NONE,mat), \
+           0, TOOL_CLASS, prob, 0, \
+           wt, cost, 0, 0, 0, 0, wt, color )
 #define WEPTOOL(name,desc,kn,mgc,bi,prob,wt,cost,sdam,ldam,hitbon,sub,mat,clr) \
-	OBJECT( OBJ(name,desc), \
-		BITS(kn,0,1,0,mgc,1,0,0,bi,0,hitbon,sub,mat), \
-		0, TOOL_CLASS, prob, 0, \
-		wt, cost, sdam, ldam, hitbon, 0, wt, clr )
+        OBJECT( OBJ(name,desc), \
+           BITS(kn,0,1,0,mgc,1,0,0,bi,0,hitbon,sub,mat), \
+           0, TOOL_CLASS, prob, 0, \
+           wt, cost, sdam, ldam, hitbon, 0, wt, clr )
 /* containers */
     CONTAINER("N{N{box},A{large}}", NULL, 1, 0, 0, 40, 350, 8, WOOD, HI_WOOD),
     CONTAINER("N{chest}", NULL, 1, 0, 0, 35, 600, 16, WOOD, HI_WOOD),
@@ -688,9 +688,9 @@ const struct objclass const_objects[] = {
 
 /* Comestibles ... */
 #define FOOD(name,prob,delay,wt,unk,tin,nutrition,color) OBJECT( \
-		OBJ(name,NULL), BITS(1,1,unk,0,0,0,0,0,0,0,0,P_NONE,tin), 0, \
-		FOOD_CLASS, prob, delay, \
-		wt, nutrition/20 + 5, 0, 0, 0, 0, nutrition, color )
+        OBJ(name,NULL), BITS(1,1,unk,0,0,0,0,0,0,0,0,P_NONE,tin), 0, \
+           FOOD_CLASS, prob, delay, \
+           wt, nutrition/20 + 5, 0, 0, 0, 0, nutrition, color )
 /* all types of food (except tins & corpses) must have a delay of at least 1. */
 /* delay on corpses is computed and is weight dependant */
 /* dog eats foods 0-4 but prefers tripe rations above all others */
@@ -743,8 +743,8 @@ const struct objclass const_objects[] = {
 
 /* potions ... */
 #define POTION(name,desc,mgc,power,prob,cost,color) OBJECT( \
-		OBJ(name,desc), BITS(0,1,0,0,mgc,0,0,0,0,0,0,P_NONE,GLASS), power, \
-		POTION_CLASS, prob, 0, 20, cost, 0, 0, 0, 0, 10, color )
+        OBJ(name,desc), BITS(0,1,0,0,mgc,0,0,0,0,0,0,P_NONE,GLASS), power, \
+            POTION_CLASS, prob, 0, 20, cost, 0, 0, 0, 0, 10, color )
     POTION("N{gain ability}", "A{ruby}", 1, 0, 42, 300, CLR_RED),
     POTION("N{restore ability}", "A{pink}", 1, 0, 40, 100, CLR_BRIGHT_MAGENTA),
     POTION("N{confusion}", "A{orange}", 1, CONFUSION, 42, 100, CLR_ORANGE),
@@ -776,8 +776,8 @@ const struct objclass const_objects[] = {
 
 /* scrolls ... */
 #define SCROLL(name,text,mgc,prob,cost) OBJECT( \
-		OBJ(name,text), BITS(0,1,0,0,mgc,0,0,0,0,0,0,P_NONE,PAPER), 0, \
-		SCROLL_CLASS, prob, 0, 5, cost, 0, 0, 0, 0, 6, HI_PAPER )
+           OBJ(name,text), BITS(0,1,0,0,mgc,0,0,0,0,0,0,P_NONE,PAPER), 0, \
+           SCROLL_CLASS, prob, 0, 5, cost, 0, 0, 0, 0, 6, HI_PAPER )
     SCROLL("N{enchant armor}", "N{m,S{ZELGO MER}}", 1, 63, 80),
     SCROLL("N{destroy armor}", "N{m,S{JUYED AWK YACC}}", 1, 45, 100),
     SCROLL("N{confuse monster}", "N{m,S{NR 9}}", 1, 53, 100),
@@ -809,9 +809,9 @@ const struct objclass const_objects[] = {
 
 /* spellbooks ... */
 #define SPELL(name,desc,sub,prob,delay,level,mgc,dir,color) OBJECT( \
-		OBJ(name,desc), BITS(0,0,0,0,mgc,0,0,0,0,0,dir,sub,PAPER), 0, \
-		SPBOOK_CLASS, prob, delay, \
-		50, level*100, 0, 0, 0, level, 20, color )
+           OBJ(name,desc), BITS(0,0,0,0,mgc,0,0,0,0,0,dir,sub,PAPER), 0, \
+           SPBOOK_CLASS, prob, delay, \
+           50, level*100, 0, 0, 0, level, 20, color )
     SPELL("N{dig}", "A{parchment}", P_MATTER_SPELL, 20, 6, 5, 1, RAY, HI_PAPER),
     SPELL("N{magic missile}", "A{vellum}", P_ATTACK_SPELL, 45, 2, 2, 1, RAY,
           HI_PAPER),
@@ -894,8 +894,8 @@ const struct objclass const_objects[] = {
 
 /* wands ... */
 #define WAND(name,typ,prob,cost,mgc,dir,metal,color) OBJECT( \
-		OBJ(name,typ), BITS(0,0,1,0,mgc,1,0,0,0,0,dir,P_NONE,metal), 0, \
-		WAND_CLASS, prob, 0, 7, cost, 0, 0, 0, 0, 30, color )
+           OBJ(name,typ), BITS(0,0,1,0,mgc,1,0,0,0,0,dir,P_NONE,metal), 0, \
+           WAND_CLASS, prob, 0, 7, cost, 0, 0, 0, 0, 30, color )
     WAND("N{light}", "A{glass}", 95, 100, 1, NODIR, GLASS, HI_GLASS),
     WAND("N{secret door detection}", "A{balsa}",
          50, 150, 1, NODIR, WOOD, HI_WOOD),
@@ -931,20 +931,20 @@ const struct objclass const_objects[] = {
 
 /* coins ... - so far, gold is all there is */
 #define COIN(name,prob,metal,worth) OBJECT( \
-		OBJ(name,NULL), BITS(0,1,0,0,0,0,0,0,0,0,0,P_NONE,metal), 0, \
-		COIN_CLASS, prob, 0, 1, worth, 0, 0, 0, 0, 0, HI_GOLD )
+           OBJ(name,NULL), BITS(0,1,0,0,0,0,0,0,0,0,0,P_NONE,metal), 0, \
+           COIN_CLASS, prob, 0, 1, worth, 0, 0, 0, 0, 0, HI_GOLD )
     COIN("N{gold piece}", 1000, GOLD, 1),
 #undef COIN
 
 /* gems ... - includes stones and rocks but not boulders */
 #define GEM(name,desc,prob,wt,gval,nutr,mohs,glass,color) OBJECT( \
-	    OBJ(name,desc), \
-	    BITS(0,1,0,0,0,0,0,0,0,HARDGEM(mohs),0,-P_SLING,glass), 0, \
-	    GEM_CLASS, prob, 0, 1, gval, 3, 3, 0, 0, nutr, color )
+        OBJ(name,desc), \
+            BITS(0,1,0,0,0,0,0,0,0,HARDGEM(mohs),0,-P_SLING,glass), 0, \
+            GEM_CLASS, prob, 0, 1, gval, 3, 3, 0, 0, nutr, color )
 #define ROCK(name,desc,kn,prob,wt,gval,sdam,ldam,mgc,nutr,mohs,glass,color) OBJECT( \
-	    OBJ(name,desc), \
-	    BITS(kn,1,0,0,mgc,0,0,0,0,HARDGEM(mohs),0,-P_SLING,glass), 0, \
-	    GEM_CLASS, prob, 0, wt, gval, sdam, ldam, 0, 0, nutr, color )
+            OBJ(name,desc), \
+            BITS(kn,1,0,0,mgc,0,0,0,0,HARDGEM(mohs),0,-P_SLING,glass), 0, \
+            GEM_CLASS, prob, 0, wt, gval, sdam, ldam, 0, 0, nutr, color )
     GEM("N{dilithium crystal}", "A{white}", 2, 1, 4500, 15, 5, GEMSTONE, CLR_WHITE),
     GEM("N{diamond}", "A{white}", 3, 1, 4000, 15, 10, GEMSTONE, CLR_WHITE),
     GEM("N{ruby}", "A{red}", 4, 1, 3500, 15, 9, GEMSTONE, CLR_RED),

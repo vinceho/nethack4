@@ -64,9 +64,9 @@
    'gold', 'orange', 'whatcha-may-callit' (mimic is mimicking a ])
  */
 
-#define PREFIX	120      /* (56) */
+#define PREFIX    120      /* (56) */
 #define SCHAR_LIM 127
-#define NUMOBUF 12
+#define NUMOBUF   12
 
 static char *strprepend(char *, const char *);
 static boolean wishymatch(const char *, const char *, boolean);
@@ -80,12 +80,12 @@ struct Jitem {
 };
 
 /* true for gems/rocks that should have ' stone' appended to their names */
-#define GemStone(typ)	(typ == FLINT ||				\
-			 (objects[typ].oc_material == GEMSTONE &&	\
-			  (typ != DILITHIUM_CRYSTAL && typ != RUBY &&	\
-			   typ != DIAMOND && typ != SAPPHIRE &&		\
-			   typ != BLACK_OPAL && 	\
-			   typ != EMERALD && typ != OPAL)))
+#define GemStone(typ)   (typ == FLINT ||                                \
+                         (objects[typ].oc_material == GEMSTONE &&       \
+                          typ != DILITHIUM_CRYSTAL && typ != RUBY &&    \
+                          typ != DIAMOND && typ != SAPPHIRE &&          \
+                          typ != BLACK_OPAL &&                          \
+                          typ != EMERALD && typ != OPAL))
 
 
 static const struct Jitem Japanese_items[] = {

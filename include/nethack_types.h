@@ -29,8 +29,6 @@
 # define BUFSZ          512     /* for getlin buffers */
 # define QBUFSZ         256     /* for building question text */
 # define PL_NSIZ        32
-                                /* name of player, ghost, shopkeeper */
-# define PLRBUFSZ       16      /* player race/role names */
 
 # define FCMASK         0660    /* file creation mask */
 
