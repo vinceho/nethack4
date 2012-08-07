@@ -49,34 +49,37 @@ static const short skill_names_indices[P_NUM_SKILLS] = {
 
 /* note: entry [0] isn't used */
 static const char *const odd_skill_names[] = {
-    "no skill",
-    "bare hands",       /* use barehands_or_martial[] instead */
-    "two weapon combat",
-    "riding",
-    "polearms",
-    "saber",
-    "hammer",
-    "whip",
-    "attack spells",
-    "healing spells",
-    "divination spells",
-    "enchantment spells",
-    "clerical spells",
-    "escape spells",
-    "matter spells",
+    "N{0,N{skill}}",
+    "N{N{*,N{hand}},A{bare}}", /* use barehands_or_martial[] instead */
+    "N{N{combat},A{N{2,N{weapon}}}}",
+    "N{riding}",
+    "N{polearm}",
+    "N{saber}",
+    "N{hammer}",
+    "N{whip}",
+    "N{N{spell},A{attack}}",
+    "N{N{spell},A{healing}}",
+    "N{N{spell},A{divination}}",
+    "N{N{spell},A{enchantment}}",
+    "N{N{spell},A{clerical}}",
+    "N{N{spell},A{escape}}",
+    "N{N{spell},A{matter}}",
 };
 
-/* indexed vis `is_martial() */
+/* indexed via is_martial() */
 static const char *const barehands_or_martial[] = {
-    "bare handed combat", "martial arts"
+    "N{N{combat},A{bare handed}}", "N{*,N{martial art}}"
 };
 
 static void
 give_may_advance_msg(int skill)
 {
-    pline("You feel more confident in your %sskills.",
-          skill == P_NONE ? "" : skill <= P_LAST_WEAPON ? "weapon " : skill <=
-          P_LAST_SPELL ? "spell casting " : "fighting ");
+    pline("C{%s,V{V{V{feel},A{c,confident}},"
+          "D{t,N{o,N{*,N{N{skill},%s}},%s}}}}.", you,
+          skill == P_NONE ? "A{buggy}" :
+          skill <= P_LAST_WEAPON ? "A{N{weapon}}" :
+          skill <= P_LAST_SPELL ? "A{N{spellcasting}}" :
+          "A{general}", you);
 }
 
 
@@ -97,8 +100,8 @@ static const char kebabable[] = {
 };
 
 /*
- *	hitval returns an integer representing the "to hit" bonuses
- *	of "otmp" against the monster.
+ *	hitval returns an integer representing the 'to hit' bonuses
+ *	of otmp against the monster.
  */
 int
 hitval(struct obj *otmp, struct monst *mon)
@@ -110,10 +113,10 @@ hitval(struct obj *otmp, struct monst *mon)
     if (Is_weapon)
         tmp += otmp->spe;
 
-/*	Put weapon specific "to hit" bonuses in below:		*/
+/*	Put weapon specific 'to hit' bonuses in below:		*/
     tmp += objects[otmp->otyp].oc_hitbon;
 
-/*	Put weapon vs. monster type "to hit" bonuses in below:	*/
+/*	Put weapon vs. monster type 'to hit' bonuses in below:	*/
 
     /* Blessed weapons used against undead or demons */
     if (Is_weapon && otmp->blessed && (is_demon(ptr) || is_undead(ptr)))
@@ -140,7 +143,7 @@ hitval(struct obj *otmp, struct monst *mon)
         tmp += 3;
 #endif
 
-    /* Check specially named weapon "to hit" bonuses */
+    /* Check specially named weapon 'to hit' bonuses */
     if (otmp->oartifact)
         tmp += spec_abon(otmp, mon);
 
@@ -171,7 +174,7 @@ hitval(struct obj *otmp, struct monst *mon)
 
 /*
  *	dmgval returns an integer representing the damage bonuses
- *	of "otmp" against the monster.
+ *	of otmp against the monster.
  */
 int
 dmgval(struct obj *otmp, struct monst *mon)
@@ -270,7 +273,7 @@ dmgval(struct obj *otmp, struct monst *mon)
     if (ptr == &mons[PM_SHADE] && objects[otyp].oc_material != SILVER)
         tmp = 0;
 
-    /* "very heavy iron ball"; weight increase is in increments of 160 */
+    /* 'very heavy iron ball'; weight increase is in increments of 160 */
     if (otyp == HEAVY_IRON_BALL && tmp > 0) {
         int wt = (int)objects[HEAVY_IRON_BALL].oc_weight;
 
@@ -633,11 +636,12 @@ possibly_unwield(struct monst *mon, boolean polyspot)
         mon->weapon_check = NO_WEAPON_WANTED;
         obj_extract_self(obj);
         if (lev == level && cansee(mon->mx, mon->my)) {
-            pline("%s drops %s.", Monnam(mon), distant_name(obj, doname));
+            pline("C{%s,V{V{drop},%s}}.",
+                  Monnam(mon), distant_name(obj, doname));
             newsym(mon->mx, mon->my);
         }
         /* might be dropping object into water or lava */
-        if (!flooreffects(obj, mon->mx, mon->my, "drop")) {     /* FIXME - JMM */
+        if (!flooreffects(obj, mon->mx, mon->my, "V{drop}")) { /* FIXME - JMM */
             if (polyspot)
                 bypass_obj(obj);
             place_object(obj, lev, mon->mx, mon->my);
@@ -703,7 +707,8 @@ mon_wield_item(struct monst *mon)
         }
         break;
     default:
-        impossible("weapon_check %d for %s?", mon->weapon_check, mon_nam(mon));
+        impossible("S{weapon_check %d for %s?}",
+                   mon->weapon_check, mon_nam(mon));
         return 0;
     }
     if (obj && obj != &zeroobj) {
@@ -724,18 +729,19 @@ mon_wield_item(struct monst *mon)
 
                 if (bimanual(mw_tmp))
                     mon_hand = makeplural(mon_hand);
-                sprintf(welded_buf, "%s welded to %s %s", otense(mw_tmp, "are"),
-                        mhis(mon), mon_hand);
+                sprintf(welded_buf, "A{V{V{weld},N{o,%s,%s}}}",
+                        mon_hand, mon_nam(mon));
 
                 if (obj->otyp == PICK_AXE) {
-                    pline("Since %s weapon%s %s,", s_suffix(mon_nam(mon)),
-                          plur(mw_tmp->quan), welded_buf);
-                    pline("%s cannot wield that %s.", mon_nam(mon), xname(obj));
+                    pline("C{%s,V{V{-,V{V{can},V{V{wield},%s}}},"
+                          "D{Q{since},C{N{o,%s,%s},V{V{are},%s}}}}}.",
+                          mon_nam(mon), xname(obj), xname(mw_tmp),
+                          mon_nam(mon), welded_buf);
                 } else {
-                    pline("%s tries to wield %s.", Monnam(mon),
+                    pline("C{%s,V{V{try},V{V{wield},%s}}}.", mon_nam(mon),
                           singular(obj, doname));
-                    pline("%s %s %s!", s_suffix(Monnam(mon)), xname(mw_tmp),
-                          welded_buf);
+                    pline("C{N{o,%s,%s},V{V{are},%s}}!", xname(mw_tmp),
+                          mon_nam(mon), welded_buf);
                 }
                 mw_tmp->bknown = 1;
             }
@@ -746,20 +752,21 @@ mon_wield_item(struct monst *mon)
         setmnotwielded(mon, mw_tmp);
         mon->weapon_check = NEED_WEAPON;
         if (canseemon(mon)) {
-            pline("%s wields %s%s", Monnam(mon), singular(obj, doname),
-                  mon->mtame ? "." : "!");
+            pline("C{%s,V{V{wield},%s}}%c", mon_nam(mon),
+                  singular(obj, doname), mon->mtame ? '.' : '!');
             if (obj->cursed && obj->otyp != CORPSE) {
-                pline("%s %s to %s %s!", Tobjnam(obj, "weld"),
-                      is_plural(obj) ? "themselves" : "itself",
-                      s_suffix(mon_nam(mon)), mbodypart(mon, HAND));
+                pline("C{%s,V{V{V{weld},%s},D{i,N{o,%s,%s}}}}!",
+                      imprecise_xname(obj), imprecise_xname{obj},
+                      mbodypart(mon, HAND), mon_nam(mon));
                 obj->bknown = 1;
             }
         }
         if (artifact_light(obj) && !obj->lamplit) {
             begin_burn(obj, FALSE);
             if (canseemon(mon))
-                pline("%s brilliantly in %s %s!", Tobjnam(obj, "glow"),
-                      s_suffix(mon_nam(mon)), mbodypart(mon, HAND));
+                pline("C{%s,V{V{V{glow},D{brilliantly}},D{a,N{o,%s,%s}}}}!",
+                      imprecise_xname(obj), mbodypart(mon, HAND),
+                      mon_nam(mon));
         }
         obj->owornmask = W_WEP;
         return 1;
@@ -841,30 +848,37 @@ skill_level_name(int skill, char *buf)
 
     switch (P_SKILL(skill)) {
     case P_UNSKILLED:
-        ptr = "Unskilled";
+        ptr = "A{unskilled}";
         break;
     case P_BASIC:
-        ptr = "Basic";
+        ptr = "A{basic}";
         break;
     case P_SKILLED:
-        ptr = "Skilled";
+        ptr = "A{skilled}";
         break;
     case P_EXPERT:
-        ptr = "Expert";
+        ptr = "A{expert}";
         break;
         /* these are for unarmed combat/martial arts only */
     case P_MASTER:
-        ptr = "Master";
+        ptr = "A{master}";
         break;
     case P_GRAND_MASTER:
-        ptr = "Grand Master";
+        ptr = "A{champion}";
         break;
     default:
-        ptr = "Unknown";
+        ptr = "A{unknown}";
         break;
     }
     strcpy(buf, ptr);
     return buf;
+}
+
+/* make it possible for other files to query skill names */
+const char *
+skill_name(int skill)
+{
+    return P_NAME(skill);
 }
 
 /* return the # of slots required to advance the skill */
@@ -926,19 +940,19 @@ skill_advance(int skill)
     P_SKILL(skill)++;
     u.skill_record[u.skills_advanced++] = skill;
     /* subtly change the advance message to indicate no more advancement */
-    pline("You are now %s skilled in %s.",
-          P_SKILL(skill) >= P_MAX_SKILL(skill) ? "most" : "more",
-          P_NAME(skill));
+    pline("C{%s,V{V{V{V{are},%s},D{now}},D{t,N{*,%s}}}}.", you,
+          P_SKILL(skill) >= P_MAX_SKILL(skill) ?
+          "A{s,A{skilled}}" : "A{c,A{skilled}}", P_NAME(skill));
 }
 
 static const struct skill_range {
     const char *name;
     short first, last;
 } skill_ranges[] = {
-    {
-    "Fighting Skills", P_FIRST_H_TO_H, P_LAST_H_TO_H}, {
-    "Weapon Skills", P_FIRST_WEAPON, P_LAST_WEAPON}, {
-"Spellcasting Skills", P_FIRST_SPELL, P_LAST_SPELL},};
+    {"N{*,N{N{skill},A{general}}}", P_FIRST_H_TO_H, P_LAST_H_TO_H},
+    {"N{*,N{N{skill},A{N{weapon}}}}", P_FIRST_WEAPON, P_LAST_WEAPON},
+    {"N{*,N{N{skill},A{N{spellcasting}}}}", P_FIRST_SPELL, P_LAST_SPELL},
+};
 
 /*
  * The `#enhance' extended command.  What we _really_ would like is
@@ -951,14 +965,15 @@ static const struct skill_range {
 int
 enhance_weapon_skill(void)
 {
-    int pass, i, n, len, longest, id, to_advance, eventually_advance,
+    int pass, i, n, len, id, to_advance, eventually_advance,
         maxxed_cnt, selected[1];
     char buf[BUFSZ], sklnambuf[BUFSZ];
     const char *prefix;
     struct menulist menu;
     boolean speedy = FALSE;
 
-    if (wizard && yn("Advance skills without practice?") == 'y')
+    if (wizard && yn("C{q,C{i,V{V{V{advance},N{*,N{i,skill}}},"
+                     "D{-,D{t,N{practice}}}}}}?") == 'y')
         speedy = TRUE;
 
     init_menulist(&menu);
@@ -966,11 +981,9 @@ enhance_weapon_skill(void)
         menu.icount = 0;
         /* find longest available skill name, count those that can advance */
         to_advance = eventually_advance = maxxed_cnt = 0;
-        for (longest = 0, i = 0; i < P_NUM_SKILLS; i++) {
+        for (i = 0; i < P_NUM_SKILLS; i++) {
             if (P_RESTRICTED(i))
                 continue;
-            if ((len = strlen(P_NAME(i))) > longest)
-                longest = len;
             if (can_advance(i, speedy))
                 to_advance++;
             else if (could_advance(i))
@@ -979,21 +992,27 @@ enhance_weapon_skill(void)
                 maxxed_cnt++;
         }
 
-        /* start with a legend if any entries will be annotated with "*" or "#" 
+        /* start with a legend if any entries will be annotated with '*' or '#'
            below */
         if (eventually_advance > 0 || maxxed_cnt > 0) {
             if (eventually_advance > 0) {
-                sprintf(buf, "(Skill%s flagged by \"*\" may be enhanced %s.)",
-                        plur(eventually_advance),
-                        (u.ulevel <
-                         MAXULEV) ? "when you're more experienced" :
-                        "if skill slots become available");
+                /* We can get away with a literal 'you' here because this is
+                   only being shown in menus, not being plined */
+                sprintf(buf, "C{s,V{V{V{may},V{V{enhance},"
+                        "N{%s,A{V{V{flag},D{t,N{m,S{*}}}}}}}},%s}}",
+                        eventually_advance == 1 ?
+                        "N{i,skill}" : "N{*,N{i,skill}}",
+                        (u.ulevel < MAXULEV) ?
+                        "D{Q{when},C{N{you},V{V{are},A{c,A{experienced}}}}}" :
+                        "D{Q{if},C{N{*,N{N{slot},A{N{skill}}}},"
+                        "V{V{become},A{available}}}}");
                 add_menutext(&menu, buf);
             }
             if (maxxed_cnt > 0) {
-                sprintf(buf,
-                        "(Skill%s flagged by \"#\" cannot be enhanced any further.)",
-                        plur(maxxed_cnt));
+                sprintf(buf, "C{-,C{s,V{V{V{can},V{V{enhance},"
+                        "N{%s,A{V{V{flag},D{t,N{m,S{#}}}}}}}},"
+                        "D{D{further},D{any}}}}}",
+                        eventually_advance == 1 ? "N{skill}" : "N{*,N{skill}}");
                 add_menutext(&menu, buf);
             }
             add_menutext(&menu, "");
@@ -1013,7 +1032,7 @@ enhance_weapon_skill(void)
                     continue;
                 /* 
                  * The 12 is the longest skill level name.
-                 * The "    " is room for a selection letter and dash, "a - ".
+                 * The '    ' is room for a selection letter and dash, 'a - '.
                  */
                 if (can_advance(i, speedy))
                     prefix = "";        /* will be preceded by menu choice */
@@ -1027,24 +1046,25 @@ enhance_weapon_skill(void)
                          0) ? "    " : "";
                 skill_level_name(i, sklnambuf);
                 if (wizard) {
-                    sprintf(buf, " %s%s\t%s\t%5d(%4d)", prefix, P_NAME(i),
-                            sklnambuf, P_ADVANCE(i),
+                    sprintf(buf, " %sN{*,%s}\t%s\tS{%5d(%4d)}", prefix,
+                            P_NAME(i), sklnambuf, P_ADVANCE(i),
                             practice_needed_to_advance(P_SKILL(i)));
                 } else {
-                    sprintf(buf, " %s%s\t[%s]", prefix, P_NAME(i), sklnambuf);
+                    sprintf(buf, " %sN{*,%s}\t[%s]", prefix, P_NAME(i),
+                            sklnambuf);
                 }
                 if (could_advance(i) || can_advance(i, speedy))
-                    sprintf(eos(buf), " (%d to advance)", slots_required(i));
+                    sprintf(eos(buf), " (A{A{%d},V{advance}})",
+                            slots_required(i));
                 id = can_advance(i, speedy) ? i + 1 : 0;
                 add_menuitem(&menu, id, buf, 0, FALSE);
             }
 
-        strcpy(buf,
-               (to_advance >
-                0) ? "Pick a skill to advance:" : "Current skills:");
-        if (wizard && !speedy)
-            sprintf(eos(buf), "  (%d slot%s available)", u.weapon_slots,
-                    plur(u.weapon_slots));
+        strcpy(buf, (to_advance > 0) ?
+               "C{i,V{V{V{pick},N{i,skill}},V{advance}}}:" :
+               "N{*,N{N{skill},A{current}}}:");
+        sprintf(eos(buf), "  (C{N{%d,N{slot}},V{V{are},A{available}}})",
+                u.weapon_slots);
         n = display_menu(menu.items, menu.icount, buf,
                          to_advance ? PICK_ONE : PICK_NONE, PLHINT_ANYWHERE,
                          selected);
@@ -1054,8 +1074,15 @@ enhance_weapon_skill(void)
             /* check for more skills able to advance, if so then .. */
             for (n = i = 0; i < P_NUM_SKILLS; i++) {
                 if (can_advance(i, speedy)) {
-                    if (!speedy)
-                        pline("You feel you could be more dangerous!");
+                    /* Originally there was a message here, 'you feel you could
+                       be more dangerous', but this is not only incorrect (it
+                       should be 'you feel that you could be more dangerous'),
+                       but it also requires implementing the subjunctive, and I
+                       don't feel like that right now. Let's call it a TODO for
+                       when we're ready to translate ever more complex
+                       grammar. The message would be kind-of obnoxious anyway,
+                       in that it'd pop you out of the menu and then straight
+                       back to it. */
                     n++;
                     break;
                 }
@@ -1088,10 +1115,12 @@ dump_skills(void)
                 continue;
 
             skill_level_name(i, sklnambuf);
-            sprintf(buf, " %s\t[%s]", P_NAME(i), sklnambuf);
+            sprintf(buf, " N{*,%s}\t[%s]", P_NAME(i), sklnambuf);
             add_menuitem(&menu, 0, buf, 0, FALSE);
         }
-    display_menu(menu.items, menu.icount, "Your skills at the end:", PICK_NONE,
+    /* Can safely use literal 'you' because this isn't being plined */
+    display_menu(menu.items, menu.icount,
+                 "N{N{*,N{o,N{skill},N{you}}},A{m,N{end}}}:", PICK_NONE,
                  PLHINT_ANYWHERE, NULL);
 
     free(menu.items);
@@ -1157,7 +1186,7 @@ lose_weapon_skill(int n)
         } else if (u.skills_advanced) {
             skill = u.skill_record[--u.skills_advanced];
             if (P_SKILL(skill) <= P_UNSKILLED)
-                panic("lose_weapon_skill (%d)", skill);
+                panic("S{lose_weapon_skill (%d)}", skill);
             P_SKILL(skill)--;   /* drop skill one level */
             /* Lost skill might have taken more than one slot; refund rest. */
             u.weapon_slots = slots_required(skill) - 1;
@@ -1185,15 +1214,17 @@ drain_weapon_skill(int n)
             }
             u.skills_advanced--;
             if (P_SKILL(skill) <= P_UNSKILLED)
-                panic("drain_weapon_skill (%d)", skill);
+                panic("S{drain_weapon_skill (%d)}", skill);
             P_SKILL(skill)--;   /* drop skill one level */
             /* refund slots used for skill */
             u.weapon_slots += slots_required(skill);
             /* drain a random proportion of skill training */
             if (P_ADVANCE(skill))
                 P_ADVANCE(skill) = rn2(P_ADVANCE(skill));
-            pline("You forget %syour training in %s.",
-                  P_SKILL(skill) >= P_BASIC ? "some of " : "", P_NAME(skill));
+            pline("C{%s,V{V{forget},N{f,N{o,N{training},%s},%s},"
+                  "D{t,N{*,N{%s}}}}}", you, you, 
+                  P_SKILL(skill) >= P_BASIC ? "A{some}" : "A{all}",
+                  P_NAME(skill));
         }
     }
 }
@@ -1233,7 +1264,7 @@ int
 weapon_hit_bonus(struct obj *weapon)
 {
     int type, wep_type, skill, bonus = 0;
-    static const char bad_skill[] = "weapon_hit_bonus: bad skill %d";
+    static const char bad_skill[] = "S{weapon_hit_bonus: bad skill %d}";
 
     wep_type = weapon_type(weapon);
     /* use two weapon skill only if attacking with one of the wielded weapons */
@@ -1337,7 +1368,7 @@ weapon_dam_bonus(struct obj *weapon)
     } else if (type <= P_LAST_WEAPON) {
         switch (P_SKILL(type)) {
         default:
-            impossible("weapon_dam_bonus: bad skill %d", P_SKILL(type));
+            impossible("S{weapon_dam_bonus: bad skill %d}", P_SKILL(type));
             /* fall through */
         case P_ISRESTRICTED:
         case P_UNSKILLED:
@@ -1471,7 +1502,7 @@ skill_init(const struct def_skill *class_skill)
     for (skill = 0; skill < P_NUM_SKILLS; skill++) {
         if (!P_RESTRICTED(skill)) {
             if (P_MAX_SKILL(skill) < P_SKILL(skill)) {
-                impossible("skill_init: curr > max: %s", P_NAME(skill));
+                impossible("S{skill_init: curr > max: %s}", P_NAME(skill));
                 P_MAX_SKILL(skill) = P_SKILL(skill);
             }
             P_ADVANCE(skill) = practice_needed_to_advance(P_SKILL(skill) - 1);
@@ -1487,9 +1518,8 @@ setmnotwielded(struct monst *mon, struct obj *obj)
     if (artifact_light(obj) && obj->lamplit) {
         end_burn(obj, FALSE);
         if (canseemon(mon))
-            pline("%s in %s %s %s glowing.", The(xname(obj)),
-                  s_suffix(mon_nam(mon)), mbodypart(mon, HAND),
-                  otense(obj, "stop"));
+            pline("C{N{%s,A{a,N{o,%s,%s}}},V{V{stop},A{glow}}}",
+                  xname(obj), mbodypart(mon, HAND), mon_nam(mon));
     }
     obj->owornmask &= ~W_WEP;
 }

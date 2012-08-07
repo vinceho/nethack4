@@ -192,6 +192,8 @@ startup_common(const char *name, int playmode)
     if (wizard)
         strcpy(plname, "wizard");
 
+    sprintf(you, "P{1|%s}", plname);
+
     cls();
 
     initrack();

@@ -36,6 +36,9 @@ set ( DLB_SRC
     dlb_main.c
     ${LNH_SRC}/dlb.c
     )
+set ( CHECK_INTL_SRC
+    check_intl.c
+    )
 
 file(MAKE_DIRECTORY ${LNH_INC_GEN})
 file(MAKE_DIRECTORY ${LNH_DAT_GEN})
@@ -50,6 +53,16 @@ add_executable (makedefs ${MAKEDEFS_SRC})
 add_executable (dgn_comp ${DGN_COMP_SRC})
 add_executable (lev_comp ${LEV_COMP_SRC})
 add_executable (dlb ${DLB_SRC})
+add_executable (check_intl ${CHECK_INTL_SRC})
+
+add_dependencies (makedefs nethack_intl)
+target_link_libraries (makedefs nethack_intl)
+
+add_dependencies (lev_comp nethack_intl)
+target_link_libraries (lev_comp nethack_intl)
+
+add_dependencies (check_intl nethack_intl)
+target_link_libraries (check_intl nethack_intl)
 
 get_property(MAKEDEFS_BIN TARGET makedefs PROPERTY LOCATION)
 
@@ -108,4 +121,3 @@ add_custom_command(OUTPUT ${LNH_UTIL_GEN}/lev_scanner.c
 add_custom_target (makedefs_headers DEPENDS ${MAKEDEFS_HEADERS})
 add_dependencies (dgn_comp makedefs_headers)
 add_dependencies (lev_comp makedefs_headers)
-

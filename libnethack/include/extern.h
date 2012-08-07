@@ -1227,14 +1227,14 @@ extern const char *safe_qbuf(const char *, unsigned, const char *, const char *,
 
 /* ### pline.c ### */
 
-extern void pline(const char *, ...);
+extern void pline(const char *, ...) PRINTFLIKE;
 extern void suppress_more(void);
-extern void impossible(const char *, ...);
-extern void Norep(const char *, ...);
+extern void impossible(const char *, ...) PRINTFLIKE;
+extern void Norep(const char *, ...) PRINTFLIKE;
 extern void free_youbuf(void);
-extern void You_hear(const char *, ...);
-extern void verbalize(const char *, ...);
-extern void raw_printf(const char *, ...);
+extern void You_hear(const char *, ...) PRINTFLIKE;
+extern void verbalize(const char *, ...) PRINTFLIKE;
+extern void raw_printf(const char *, ...) PRINTFLIKE;
 extern const char *align_str(aligntyp);
 extern void mstatusline(struct monst *);
 extern void ustatusline(void);
@@ -1738,6 +1738,7 @@ extern struct obj *select_rwep(struct monst *);
 extern struct obj *select_hwep(struct monst *);
 extern void possibly_unwield(struct monst *, boolean);
 extern int mon_wield_item(struct monst *);
+extern const char *skill_name(int);
 extern int abon(void);
 extern int dbon(void);
 extern int enhance_weapon_skill(void);

@@ -110,6 +110,7 @@ struct objclass {
     unsigned short oc_nutrition;        /* food value */
 };
 
+#define UNID_ADJ "A{unidentified}"
 struct objdescr {
     const char *oc_name;        /* actual name */
     const char *oc_descr;       /* description when name unknown */

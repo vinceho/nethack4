@@ -61,7 +61,10 @@ void do_questtxt(const char *, const char *);
 void do_rumors(const char *, const char *, const char *);
 void do_oracles(const char *, const char *);
 
-extern void objects_init(void); /* objects.c */
+/* objects.c */
+extern void objects_init(void);
+/* libnethack_intl */
+extern char *malloc_parsestring(const char *, boolean, boolean);
 
 static void make_version(void);
 static char *version_string(char *);
@@ -1202,8 +1205,22 @@ do_objs(const char *outfile)
 
     for (i = 0; !i || objects[i].oc_class != ILLOBJ_CLASS; i++) {
         objects[i].oc_name_idx = objects[i].oc_descr_idx = i;   /* init */
-        if (!(objnam = tmpdup(OBJ_NAME(objects[i]))))
-            continue;
+
+        if (!OBJ_NAME(objects[i])) continue;
+
+        /* We translate object names from grammartree into English before
+           making them into constants; the English names are used throughout the
+           code.*/
+        objnam = malloc_parsestring(OBJ_NAME(objects[i]), TRUE, FALSE);
+
+        /* Catch error messages */
+        if (*objnam == '(') {
+            fprintf(stderr, "%s", objnam);
+            sumerr = 1;
+            free(objnam);
+            objnam = malloc(120);
+            sprintf(objnam, "object %d", i);
+        }
 
         /* make sure probabilities add up to 1000 */
         if (objects[i].oc_class != class) {
@@ -1219,7 +1236,7 @@ do_objs(const char *outfile)
         for (c = objnam; *c; c++)
             if (*c >= 'a' && *c <= 'z')
                 *c -= (char)('a' - 'A');
-            else if (*c < 'A' || *c > 'Z')
+            else if ((*c < 'A' || *c > 'Z') && (*c < '0' || *c > '9'))
                 *c = '_';
 
         switch (class) {
@@ -1261,6 +1278,8 @@ do_objs(const char *outfile)
         prefix = 0;
 
         sum += objects[i].oc_prob;
+
+        free(objnam);
     }
 
     /* check last set of probabilities */

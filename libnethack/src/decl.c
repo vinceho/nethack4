@@ -130,6 +130,9 @@ char catname[PL_PSIZ];
 char horsename[PL_PSIZ];
 char preferred_pet;     /* '\0', 'c', 'd', 'n' (none) */
 
+/* a reference to the player in messages */
+char you[PL_PSIZ + 40];
+
 /* monsters that went down/up together with @ */
 struct monst *mydogs;
 

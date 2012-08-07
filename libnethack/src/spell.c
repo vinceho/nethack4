@@ -32,13 +32,15 @@ static void spell_backfire(int);
 static const char *spelltypemnemonic(int);
 static int isqrt(int);
 
+static char putdownbuf[BUFSZ]; /* used for nomovemsg to point to */
+
 /* The roles[] table lists the role-specific values for tuning
  * percent_success().
  *
  * Reasoning:
  *   spelbase, spelheal:
  *	Arc are aware of magic through historical research
- *	Bar abhor magic (Conan finds it "interferes with his animal instincts")
+ *	Bar abhor magic (Conan finds it 'interferes with his animal instincts')
  *	Cav are ignorant to magic
  *	Hea are very aware of healing magic through medical research
  *	Kni are moderately aware of healing from Paladin training
@@ -85,9 +87,6 @@ static int isqrt(int);
 #define uarmgbon 6      /* Casting channels through the hands */
 #define uarmfbon 2      /* All metal interferes to some degree */
 
-/* since the spellbook itself doesn't blow up, don't say just "explodes" */
-static const char explodes[] = "radiates explosive energy";
-
 /* TRUE: book should be destroyed by caller */
 static boolean
 cursed_book(struct obj *bp)
@@ -96,11 +95,11 @@ cursed_book(struct obj *bp)
 
     switch (rn2(lev)) {
     case 0:
-        pline("You feel a wrenching sensation.");
+        pline("C{N=%s,V{V{feel},N{N{i,sensation},A{wrenching}}}}.", you);
         tele(); /* teleport him */
         break;
     case 1:
-        pline("You feel threatened.");
+        pline("C{N=%s,V{V{feel},A{V{threaten}}}}.", you);
         aggravate();
         break;
     case 2:
@@ -110,44 +109,53 @@ cursed_book(struct obj *bp)
         take_gold();
         break;
     case 4:
-        pline("These runes were just too much to comprehend.");
+        pline("C{i,N{*,N{%d|rune}},V{V{V{are},"
+              "A{A{A{much},D{too}},D{just}}},V{comprehend}}}.", bp->o_id);
         make_confused(HConfusion + rn1(7, 16), FALSE);
         break;
     case 5:
-        pline("The book was coated with contact poison!");
+        pline("C{i,s,V{V{V{coat},N{book}},D{t,N{N{o,poison},A{contact}}}}}!");
         if (uarmg) {
             if (uarmg->oerodeproof || !is_corrodeable(uarmg)) {
-                pline("Your gloves seem unaffected.");
+                pline("C{s,V{V{-,V{V{seem},V{affect}}},"
+                      "N{o,N{*,N{glove}},N=%s}}}.", you);
             } else if (uarmg->oeroded2 < MAX_ERODE) {
                 if (uarmg->greased) {
-                    grease_protect(uarmg, "gloves", &youmonst);
+                    grease_protect(uarmg, "N{*,N{glove}}", &youmonst);
                 } else {
-                    pline("Your gloves corrode%s!",
-                          uarmg->oeroded2 + 1 ==
-                          MAX_ERODE ? " completely" : uarmg->
-                          oeroded2 ? " further" : "");
+                    pline("C{N{o,N{*,N{glove}},N=%s},V=%s}!", you,
+                          uarmg->oeroded2 + 1 == MAX_ERODE ?
+                          "V{V{corrode},D{completely}}" :
+                          uarmg->oeroded2 ?
+                          "V{V{corrode},D{completely}}" : "V{corrode}");
                     uarmg->oeroded2++;
                 }
             } else
-                pline("Your gloves %s completely corroded.",
-                      Blind ? "feel" : "look");
+                pline("C{N{o,N{*,N{glove}},N=%s},V{V=%s,"
+                      "A{A{V{corrode}},D{completely}}}}.", you,
+                      Blind ? "V{feel}" : "V{look}");
             break;
         }
         /* temp disable in_use; death should not destroy the book */
         bp->in_use = FALSE;
         losestr(Poison_resistance ? rn1(2, 1) : rn1(4, 3));
-        losehp(rnd(Poison_resistance ? 6 : 10), "contact-poisoned spellbook",
-               KILLED_BY_AN);
+        losehp(rnd(Poison_resistance ? 6 : 10),
+               "N{N{i,spellbook},A{A{V{poison}},"
+               "D{t,N{N{o,poison},A{contact}}}}}", KILLED_BY_AN);
         bp->in_use = TRUE;
         break;
     case 6:
         if (Antimagic) {
             shieldeff(u.ux, u.uy);
-            pline("The book %s, but you are unharmed!", explodes);
+            pline("C{+,C{N{book},V{V{radiate},N{N{o,energy},A{explosive}}}},"
+                  "C{-,C{s,V{V{harm},N=%s}}}}!", you);
         } else {
-            pline("As you read the book, it %s in your %s!", explodes,
-                  body_part(FACE));
-            losehp(2 * rnd(10) + 5, "exploding rune", KILLED_BY_AN);
+            int id = flags.ident++;
+            pline("C{N{%d|book},V{V{V{V{radiate},N{N{o,energy},A{explosive}}},"
+                  "D{a,N{o,N=%s,N=%s}}},D{Q{as},"
+                  "C{N=%s,V{V{read},N{%d|book}}}}}}!",
+                  id, body_part(FACE), you, you, id);
+            losehp(2 * rnd(10) + 5, "N{a,N{i,rune},V{explode}}", KILLED_BY_AN);
         }
         return TRUE;
     default:
@@ -165,18 +173,17 @@ confused_book(struct obj *spellbook)
 
     if (!rn2(3) && spellbook->otyp != SPE_BOOK_OF_THE_DEAD) {
         spellbook->in_use = TRUE;       /* in case called from learn */
-        pline
-            ("Being confused you have difficulties in controlling your actions.");
-        win_pause_output(P_MESSAGE);
-        pline("You accidentally tear the spellbook to pieces.");
+        pline("C{N=%s,V{V{V{V{tear},N{spellbook}},D{accidentally}},"
+              "D{e,N{*,N{i,piece}}}}}.", you);
         if (!objects[spellbook->otyp].oc_name_known &&
             !objects[spellbook->otyp].oc_uname)
             docall(spellbook);
         useup(spellbook);
         gone = TRUE;
     } else {
-        pline("You find yourself reading the %s line over and over again.",
-              spellbook == book ? "next" : "first");
+        pline("C{N=%s,V{V{find},N{a,N=%s,V{V{V{read},N{N{line},A=%s}},"
+              "D{over and over again}}}}}.",
+              you, you, spellbook == book ? "A{next}" : "A{first}");
     }
     return gone;
 }
@@ -188,25 +195,28 @@ deadbook(struct obj *book2)
     struct monst *mtmp, *mtmp2;
     coord mm;
 
-    pline("You turn the pages of the Book of the Dead...");
+    pline("C{N=%s,V{V{turn},N{o,N{*,N{page}},N{Book of the Dead}}}}...", you);
     makeknown(SPE_BOOK_OF_THE_DEAD);
-    /* KMH -- Need ->known to avoid "_a_ Book of the Dead" */
+    /* KMH -- Need ->known to avoid '_a_ Book of the Dead' */
     book2->known = 1;
     if (invocation_pos(&u.uz, u.ux, u.uy) && !On_stairs(u.ux, u.uy)) {
         struct obj *otmp;
         boolean arti1_primed = FALSE, arti2_primed = FALSE, arti_cursed = FALSE;
 
         if (book2->cursed) {
-            pline("The runes appear scrambled.  You can't read them!");
+            int id = flags.ident++;
+            pline("C{N{*,N{%d|rune}},V{V{appear},A{V{scramble}}}}.",id);
+            pline("C{N=%s,V{-,V{V{can},V{V{read},N{*,N{%d|rune}}}}}}!",you,id);
             return;
         }
 
         if (!u.uhave.bell || !u.uhave.menorah) {
-            pline("A chill runs down your %s.", body_part(SPINE));
+            pline("C{N{i,chill},V{V{run down},N{o,N=%s,N=%s}}}.",
+                  body_part(SPINE), you);
             if (!u.uhave.bell)
-                You_hear("a faint chime...");
+                pline("C{N=%s,V{V{hear},N{N{i,chime},A{faint}}}}...", you);
             if (!u.uhave.menorah)
-                pline("Vlad's doppelganger is amused.");
+                pline("C{s,V{V{amuse},N{o,N{doppelganger},P{Vlad}}}}.");
             return;
         }
 
@@ -228,22 +238,27 @@ deadbook(struct obj *book2)
         }
 
         if (arti_cursed) {
-            pline("The invocation fails!");
-            pline("At least one of your artifacts is cursed...");
+            pline("C{N{invocation},V{fail}}!");
+            pline("C{N{s,f,N{*,N{artifact}},A{at least one}},"
+                  "V{V{are},A{V{curse}}}}...");
         } else if (arti1_primed && arti2_primed) {
             unsigned soon = (unsigned)dice(2, 6); /* time til next intervene */
+            char buf[BUFSZ];
 
             /* successful invocation */
             mkinvokearea();
             u.uevent.invoked = 1;
-            historic_event(FALSE, "performed the invocation.");
+            sprintf(buf, "C{i,N=%s,V{V{perform},N{invocation}}}!", you);
+            historic_event(FALSE, buf);
             /* in case you haven't killed the Wizard yet, behave as if you just 
                did */
             u.uevent.udemigod = 1;      /* wizdead() */
             if (!u.udg_cnt || u.udg_cnt > soon)
                 u.udg_cnt = soon;
         } else {        /* at least one artifact not prepared properly */
-            pline("You have a feeling that something is amiss...");
+            /* literal 'something', we don't want 'it is amiss' */
+            pline("C{N=%s,V{V{have},N{N{i,feeling},A{Q{that},"
+                  "C{N{o,something},V{V{are},A{amiss}}}}}}}...", you);
             goto raise_dead;
         }
         return;
@@ -252,8 +267,8 @@ deadbook(struct obj *book2)
     /* when not an invocation situation */
     if (book2->cursed) {
     raise_dead:
+        pline("C{i,N=%s,V{V{raise},N{dead}}}!", you);
 
-        pline("You raised the dead!");
         /* first maybe place a dangerous adversary */
         if (!rn2(3) &&
             ((mtmp =
@@ -293,13 +308,18 @@ deadbook(struct obj *book2)
     } else {
         switch (rn2(3)) {
         case 0:
-            pline("Your ancestors are annoyed with you!");
+            /* Originally 'your ancestors are annoyed at you', but this
+               defies translation, especially as it's hard to automatically
+               distinguish from 'your ancestors are annoyed by you'. */
+            pline("C{N{o,N{*,N{ancestor}},N=%s},V{V{are},N{o,annoyed}}}!", you);
             break;
         case 1:
-            pline("The headstones in the cemetery begin to move!");
+            pline("C{N{N{*,N{headstone}},A{a,N{cemetery}}},"
+                  "V{V{begin},V{move}}}!");
             break;
         default:
-            pline("Oh my!  Your name appears in the book!");
+            pline("S{Oh my!}");
+            pline("C{N{o,N{name},N=%s},V{V{appear},D{a,N{book}}}}!", you);
         }
     }
     return;
@@ -319,8 +339,10 @@ learn(void)
     if (Confusion) {    /* became confused while learning */
         confused_book(book);
         book = 0;       /* no longer studying */
-        nomul(delay, "reading a book"); /* remaining delay is uninterrupted */
-        nomovemsg = "You're finally able to put the book down.";
+        nomul(delay, "V{V{read},N{i,book}}"); /* cannot now be interrupted */
+        sprintf(putdownbuf, "C{N=%s,V{V{V{are},A{A{able},D{finally}}},"
+                "V{V{put down},N{book}}}}.", you);
+        nomovemsg = putdownbuf;
         delay = 0;
         return 0;
     }
@@ -335,23 +357,31 @@ learn(void)
         return 0;
     }
 
-    sprintf(splname,
-            objects[booktype].oc_name_known ? "\"%s\"" : "the \"%s\" spell",
+    sprintf(splname, objects[booktype].oc_name_known ?
+            "N{m,N=%s}" : "N{N{spell},A{N{m,N=%s}}}",
             OBJ_NAME(objects[booktype]));
     for (i = 0; i < MAXSPELL; i++) {
         if (spellid(i) == booktype) {
             if (book->spestudied > MAX_SPELL_STUDY) {
-                pline("This spellbook is too faint to be read any more.");
+                pline("C{N{%d|spellbook},V{V{V{are},A{A{faint},D{too}}},"
+                      "V{V{be read},D{any more}}}}.", book->o_id);
                 book->otyp = booktype = SPE_BLANK_PAPER;
             } else if (spellknow(i) <= 1000) {
-                pline("Your knowledge of %s is keener.", splname);
+                pline("C{N{l,N{o,N{knowledge},N=%s},N=%s},"
+                      "V{V{are},A{c,A{keen}}}}.", you, splname);
                 incrnknow(i);
                 book->spestudied++;
                 exercise(A_WIS, TRUE);  /* extra study */
             } else {    /* 1000 < spellknow(i) <= MAX_SPELL_STUDY */
-                pline("You know %s quite well already.", splname);
-                if (yn("Do you want to read the book anyway?") == 'y') {
-                    pline("You refresh your knowledge of %s.", splname);
+                char qbuf[QBUFSZ];
+                pline("C{N=%s,V{V{V{V{know},N=%s},D{D{well},D{quite}}},"
+                      "D{already}}}.", you, splname);
+                sprintf(qbuf,"C{q,C{N=%s,V{V{want},"
+                        "V{V{V{read},N{book}},D{anyway}}}}}?", you);
+                if (yn(qbuf) == 'y') {
+                    pline("C{N=%s,V{V{refresh},"
+                          "N{l,N{o,N{knowledge},N=%s},N=%s}}}.",
+                          you, you, splname);
                     incrnknow(i);
                     book->spestudied++;
                 } else
@@ -366,14 +396,17 @@ learn(void)
             spl_book[i].sp_lev = objects[booktype].oc_level;
             incrnknow(i);
             book->spestudied++;
-            pline(i > 0 ? "You add %s to your repertoire." : "You learn %s.",
-                  splname);
+            if (i > 0)
+                pline("C{N=%s,V{V{V{add},N=%s},D{i,N{o,N{repertoire},N=%s}}}}.",
+                      you, splname, you);
+            else
+                pline("C{N=%s,V{V{learn},N=%s}}.", you, splname);
             makeknown((int)booktype);
             break;
         }
     }
     if (i == MAXSPELL)
-        impossible("Too many spells memorized!");
+        impossible("S{Too many spells memorized!}");
 
     if (book->cursed) { /* maybe a demon cursed it */
         if (cursed_book(book)) {
@@ -399,11 +432,12 @@ study_book(struct obj *spellbook)
         /* handle the sequence: start reading, get interrupted, have book
            become erased somehow, resume reading it */
         booktype != SPE_BLANK_PAPER) {
-        pline("You continue your efforts to memorize the spell.");
+        pline("C{N=%s,V{V{continue},V{memorize}}}.", you);
     } else {
         /* KMH -- Simplified this code */
         if (booktype == SPE_BLANK_PAPER) {
-            pline("This spellbook is all blank.");
+            pline("C{N{%d|spellbook},V{V{are},A{A{blank},D{all}}}}.",
+                  spellbook->o_id);
             makeknown(booktype);
             return 1;
         }
@@ -425,7 +459,7 @@ study_book(struct obj *spellbook)
             delay = -8 * objects[booktype].oc_delay;
             break;
         default:
-            impossible("Unknown spellbook level %d, book %d;",
+            impossible("S{Unknown spellbook level %d, book %d;}",
                        objects[booktype].oc_level, booktype);
             return 0;
         }
@@ -446,14 +480,16 @@ study_book(struct obj *spellbook)
                     char qbuf[QBUFSZ];
 
                     sprintf(qbuf,
-                            "This spellbook is %sdifficult to comprehend. Continue?",
-                            (read_ability < 12 ? "very " : ""));
+                            "C{N=%s,V{V{are},A{A=%s,V{comprehend}}}}.  "
+                            "C{q,C{i,V{continue}}}?", xname(spellbook),
+                            (read_ability < 12 ?
+                             "A{A{difficult},D{very}}" : "A{difficult}"));
                     if (yn(qbuf) != 'y') {
                         spellbook->in_use = FALSE;
                         return 1;
                     }
                 }
-                /* its up to random luck now */
+                /* it's up to random luck now */
                 if (rnd(20) > read_ability) {
                     too_hard = TRUE;
                 }
@@ -463,12 +499,13 @@ study_book(struct obj *spellbook)
         if (too_hard) {
             boolean gone = cursed_book(spellbook);
 
-            nomul(delay, "reading a book");     /* study time */
+            nomul(delay, "V{V{read},N{i,book}}");     /* study time */
             nomovemsg = 0;      /* default: "You can move again." */
             delay = 0;
             if (gone || !rn2(3)) {
                 if (!gone)
-                    pline("The spellbook crumbles to dust!");
+                    pline("C{N=%s,V{V{crumble},D{e,N{o,dust}}}}!",
+                          xname(spellbook));
                 if (!objects[spellbook->otyp].oc_name_known &&
                     !objects[spellbook->otyp].oc_uname)
                     docall(spellbook);
@@ -480,19 +517,22 @@ study_book(struct obj *spellbook)
             if (!confused_book(spellbook)) {
                 spellbook->in_use = FALSE;
             }
-            nomul(delay, "reading a book");
-            nomovemsg = "You're finally able to put the book down.";
+            nomul(delay, "V{V{read},N{i,book}}");
+            sprintf(putdownbuf, "C{N=%s,V{V{V{are},A{A{able},D{finally}}},"
+                    "V{V{put down},N{book}}}}.", you);
+            nomovemsg = putdownbuf;
             delay = 0;
             return 1;
         }
         spellbook->in_use = FALSE;
 
-        pline("You begin to %s the runes.",
-              spellbook->otyp == SPE_BOOK_OF_THE_DEAD ? "recite" : "memorize");
+        pline("C{N=%s,V{V{begin},V{V=%s,N{*,N{rune}}}}}.", you,
+              spellbook->otyp == SPE_BOOK_OF_THE_DEAD ?
+              "V{recite}" : "V{memorize}");
     }
 
     book = spellbook;
-    set_occupation(learn, "studying", 0);
+    set_occupation(learn, "V{study}", 0);
     return 1;
 }
 
@@ -507,7 +547,7 @@ book_disappears(struct obj *obj)
 
 /* renaming an object usually results in it having a different address;
    so the sequence start reading, get interrupted, name the book, resume
-   reading would read the "new" book from scratch */
+   reading would read the 'new' book from scratch */
 void
 book_substitution(struct obj *old_obj, struct obj *new_obj)
 {
@@ -541,11 +581,13 @@ static boolean
 getspell(int *spell_no)
 {
     if (spellid(0) == NO_SPELL) {
-        pline("You don't know any spells right now.");
+        pline("C{-,C{N=%s,V{V{V{know},N{N{*,N{i,spell}},A{any}}},"
+              "D{right now}}}}.", you);
         return FALSE;
     }
 
-    return dospellmenu("Choose which spell to cast", SPELLMENU_CAST, spell_no);
+    return dospellmenu("C{i,V{V{V{choose},N{i,spell}},V{cast}}}:",
+                       SPELLMENU_CAST, spell_no);
 }
 
 /* the 'Z' command -- cast a spell */
@@ -564,22 +606,22 @@ spelltypemnemonic(int skill)
 {
     switch (skill) {
     case P_ATTACK_SPELL:
-        return "attack";
+        return "A{attack}";
     case P_HEALING_SPELL:
-        return "healing";
+        return "A{healing}";
     case P_DIVINATION_SPELL:
-        return "divination";
+        return "A{divination}";
     case P_ENCHANTMENT_SPELL:
-        return "enchantment";
+        return "A{enchantment}";
     case P_CLERIC_SPELL:
-        return "clerical";
+        return "A{clerical}";
     case P_ESCAPE_SPELL:
-        return "escape";
+        return "A{escape}";
     case P_MATTER_SPELL:
-        return "matter";
+        return "A{matter}";
     default:
-        impossible("Unknown spell skill, %d;", skill);
-        return "";
+        impossible("S{Unknown spell skill, %d;}", skill);
+        return "A{erroneous}";
     }
 }
 
@@ -603,29 +645,43 @@ cast_protection(void)
         l /= 2;
     }
 
-    /* The more u.uspellprot you already have, the less you get, and the better 
-       your natural ac, the less you get.  LEVEL AC SPELLPROT from sucessive
-       SPE_PROTECTION casts 1 10 0, 1, 2, 3, 4 1 0 0, 1, 2, 3 1 -10 0, 1, 2 2-3 
-       10 0, 2, 4, 5, 6, 7, 8 2-3 0 0, 2, 4, 5, 6 2-3 -10 0, 2, 3, 4 4-7 10 0,
-       3, 6, 8, 9, 10, 11, 12 4-7 0 0, 3, 5, 7, 8, 9 4-7 -10 0, 3, 5, 6 7-15
-       -10 0, 3, 5, 6 8-15 10 0, 4, 7, 10, 12, 13, 14, 15, 16 8-15 0 0, 4, 7,
-       9, 10, 11, 12 8-15 -10 0, 4, 6, 7, 8 16-30 10 0, 5, 9, 12, 14, 16, 17,
-       18, 19, 20 16-30 0 0, 5, 9, 11, 13, 14, 15 16-30 -10 0, 5, 8, 9, 10 */
+    /***
+       The more u.uspellprot you already have, the less you get, and the better 
+       your natural ac, the less you get. 
+       LEVEL  AC SPELLPROT from sucessive SPE_PROTECTION casts
+       1      10  0, 1, 2, 3, 4
+       1      0   0, 1, 2, 3
+       1     -10  0, 1, 2
+       2-3    10  0, 2, 4, 5, 6, 7, 8
+       2-3    0   0, 2, 4, 5, 6
+       2-3   -10  0, 2, 3, 4
+       4-7    10  0, 3, 6, 8, 9, 10, 11, 12
+       4-7    0   0, 3, 5, 7, 8, 9
+       4-7   -10  0, 3, 5, 6
+       7-15  -10  0, 3, 5, 6
+       8-15   10  0, 4, 7, 10, 12, 13, 14, 15, 16
+       8-15   0   0, 4, 7, 9, 10, 11, 12
+       8-15  -10  0, 4, 6, 7, 8
+       16-30  10  0, 5, 9, 12, 14, 16, 17, 18, 19, 20
+       16-30  0   0, 5, 9, 11, 13, 14, 15
+       16-30 -10  0, 5, 8, 9, 10
+    */
     gain = loglev - (int)u.uspellprot / (4 - min(3, (10 - natac) / 10));
 
     if (gain > 0) {
         if (!Blind) {
-            const char *hgolden = hcolor("golden");
+            const char *hgolden = hcolor("A{golden}");
 
             if (u.uspellprot)
-                pline("The %s haze around you becomes more dense.", hgolden);
+                pline("C{N{N{N{haze},A=%s},E{around},N=%s},"
+                      "V{V{become},A{A{dense},D{more}}}}.", hgolden, you);
             else
-                pline("The %s around you begins to shimmer with %s haze.",
-                      (Underwater ||
-                       Is_waterlevel(&u.uz)) ? "water" : u.
-                      uswallow ? mbodypart(u.ustuck, STOMACH)
-                      : IS_STWALL(level->locations[u.dx][u.dy].
-                                  typ) ? "stone" : "air", an(hgolden));
+                pline("C{N{N=%s,E{around},N=%s},V{V{begin},"
+                      "V{V{shimmer with},N{N{i,haze},A=%s}}}}.",
+                      (Underwater || Is_waterlevel(&u.uz)) ? "N{water}" :
+                      u.uswallow ? mbodypart(u.ustuck, STOMACH) :
+                      IS_STWALL(level->locations[u.dx][u.dy].typ) ?
+                      "N{stone}" : "N{air}", you, hgolden);
         }
         u.uspellprot += gain;
         u.uspmtime =
@@ -634,7 +690,9 @@ cast_protection(void)
             u.usptime = u.uspmtime;
         find_ac();
     } else {
-        pline("Your skin feels warm for a moment.");
+        /* Should this be body-parted? */
+        pline("C{N{o,N{skin},N=%s},V{V{V{feel},A{warm}},D{d,N{i,moment}}}}.",
+              you);
     }
 }
 
@@ -680,44 +738,57 @@ spelleffects(int spell, boolean atme)
     boolean dummy;
     coord cc;
     schar dx, dy, dz;
+    char spellnoun[80];
+    char buf[BUFSZ];
+    sprintf(spellnoun, "N{t%d|spell}", spellid(spell));
 
     /* 
      * Spell casting no longer affects knowledge of the spell. A
      * decrement of spell knowledge is done every turn.
      */
     if (spellknow(spell) <= 0) {
-        pline("Your knowledge of this spell is twisted.");
-        pline("It invokes nightmarish images in your mind...");
+        pline("C{s,V{V{twist},N{o,N{l,N{knowledge},N=%s},N=%s}}}.",
+              spellnoun, you);
+        pline("C{N=%s,V{V{V{invoke},N{N{*,N{i,image}},A{nightmarish}}},"
+              "D{a,N{o,N{mind},N=%s}}}}!", spellnoun, you);
         spell_backfire(spell);
         return 0;
     } else if (spellknow(spell) <= 200) {       /* 1% */
-        pline("You strain to recall the spell.");
+        pline("C{N=%s,V{V{strain},V{V{recall},N{spell}}}}.", you);
     } else if (spellknow(spell) <= 1000) {      /* 5% */
-        pline("Your knowledge of this spell is growing faint.");
+        pline("C{c,N{l,N{o,N{knowledge},N=%s},N=%s},V{V{grow},A{faint}}}.",
+              you, spellnoun);
     }
     energy = (spellev(spell) * 5);      /* 5 <= energy <= 35 */
 
+    sprintf(buf,"C{N{o,N{concentration},N=%s},V{V{falter},D{Q{because},"
+            "C{c,N=%s,V{V{carry},N{N{stuff},A{A{much},D{so}}}}}}}}.", you, you);
+
     if (u.uhunger <= 10 && spellid(spell) != SPE_DETECT_FOOD) {
-        pline("You are too hungry to cast that spell.");
+        pline("C{N=%s,V{V{V{are},A{A{hungry},D{too}}},V{V{cast},N=%s}}}.",
+              you, spellnoun);
         return 0;
     } else if (ACURR(A_STR) < 4) {
-        pline("You lack the strength to cast spells.");
+        pline("C{N=%s,V{V{lack},N{N{strength},V{V{cast},N{*,N{o,spell}}}}}}.",
+              you);
         return 0;
-    } else
-        if (check_capacity
-            ("Your concentration falters while carrying so much stuff.")) {
+    } else if (check_capacity(buf)) {
         return 1;
     } else if (!freehand()) {
-        pline("Your arms are not free to cast!");
+        /* should this be body-parted? */
+        pline("C{-,C{N{o,N{*,N{arm}},N=%s},V{V{are},A{A{free},V{cast}}}}}.",
+              you);
         return 0;
     }
 
     if (u.uhave.amulet) {
-        pline("You feel the amulet draining your energy away.");
+        pline("C{N=%s,V{V{feel},N{N{Amulet},V{V{drain away},"
+              "N{o,N{o,energy},N=%s}}}}}.", you, you);
         energy += rnd(2 * energy);
     }
     if (energy > u.uen) {
-        pline("You don't have enough energy to cast that spell.");
+        pline("C{-,C{N=%s,V{V{V{have},N{N{o,energy},A{enough}}},"
+              "V{V{cast},N=%s}}}}.", you, spellnoun);
         return 0;
     } else {
         if (spellid(spell) != SPE_DETECT_FOOD) {
@@ -764,7 +835,7 @@ spelleffects(int spell, boolean atme)
 
     chance = percent_success(spell);
     if (confused || (rnd(100) > chance)) {
-        pline("You fail to cast the spell correctly.");
+        pline("C{N=%s,V{V{fail},V{V{V{cast},N{spell}},D{correctly}}}}.", you);
         u.uen -= energy / 2;
         iflags.botl = 1;
         return 1;
@@ -773,7 +844,7 @@ spelleffects(int spell, boolean atme)
     u.uen -= energy;
     iflags.botl = 1;
     exercise(A_WIS, TRUE);
-    /* pseudo is a temporary "false" object containing the spell stats */
+    /* pseudo is a temporary 'false' object containing the spell stats */
     pseudo = mksobj(level, spellid(spell), FALSE, FALSE);
     pseudo->blessed = pseudo->cursed = 0;
     pseudo->quan = 20L; /* do not let useup get it */
@@ -804,7 +875,8 @@ spelleffects(int spell, boolean atme)
                         if ((damage = zapyourself(pseudo, TRUE)) != 0) {
                             char buf[BUFSZ];
 
-                            sprintf(buf, "zapped %sself with a spell", uhim());
+                            sprintf(buf, "V{V{V{zap},N=%s},D{t,N{i,spell}}}",
+                                    you);
                             losehp(damage, buf, NO_KILLER_PREFIX);
                         }
                     } else {
@@ -853,13 +925,13 @@ spelleffects(int spell, boolean atme)
                 /* getdir cancelled, generate a random direction */
                 dz = 0;
                 confdir(&dx, &dy);
-                pline("The magical energy is released!");
+                pline("C{s,V{V{release},N{N{energy},A{magical}}}}!");
             }
             if (!dx && !dy && !dz) {
                 if ((damage = zapyourself(pseudo, TRUE)) != 0) {
                     char buf[BUFSZ];
 
-                    sprintf(buf, "zapped %sself with a spell", uhim());
+                    sprintf(buf, "V{V{V{zap},N=%s},D{t,N{i,spell}}}", you);
                     losehp(damage, buf, NO_KILLER_PREFIX);
                 }
             } else
@@ -904,9 +976,9 @@ spelleffects(int spell, boolean atme)
         break;
     case SPE_CURE_SICKNESS:
         if (Sick)
-            pline("You are no longer ill.");
+            pline("C{N=%s,V{V{are},A{A{ill},D{-,D{longer}}}}}.", you);
         if (Slimed) {
-            pline("The slime disappears!");
+            pline("C{N{slime},V{disappear}}!");
             Slimed = 0;
             /* iflags.botl = 1; -- healup() handles this */
         }
@@ -920,17 +992,18 @@ spelleffects(int spell, boolean atme)
             do_vicinity_map();
         /* at present, only one thing blocks clairvoyance */
         else if (uarmh && uarmh->otyp == CORNUTHAUM)
-            pline("You sense a pointy hat on top of your %s.", body_part(HEAD));
+            pline("C{N=%s,V{V{sense},N{N{N{i,hat},A{pointy}},"
+                  "E{on top of},N{o,N=%s,N=%s}}}}.", you, body_part(HEAD), you);
         break;
     case SPE_PROTECTION:
         cast_protection();
         break;
     case SPE_JUMPING:
         if (!jump(max(role_skill, 1)))
-            pline("Nothing happens.");
+            pline("C{N{o,nothing},V{happen}}.");
         break;
     default:
-        impossible("Unknown spell %d attempted.", spell);
+        impossible("S{Unknown spell %d attempted.}", spell);
         obfree(pseudo, NULL);
         return 0;
     }
@@ -949,24 +1022,26 @@ throwspell(schar * dx, schar * dy)
     coord cc;
 
     if (u.uinwater) {
-        pline("You're joking! In this weather?");
+        pline("C{c,N=%s,V{joke}}!", you);
+        pline("S{In this weather?}"); /* too much elided to spell it out */
         return 0;
     } else if (Is_waterlevel(&u.uz)) {
-        pline("You had better wait for the sun to come out.");
+        pline("C{N=%s,V{V{had better},V{V{V{wait for},N{sun}},V{come out}}}}.",
+              you);
         return 0;
     }
 
-    pline("Where do you want to cast the spell?");
+    pline("C{q,C{N=%s,V{V{want},V{V{V{cast},N{spell}},N{where}}}}}?", you);
     cc.x = u.ux;
     cc.y = u.uy;
-    if (getpos(&cc, TRUE, "the desired position") < 0)
+    if (getpos(&cc, TRUE, "N{N{position},A{desired}}") < 0)
         return 0;       /* user pressed ESC */
     /* The number of moves from hero to where the spell drops. */
     if (distmin(u.ux, u.uy, cc.x, cc.y) > 10) {
-        pline("The spell dissipates over the distance!");
+        pline("C{N{spell},V{V{dissipate over},N{distance}}}!");
         return 0;
     } else if (u.uswallow) {
-        pline("The spell is cut short!");
+        pline("C{N{spell},V{V{are},A{cut short}}}!");
         exercise(A_WIS, FALSE); /* What were you THINKING! */
         *dx = 0;
         *dy = 0;
@@ -976,7 +1051,8 @@ throwspell(schar * dx, schar * dy)
              (!MON_AT(level, cc.x, cc.y) ||
               !canspotmon(m_at(level, cc.x, cc.y)))) ||
             IS_STWALL(level->locations[cc.x][cc.y].typ)) {
-        pline("Your mind fails to lock onto that location!");
+            pline("C{N{o,N{mind},N=%s},V{V{fail},V{V{lock on to},"
+                  "N{x%dy%d|location}}}}!", you, cc.x, cc.y);
         return 0;
     } else {
         *dx = cc.x;
@@ -1014,10 +1090,14 @@ dovspell(void)
     struct spell spl_tmp;
 
     if (spellid(0) == NO_SPELL)
-        pline("You don't know any spells right now.");
+        pline("C{-,C{N=%s,V{V{V{know},"
+              "N{N{*,N{o,spell}},A{any}}},D{right now}}}}.", you);
     else {
-        while (dospellmenu("Currently known spells", SPELLMENU_VIEW, &splnum)) {
-            sprintf(qbuf, "Reordering spells; swap '%c' with", spellet(splnum));
+        while (dospellmenu("N{N{o,spells},A{A{known},D{currently}}}",
+                           SPELLMENU_VIEW, &splnum)) {
+            sprintf(qbuf, "C{i,V{V{reorder},N{*,N{o,spell}}}}: "
+                    "C{q,C{i,V{V{V{swap},N{m,S{%c}}},D{t,N{what}}}}}?",
+                    spellet(splnum));
             if (!dospellmenu(qbuf, splnum, &othnum))
                 break;
 
@@ -1040,11 +1120,13 @@ dospellmenu(const char *prompt,
     struct nh_menuitem items[MAXSPELL + 1];
     int selected[MAXSPELL + 1];
 
-    sprintf(buf, "Name\tLevel\tCategory\tFail\tMemory");
+    sprintf(buf, "N{o,name}\tN{o,level}\tN{o,category}\t"
+            "N{o,fail}\tN{o,memory}");
     set_menuitem(&items[count++], 0, MI_HEADING, buf, 0, FALSE);
     for (i = 0; i < MAXSPELL && spellid(i) != NO_SPELL; i++) {
-        sprintf(buf, "%s\t%-d%s\t%s\t%-d%%\t%-d%%", spellname(i), spellev(i),
-                spellknow(i) ? " " : "*",
+        sprintf(buf, "N=%s\tS{%d}S=%s\tN=%s\tS{%d%%}\tS{%d%%}",
+                spellname(i), spellev(i),
+                spellknow(i) ? "S{ }" : "S{*}",
                 spelltypemnemonic(spell_skilltype(spellid(i))),
                 100 - percent_success(i),
                 (spellknow(i) * 100 + (KEEN - 1)) / KEEN);
@@ -1083,7 +1165,8 @@ dump_spells(void)
 {
     /* note: the actual dumping is done in dump_display_menu(), we just need to 
        get the data there. */
-    dospellmenu("Spells known in the end:", SPELLMENU_VIEW, NULL);
+    dospellmenu("N{N{*,N{i,spell}},A{V{V{know},D{m,N{end}}}}}:",
+                SPELLMENU_VIEW, NULL);
 }
 
 
@@ -1176,7 +1259,7 @@ percent_success(int spell)
     }
 
     /* Clamp the chance: >18 stat and advanced learning only help to a limit,
-       while chances below "hopeless" only raise the specter of overflowing
+       while chances below 'hopeless' only raise the specter of overflowing
        16-bit ints (and permit wearing a shield to raise the chances :-). */
     if (chance < 0)
         chance = 0;
@@ -1219,7 +1302,7 @@ initialspell(struct obj *obj)
 
     for (i = 0; i < MAXSPELL; i++) {
         if (spellid(i) == obj->otyp) {
-            pline("Error: Spell %s already known.",
+            pline("S{Error: Spell %s already known.}",
                   OBJ_NAME(objects[obj->otyp]));
             return;
         }
@@ -1230,7 +1313,7 @@ initialspell(struct obj *obj)
             return;
         }
     }
-    impossible("Too many spells memorized!");
+    impossible("S{Too many spells memorized!}");
     return;
 }
 

@@ -44,6 +44,9 @@ extern int yyparse(void);
 extern void init_yyin(FILE *);
 extern void init_yyout(FILE *);
 
+/* libnethack_intl */
+extern char *malloc_parsestring(const char *, boolean, boolean);
+
 int main(int, char **);
 void yyerror(const char *);
 void yywarning(const char *);
@@ -348,11 +351,18 @@ get_object_id(char *s, char c)
         return ERR;
 
     for (i = class ? bases[class] : 0; i < NUM_OBJECTS; i++) {
+        char *name;
         if (class && objects[i].oc_class != class)
             break;
         objname = obj_descr[i].oc_name;
-        if (objname && !strcmp(s, objname))
-            return i;
+        if (objname) {
+            name = malloc_parsestring(objname, TRUE, FALSE);
+            if (!strcmp(s, name)) {
+                free(name);
+                return i;
+            }
+            free(name);
+        }
     }
     return ERR;
 }

@@ -97,6 +97,12 @@ typedef schar xchar;
 #  define NORETURN __attribute__((noreturn))
 # endif
 
+# ifdef __GNUC__
+#  define PRINTFLIKE __attribute__((format(printf, 1, 2)))
+# else
+#  define PRINTFLIKE
+# endif
+
 /* Used for consistency checks of various data files; declare it here so
    that utility programs which include config.h but not hack.h can see it. */
 struct version_info {

@@ -33,6 +33,7 @@ static void
 vpline(const char *line, va_list the_args)
 {
     char pbuf[BUFSZ];
+    char *translated_line;
 
     if (!line || !*line)
         return;
@@ -40,14 +41,19 @@ vpline(const char *line, va_list the_args)
         vsprintf(pbuf, line, the_args);
         line = pbuf;
     }
-    if (no_repeat && !strcmp(line, toplines[curline]))
-        return;
     if (vision_full_recalc)
         vision_recalc(0);
     if (u.ux)
         flush_screen();
 
-    strcpy(toplines[curline++], line);
+    translated_line = malloc_parsestring(line);
+    strcpy(toplines[curline], translated_line);
+    free(translated_line);
+    line = toplines[curline++];
+
+    if (no_repeat && !strcmp(line, toplines[curline]))
+        return;
+
     curline %= MSGCOUNT;
     if (iflags.next_msg_nonblocking)
         (*windowprocs.win_print_message_nonblocking) (moves, line);
