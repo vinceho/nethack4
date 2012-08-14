@@ -1,0 +1,267 @@
+NetHack 4 now uses a special grammar-tagging format internally for
+messages, and they are subsequently translated into messages in
+natural language.
+
+The basic tokens are words (English is always used internally, but
+it should theoretically be possible to translate to other languages):
+N{goblin}        A noun (always written in the singular)
+N{125|goblin}    A noun, with a uniquifier (to show /which/ goblin)
+N{f,125|goblin}  A noun, with a gender and uniquifier
+N{i,light}       An indefinite noun (uses "a" not "the")
+                 (note: uniquified non-proper nouns are automatically made
+                 indefinite on the first use, and definite thereafter)
+P{Izchak}        A personal name (but N{Amulet of Yendor})
+P{12|Dudley}     A player, with a uniquifier to show which player
+V{run}           A verb (present plural, regardless of how it's used)
+A{tame}          An adjective
+D{slowly}        An adverb
+Q{as}            A relative pronoun not being used as a noun
+S{Ouch!}         An entire sentence (usually used for interjections)
+E{above}         A preposition that isn't being used with a verb
+?{}              An unknown noun (used as a noun)
+C{}              A clause (always made out of a combination of words)
+
+In addition, anything that's entered by the user (rather than being part of the
+game source) is surrounded by \x1c, in order to "escape" it to avoid injection
+of weird bits of grammar, and in order to be able to handle attempts to get
+unique deaths via fruitnames.
+
+Absolute pronouns, articles, and conjunctions never appear in the message at
+all; rather, it's the grammar parser's responsibility to add them. (It'll
+typically add "the" to non-indefinite nouns, use "and" to combine clauses but
+"but" if the second is a negated clause, and use uniquifiers to determine
+whether a repeated noun deserves to be made into a pronoun.)  Things like idioms
+and compound verbs are best written out inside a grammar marker (e.g.
+"D{happily every after}"), otherwise they'll be nearly impossible to translate.
+Prepositions are /always part of the verb/ if they aren't being implied in via
+pseudo-adverbs; this is because the use of prepositions varies so much from
+language to language, and it allows appropriate ones to be substituted. (The
+exception is if they aren't being attached to a verb, in which case they're much
+more stable.)
+
+Also, anything but a sentence can be negated, and any two things with the same
+grammatical class except sentences can be combined:
+N{-,N{weapon}}           "nonweapon"
+A{+,A{black},A{blue}}    "black and blue"
+
+And other combinations work like this:
+
+NV, PV                             Verb with subject
+C{V{die},P{12|Dudley}}
+"You die", "Dudley dies", depending on who the message is sent to
+
+s,V                                Verb used in the passive
+C{s,V{V{kill},N{143|newt}}}
+"The newt is killed"
+
+VN                                 Verb with object
+V{V{hit},P{12|Dudley}}
+"hits you", "hits Dudley"
+
+VA                                 Verb with complement
+V{V{are},A{cursed}}
+"is cursed"
+
+VD                                 Verb with adverb
+V{V{open},D{slowly}}
+"slowly opens"
+
+VV                                 Verb with secondary verb
+V{V{can},V{open}}
+"can open the door"
+
+(In English, secondary verbs are either chained with the primary, as in "can
+open" or "must want"; or infinitivized and chained, as in "want to
+go". Secondary verbs can also be chained with each other ("You must want to go
+there"). We solve this with a dictionary lookup, and so all verbs used in the
+game with secondaries are listed here:
+
+Primary verbs whose secondary is chained directly in English:
+can, had better, should, may
+
+Primary verbs whose secondary is chained via an infinitive in English:
+are, begin, want, choose, strain, have, fail, wait for, try, pick
+
+"do" and "have" used as grammatical entities in English have their own rules,
+but don't appear in the trees. Also, chained-directly primaries tend to be
+negated with "verb not", and all others with "do not verb", apart from "are" for
+some reason; "you are not hard to kill", not "you do not be hard to kill" which
+is definitely parseable for an English speaker but sounds ridiculous.)
+
+There is also a tense modifier i, on a clause to indicate that the verb should
+be sent into imperfect past tense, or p, for perfect past tense, or c, for
+continuous perfect tense:
+C{P{12|Dudley},V{wake up}}         "You wake up", "Dudley wakes up"
+C{i,P{12|Dudley},V{wake up}}       "You woke up", "Dudley woke up"
+C{p,P{12|Dudley},V{wake up}}       "You have woken up", "Dudley has woken up"
+C{c,P{12|Dudley},V{wake up}}       "You are waking up", "Dudley is waking up"
+Because of the number of irregular verbs in English, all verbs which are used
+with this that don't form their imperfect with -d (ending in -e) or -ed
+(otherwise), their continuous with "is -ing", and their perfect with "have "
+before their imperfect, are listed here:
+are, have, read
+
+NA, PA                             Noun with adjective
+N{N{potion},A{orange}}
+"orange potion"
+
+NEN                                Noun relative to another noun
+N{N{body},E{on},N{altar}}
+"body on the altar"
+
+n,N, n,P *,n *,P                   Noun with quantity
+N{2,N{123|dagger}}           N{*,N{rune}}
+"2 daggers", "two daggers"   "runes"
+
+f,N,A, f,N,N                       Noun with fractional quantity
+N{f,N{*,N{dagger}},A{2}}                       N{f,N{cake},N{slice}}
+"2 of the daggers", "two of the daggers"       "slice of cake"
+
+s,f,N,A                            Noun with unit quanitity
+N{s,f,N{*,N{dagger}},A{1}}
+"one of the daggers"
+
+o,N,N, o,N,P                       Noun with owner
+N{o,N{dungeon},P{12|Dudley}}
+"Your dungeon", "Dudley's dungeon"
+
+l,N,N                              Noun with limitation
+N{l,N{information},N{dungeoneering}}
+"information about dungeoneering"
+Choosing between "about" and "of" is problematic. So far, this is used with:
+of: knowledge, imitation
+about:
+
+m,anything                         Mention a sentence fragment
+N{m,N{lightning}} or A{m,N{lightning}}
+""lightning""
+
+c,A                                Comparative of adjective
+A{c,A{hot}}
+"hotter"
+
+s,A                                Superlative of adjective
+A{s,A{hot}}
+"hottest"
+
+Some adjectives form comparatives/superlatives with -er/-est, and some with
+more/most. Here's the ones that are used:
+-er/-est with normal stem rules: keen
+-er/-est doubling final consonant:
+more/most: confident, skilled, experienced
+
+
+AD                                 Adjective with adverb
+A{A{hot},D{very}}
+"very hot"
+
+DD                                 Adverb with adverb
+D{D{slowly},D{excruciatingly}}
+"excruciatingly slowly"
+
+t,N                                Item used to perform something
+D{t,N{i,hammer}}
+"with a hammer"
+English also allows a contraction if this is used on a participle:
+C{s,p,V{V{damage},?{},D{t,N{water}}}}
+"it is damaged with water", "it is damaged by water", or "it is water-damaged"
+The first case is a little unnatural, and the second is probably hard to
+automate without a dictionary of special cases, so let's use the third :)
+
+l,N, a,N                           Location where something happens
+D{l,N{door}}     D{a,P{Gehennom}}
+A{l,N{door}}     A{a,P{Gehennom}}
+"at the door"    "in Gehennom"
+l, is used for point locations; a, for areas.
+
+d,N                                Duration for which something happens
+D{d,N{i,hour}}
+"for an hour"
+
+m,N                                Time at which something happens
+D{m,N{midnight}}
+A{m,N{midnight}}
+"at midnight"
+
+e,N                                End state of an action
+D{e,N{i,despair}}
+"to despair"
+
+i,N                                Indirect object
+D{i,N{*,N{god}}}
+"to the gods"
+
+p,A                                Parenthesized adjective
+A{p,A{hot}}
+"(hot)"
+
+AV                                 Adjective with verb
+A{A{hard},V{manage}}
+"hard to manage"
+
+NV                                 Noun with verb
+N{N{will},V{live}}
+"will to live"
+
+V                                  Generally affected by the verb in question
+A{V{curse}}     A{V{V{paint},N{red}}}
+"cursed"        "painted red"
+
+N                                  Generally limited by the noun in question
+N{N{corpse},A{N{gnome}}}
+"gnome corpse"
+
+QC                                 A comparison clause
+D{Q{while},C{V{sleep},P{12|Dudley}}}
+"while you sleep", "while Dudley sleeps"
+A{Q{where},C{V{sleep},N{dragon}}}
+"where the dragon sleeps"
+Comparison clauses can usually go either at the start of the sentence or the end
+in English. NetHack usually puts them at the start; it's more dramatic that
+way. When being used as adjectives rather than adverbs, they go just after the
+noun they're modifying in English, rather than just before like most adjectives.
+
+a,NV                               A noun that is verbing
+N{a,N{1|newt},V{V{hit},P{12|Dudley}}}
+"The newt hitting you", "The newt hitting Dudley"
+
+NN                                 A noun limited by a noun
+N{N{corpse},N{gnome}}
+"gnome corpse"
+
+q,NN                               A magical item name (X of Y)
+N{N{*,N{boot}},N{speed}}
+"boots of speed"
+
+q,C                                Create a question rather than a sentence
+C{q,C{V{hit},N{1|newt},P{12|Dudley}}}
+"Does the newt hit you"
+This is done by either substituting in "do" as the verb and putting that first,
+or moving the verb first (unless there's a relative pronoun in the subject
+position, in which case nothing needs to be done; so many special cases in
+English...). The verb is moved first if it's in the following list:
+are
+Also, the first relative pronoun used as a noun moves to the start of the
+sentence:
+where
+
+(i.e. "Where do you want to cast the spell?", not "Do you want to cast the spell
+where?" (the second is arguably correct English but sounds absurd); but "What do
+you want to do when?", not "What when do you want to do?", or "Do you want to do
+what when?"; and "Who wants to cast the spell?", not "Does who want to cast the
+spell?", or "Who does want to cast the spell?")
+
+i,V                                Create an imperative
+C{i,V{V{kill},N{1|newt}}}
+"Kill the newt"
+
+
+Forming a complete sentence is simply done by putting the punctuation
+after a clause, or by using a complete sentence:
+
+C{V{die},P{12|Dudley}}...               "You die..."
+S{Ouch!}                                "Ouch!"
+
+Other parts of speech can be used too; this is mostly used for things like menu
+headings. The only change from use inside a clause is that they'll be
+init-capsed, rather than the clause.
