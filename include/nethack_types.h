@@ -28,7 +28,8 @@
 
 # define BUFSZ          512     /* for getlin buffers */
 # define QBUFSZ         256     /* for building question text */
-# define PL_NSIZ        32
+# define PL_NSIZ        64      /* player/ghost/shk max length */
+# define PLRBUFSZ       32      /* race/role max length*/
 
 # define FCMASK         0660    /* file creation mask */
 
