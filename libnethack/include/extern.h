@@ -1150,6 +1150,7 @@ extern char *distant_name(const struct obj *obj,
 extern char *fruitname(boolean);
 extern void examine_object(struct obj *obj);
 extern char *xname(const struct obj *);
+extern char *imprecise_xname(const struct obj *);
 extern char *mshot_xname(const struct obj *);
 extern boolean the_unique_obj(const struct obj *obj);
 extern char *doname(const struct obj *obj);
@@ -1163,23 +1164,15 @@ extern char *cxname2(const struct obj *obj);
 extern char *killer_xname(const struct obj *obj_orig);
 extern const char *singular(struct obj *, char *(*)(const struct obj *));
 extern char *an(const char *);
-extern char *An(const char *);
-extern char *The(const char *);
-extern char *the(const char *);
-extern char *aobjnam(const struct obj *, const char *);
-extern char *Tobjnam(const struct obj *, const char *);
-extern char *otense(const struct obj *, const char *);
-extern char *vtense(const char *, const char *);
-extern char *Doname2(const struct obj *);
 extern char *yname(const struct obj *);
-extern char *Yname2(const struct obj *);
 extern char *ysimple_name(const struct obj *);
-extern char *makeplural(const char *);
 extern char *makesingular(const char *);
 extern struct obj *readobjnam(char *bp, struct obj *no_wish, boolean from_user);
 extern int rnd_class(int, int);
 extern const char *cloak_simple_name(const struct obj *cloak);
 extern const char *mimic_obj_name(const struct monst *mimic);
+
+extern char *makeplural(const char *s);
 
 /* ### options.c ### */
 

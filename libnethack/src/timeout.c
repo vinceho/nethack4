@@ -138,7 +138,7 @@ slime_dialogue(void)
                     pline(str, monnam_is_pname(idx)
                           ? monnam_for_index(idx)
                           : (idx < SPECIAL_PM && (mons[idx].geno & G_UNIQ))
-                          ? the(monnam_for_index(idx))
+                          ? (monnam_for_index(idx))
                           : an(monnam_for_index(idx)));
                 } else {
                     pline(str, "a green slime");
@@ -268,7 +268,7 @@ nh_timeout(void)
                     if (type_is_pname(&mons[m_idx])) {
                         killer_format = KILLED_BY;
                     } else if (mons[m_idx].geno & G_UNIQ) {
-                        killer = the(killer);
+                        killer = (killer);
                         strcpy(u.usick_cause, killer);
                         killer_format = KILLED_BY;
                     }
@@ -674,7 +674,7 @@ see_lamp_flicker(struct obj *obj, const char *tailer)
     switch (obj->where) {
     case OBJ_INVENT:
     case OBJ_MINVENT:
-        pline("%s flickers%s.", Yname2(obj), tailer);
+        pline("%s flickers%s.", yname(obj), tailer);
         break;
     case OBJ_FLOOR:
         pline("You see %s flicker%s.", an(xname(obj)), tailer);

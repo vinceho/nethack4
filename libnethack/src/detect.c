@@ -794,7 +794,7 @@ use_crystal_ball(struct obj *obj)
     int oops;
 
     if (Blind) {
-        pline("Too bad you can't see %s.", the(xname(obj)));
+        pline("Too bad you can't see %s.", (xname(obj)));
         return;
     }
     oops = (rnd(20) > ACURR(A_INT) || obj->cursed);
@@ -876,7 +876,7 @@ use_crystal_ball(struct obj *obj)
             pline("Never mind.");
         return;
     }
-    pline("You peer into %s...", the(xname(obj)));
+    pline("You peer into %s...", (xname(obj)));
     nomul(-rnd(10), "gazing into a crystal ball");
     nomovemsg = "You finish your crystal-gazing.";
     if (obj->spe <= 0)

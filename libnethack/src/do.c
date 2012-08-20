@@ -77,10 +77,10 @@ boulder_hits_pool(struct obj * otmp, int rx, int ry, boolean pushing)
                     char *bp = y_monnam(u.usteed);
 
                     *bp = highc(*bp);   /* bp points to a static buffer */
-                    pline("%s pushes %s into the %s.", bp, the(xname(otmp)),
+                    pline("%s pushes %s into the %s.", bp, (xname(otmp)),
                           what);
                 } else
-                    pline("You push %s into the %s.", the(xname(otmp)), what);
+                    pline("You push %s into the %s.", (xname(otmp)), what);
                 if (flags.verbose && !Blind)
                     pline("Now you can cross it!");
                 /* no splashing in this case */
@@ -90,7 +90,7 @@ boulder_hits_pool(struct obj * otmp, int rx, int ry, boolean pushing)
             if (!u.uinwater) {
                 if (pushing ? !Blind : cansee(rx, ry)) {
                     pline("There is a large splash as %s %s the %s.",
-                          the(xname(otmp)), fills_up ? "fills" : "falls into",
+                          (xname(otmp)), fills_up ? "fills" : "falls into",
                           what);
                 } else if (flags.soundok)
                     You_hear("a%s splash.", lava ? " sizzling" : "");
@@ -210,10 +210,10 @@ flooreffects(struct obj * obj, int x, int y, const char *verb)
                (t->ttyp == PIT || t->ttyp == SPIKED_PIT)) {
         /* you escaped a pit and are standing on the precipice */
         if (Blind && flags.soundok)
-            You_hear("%s %s downwards.", The(xname(obj)),
+            You_hear("%s %s downwards.", (xname(obj)),
                      otense(obj, "tumble"));
         else
-            pline("%s %s into %s pit.", The(xname(obj)), otense(obj, "tumble"),
+            pline("%s %s into %s pit.", (xname(obj)), otense(obj, "tumble"),
                   the_your[t->madeby_u]);
     }
     return FALSE;
@@ -236,7 +236,7 @@ doaltarobj(struct obj *obj)
         if (!Hallucination)
             obj->bknown = 1;
     } else {
-        pline("%s %s on the altar.", Doname2(obj), otense(obj, "land"));
+        pline("%s %s on the altar.", doname(obj), otense(obj, "land"));
         obj->bknown = 1;
     }
     /* Also BCU one level deep inside containers */
@@ -252,10 +252,10 @@ doaltarobj(struct obj *obj)
         }
         if (bcucount == 1) {
             pline("Looking inside %s, you see a colored flash.",
-                  the(xname(obj)));
+                  (xname(obj)));
         } else if (bcucount > 1) {
             pline("Looking inside %s, you see colored flashes.",
-                  the(xname(obj)));
+                  (xname(obj)));
         }
     }
 

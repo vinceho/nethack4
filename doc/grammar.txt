@@ -71,16 +71,22 @@ V{V{can},V{open}}
 "can open the door"
 
 (In English, secondary verbs are either chained with the primary, as in "can
-open" or "must want"; or infinitivized and chained, as in "want to
-go". Secondary verbs can also be chained with each other ("You must want to go
-there"). We solve this with a dictionary lookup, and so all verbs used in the
-game with secondaries are listed here:
+open" or "must want"; or infinitivized and chained, as in "want to go"; or work
+via the active participle, as in "stops fighting". Secondary verbs can also be
+chained with each other ("You must want to go there"). We solve this with a
+dictionary lookup, and so all verbs used in the game with secondaries are listed
+here:
 
 Primary verbs whose secondary is chained directly in English:
 can, had better, should, may
 
 Primary verbs whose secondary is chained via an infinitive in English:
 are, begin, want, choose, strain, have, fail, wait for, try, pick
+
+Primary verbs whose secondary is chained via a participle in English:
+stop
+(also many verbs in the previous list, but the infinitive tends to be more
+natural)
 
 "do" and "have" used as grammatical entities in English have their own rules,
 but don't appear in the trees. Also, chained-directly primaries tend to be
@@ -120,6 +126,10 @@ N{f,N{*,N{dagger}},A{2}}                       N{f,N{cake},N{slice}}
 s,f,N,A                            Noun with unit quanitity
 N{s,f,N{*,N{dagger}},A{1}}
 "one of the daggers"
+
+o,A                                Ordinal of a number
+A{o,A{2}}
+"second"
 
 o,N,N, o,N,P                       Noun with owner
 N{o,N{dungeon},P{12|Dudley}}
@@ -206,6 +216,10 @@ N{N{will},V{live}}
 V                                  Generally affected by the verb in question
 A{V{curse}}     A{V{V{paint},N{red}}}
 "cursed"        "painted red"
+
+VN                                 Generally affected by a verb and subject
+A{V{curse},P{Rodney}}
+"cursed by Rodney"
 
 N                                  Generally limited by the noun in question
 N{N{corpse},A{N{gnome}}}

@@ -182,7 +182,7 @@ eatmdone(void)
     return 0;
 }
 
-/* ``[the(] singular(food, xname) [)]'' with awareness of unique monsters */
+/* ``[(] singular(food, xname) [)]'' with awareness of unique monsters */
 static const char *
 food_xname(struct obj *food, boolean the_pfx)
 {
@@ -202,7 +202,7 @@ food_xname(struct obj *food, boolean the_pfx)
         /* the ordinary case */
         result = singular(food, xname);
         if (the_pfx)
-            result = the(result);
+            result = (result);
     }
     return result;
 }
@@ -247,7 +247,7 @@ choke(struct obj *food)
                 if (food->otyp == CORPSE &&
                     (mons[food->corpsenm].geno & G_UNIQ)) {
                     if (!type_is_pname(&mons[food->corpsenm]))
-                        killer = the(killer);
+                        killer = (killer);
                     killer_format = KILLED_BY;
                 }
             }
@@ -1859,7 +1859,7 @@ doeat(struct obj *otmp)
         /* The regurgitated object's rustproofing is gone now */
         otmp->oerodeproof = 0;
         make_stunned(HStun + rn2(10), TRUE);
-        pline("You spit %s out onto the %s.", the(xname(otmp)),
+        pline("You spit %s out onto the %s.", (xname(otmp)),
               surface(u.ux, u.uy));
         if (carried(otmp)) {
             freeinv(otmp);

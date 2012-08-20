@@ -787,7 +787,7 @@ tamedog(struct monst *mtmp, struct obj *obj)
                                       obj->corpsenm >= LOW_PM &&
                                       mons[obj->corpsenm].msize >
                                       mtmp->data->msize);
-                pline("%s catches %s%s", Monnam(mtmp), the(xname(obj)),
+                pline("%s catches %s%s", Monnam(mtmp), (xname(obj)),
                       !big_corpse ? "." : ", or vice versa!");
             } else if (cansee(mtmp->mx, mtmp->my))
                 pline("%s.", Tobjnam(obj, "stop"));

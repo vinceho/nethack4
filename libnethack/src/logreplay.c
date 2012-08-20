@@ -340,7 +340,7 @@ static void NORETURN
 parse_error(const char *str)
 {
 #ifdef DEBUG
-    raw_printf("Error at file position: %ld\n", ftell(loginfo.flog), str);
+    raw_printf("Error at file position %ld: %s\n", ftell(loginfo.flog), str);
 #else
     raw_printf("The command log seems to be in an outdated format. "
                "The game will be replayed from diffs instead.");

@@ -278,7 +278,7 @@ dig(void)
             break;
         case 1:
             pline("Bang!  You hit with the broad side of %s!",
-                  the(xname(uwep)));
+                  (xname(uwep)));
             break;
         default:
             pline("Your swing misses its mark.");

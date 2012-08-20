@@ -82,7 +82,7 @@ moverock(schar dx, schar dy)
             if (Blind)
                 feel_location(sx, sy);
             pline("You don't have enough leverage to push %s.",
-                  the(xname(otmp)));
+                  (xname(otmp)));
             /* Give them a chance to climb over it? */
             return -1;
         }
@@ -105,7 +105,7 @@ moverock(schar dx, schar dy)
             if (In_sokoban(&u.uz) && dx && dy) {
                 if (Blind)
                     feel_location(sx, sy);
-                pline("%s won't roll diagonally on this %s.", The(xname(otmp)),
+                pline("%s won't roll diagonally on this %s.", (xname(otmp)),
                       surface(sx, sy));
                 goto cannot_push;
             }
@@ -122,7 +122,7 @@ moverock(schar dx, schar dy)
                 if (canspotmon(mtmp))
                     pline("There's %s on the other side.", a_monnam(mtmp));
                 else {
-                    You_hear("a monster behind %s.", the(xname(otmp)));
+                    You_hear("a monster behind %s.", (xname(otmp)));
                     map_invisible(rx, ry);
                 }
                 if (flags.verbose)
@@ -169,7 +169,7 @@ moverock(schar dx, schar dy)
                 case TRAPDOOR:
                     if (Blind)
                         pline("Kerplunk!  You no longer feel %s.",
-                              the(xname(otmp)));
+                              (xname(otmp)));
                     else
                         pline("%s%s and %s a %s in the %s!",
                               Tobjnam(otmp,
@@ -189,10 +189,10 @@ moverock(schar dx, schar dy)
                 case TELEP_TRAP:
                     if (u.usteed)
                         pline("%s pushes %s and suddenly it disappears!",
-                              upstart(y_monnam(u.usteed)), the(xname(otmp)));
+                              upstart(y_monnam(u.usteed)), (xname(otmp)));
                     else
                         pline("You push %s and suddenly it disappears!",
-                              the(xname(otmp)));
+                              (xname(otmp)));
                     if (ttmp->ttyp == TELEP_TRAP)
                         rloco(otmp);
                     else {
@@ -231,11 +231,11 @@ moverock(schar dx, schar dy)
                     if (moves > lastmovetime + 2 || moves < lastmovetime)
                         pline("With %s effort you move %s.",
                               throws_rocks(youmonst.data) ? "little" : "great",
-                              the(xname(otmp)));
+                              (xname(otmp)));
                     exercise(A_STR, TRUE);
                 } else
                     pline("%s moves %s.", upstart(y_monnam(u.usteed)),
-                          the(xname(otmp)));
+                          (xname(otmp)));
                 lastmovetime = moves;
             }
 
@@ -253,9 +253,9 @@ moverock(schar dx, schar dy)
         nopushmsg:
             if (u.usteed)
                 pline("%s tries to move %s, but cannot.",
-                      upstart(y_monnam(u.usteed)), the(xname(otmp)));
+                      upstart(y_monnam(u.usteed)), (xname(otmp)));
             else
-                pline("You try to move %s, but in vain.", the(xname(otmp)));
+                pline("You try to move %s, but in vain.", (xname(otmp)));
             if (Blind)
                 feel_location(sx, sy);
         cannot_push:
@@ -263,7 +263,7 @@ moverock(schar dx, schar dy)
                 if (u.usteed && P_SKILL(P_RIDING) < P_BASIC) {
                     pline("You aren't skilled enough to %s %s from %s.",
                           (flags.pickup && !In_sokoban(&u.uz))
-                          ? "pick up" : "push aside", the(xname(otmp)),
+                          ? "pick up" : "push aside", (xname(otmp)),
                           y_monnam(u.usteed));
                 } else {
                     pline("However, you can easily %s.",
@@ -1598,7 +1598,7 @@ invocation_message(void)
 
         pline("You feel a strange vibration %s.", buf);
         if (otmp && otmp->spe == 7 && otmp->lamplit)
-            pline("%s %s!", The(xname(otmp)),
+            pline("%s %s!", (xname(otmp)),
                   Blind ? "throbs palpably" : "glows with a strange light");
     }
 }

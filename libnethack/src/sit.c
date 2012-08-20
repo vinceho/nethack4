@@ -63,7 +63,7 @@ dosit(void)
         struct obj *obj;
 
         obj = level->objects[u.ux][u.uy];
-        pline("You sit on %s.", the(xname(obj)));
+        pline("You sit on %s.", (xname(obj)));
         if (!(Is_box(obj) || objects[obj->otyp].oc_material == CLOTH))
             pline("It's not very comfortable...");
 

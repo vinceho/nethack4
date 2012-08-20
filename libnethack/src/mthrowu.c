@@ -58,7 +58,7 @@ thitu(int tlev, int dam, struct obj *obj, const char *name)
             !strncmpi(name, "a ", 2))
             kprefix = KILLED_BY;
     }
-    onm = (obj && obj_is_pname(obj)) ? the(name) :
+    onm = (obj && obj_is_pname(obj)) ? (name) :
       (obj && obj->quan > 1L) ? name : an(name);
     is_acid = (obj && obj->otyp == ACID_VENOM);
 
@@ -245,7 +245,7 @@ int ohitmon(struct monst *mtmp, /* accidental target */
              (uchar) (otmp->otyp == BLINDING_VENOM ? AT_SPIT : AT_WEAP),
              otmp)) {
             if (vis && mtmp->mcansee)
-                pline("%s is blinded by %s.", Monnam(mtmp), the(xname(otmp)));
+                pline("%s is blinded by %s.", Monnam(mtmp), (xname(otmp)));
             mtmp->mcansee = 0;
             tmp = (int)mtmp->mblinded + rnd(25) + 20;
             if (tmp > 127)
@@ -543,7 +543,7 @@ thrwmu(struct monst *mtmp)
         if (canseemon(mtmp)) {
             onm = singular(otmp, xname);
             pline("%s thrusts %s.", Monnam(mtmp),
-                  obj_is_pname(otmp) ? the(onm) : an(onm));
+                  obj_is_pname(otmp) ? (onm) : an(onm));
         }
 
         dam = dmgval(otmp, &youmonst);
@@ -626,7 +626,7 @@ thrwmu(struct monst *mtmp)
         } else {
             /* "an arrow" */
             onm = singular(otmp, xname);
-            onm = obj_is_pname(otmp) ? the(onm) : an(onm);
+            onm = obj_is_pname(otmp) ? (onm) : an(onm);
         }
         m_shot.s = ammo_and_launcher(otmp, mwep) ? TRUE : FALSE;
         pline("%s %s %s!", Monnam(mtmp), m_shot.s ? "shoots" : "throws", onm);
@@ -763,7 +763,7 @@ thrwmm(struct monst *mtmp, struct monst *mdef)
         if (canseemon(mtmp)) {
             onm = xname(otmp);
             pline("%s thrusts %s.", Monnam(mtmp),
-                  obj_is_pname(otmp) ? the(onm) : an(onm));
+                  obj_is_pname(otmp) ? (onm) : an(onm));
         }
 
         (void)ohitmon(mdef, otmp, 0, FALSE);
@@ -832,7 +832,7 @@ thrwmm(struct monst *mtmp, struct monst *mdef)
         } else {
             /* "an arrow" */
             onm = singular(otmp, xname);
-            onm = obj_is_pname(otmp) ? the(onm) : an(onm);
+            onm = obj_is_pname(otmp) ? (onm) : an(onm);
         }
         m_shot.s = ammo_and_launcher(otmp, mwep) ? TRUE : FALSE;
         pline("%s %s %s!", Monnam(mtmp), m_shot.s ? "shoots" : "throws", onm);

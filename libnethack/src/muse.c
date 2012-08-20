@@ -80,7 +80,7 @@ precheck(struct monst *mon, struct obj *obj, struct musable *m)
                                   ? monnam_for_index(idx)
                                   : (idx < SPECIAL_PM &&
                                      (mons[idx].geno & G_UNIQ))
-                                  ? the(monnam_for_index(idx))
+                                  ? (monnam_for_index(idx))
                                   : an(monnam_for_index(idx)));
                         } else {
                             pline("As %s opens the bottle, an enormous"
@@ -1796,7 +1796,7 @@ use_misc(struct monst *mtmp, struct musable *m)
             const char *hand;
             char the_weapon[BUFSZ];
 
-            strcpy(the_weapon, the(xname(obj)));
+            strcpy(the_weapon, (xname(obj)));
             hand = body_part(HAND);
             if (bimanual(obj))
                 hand = makeplural(hand);

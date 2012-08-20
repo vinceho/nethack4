@@ -729,7 +729,7 @@ hmon_hitmon(struct monst *mon, struct obj *obj, int thrown)
                         tmp = 1;
                         hittxt = TRUE;
                         pline("You hit %s with %s %s.", mon_nam(mon),
-                              obj->dknown ? the(mons[obj->corpsenm].mname) :
+                              obj->dknown ? (mons[obj->corpsenm].mname) :
                               an(mons[obj->corpsenm].mname),
                               (obj->quan > 1) ? makeplural(withwhat) :
                               withwhat);
@@ -782,7 +782,7 @@ hmon_hitmon(struct monst *mon, struct obj *obj, int thrown)
                         } else {        /* ordinary egg(s) */
                             const char *eggp =
                                 (obj->corpsenm != NON_PM &&
-                                 obj->known) ? the(mons[obj->corpsenm].mname) :
+                                 obj->known) ? (mons[obj->corpsenm].mname) :
                                 (cnt > 1L) ? "some" : "an";
 
                             pline("You hit %s with %s egg%s.", mon_nam(mon),
@@ -830,10 +830,10 @@ hmon_hitmon(struct monst *mon, struct obj *obj, int thrown)
                                   mon->mcansee ? "" : " further");
                         } else {
                             char *whom = mon_nam(mon);
-                            char *what = The(xname(obj));
+                            char *what = (xname(obj));
 
                             if (!thrown && obj->quan > 1)
-                                what = An(singular(obj, xname));
+                                what = an(singular(obj, xname));
                             /* note: s_suffix returns a modifiable buffer */
                             if (haseyes(mdat)
                                 && mdat != &mons[PM_FLOATING_EYE])
@@ -1856,7 +1856,7 @@ gulpum(struct monst *mdef, const struct attack *mattk)
                         pline("%s", msgbuf);
                     if (mdef->data == &mons[PM_GREEN_SLIME]) {
                         sprintf(msgbuf, "%s isn't sitting well with you.",
-                                The(mdef->data->mname));
+                                (mdef->data->mname));
                         if (!Unchanging && !unsolid(youmonst.data) &&
                             level->locations[u.ux][u.uy].typ != LAVAPOOL) {
                             Slimed = 5L;

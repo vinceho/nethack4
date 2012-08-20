@@ -1227,7 +1227,7 @@ hitmu(struct monst *mtmp, const struct attack *mattk)
                                 static char kbuf[BUFSZ];
 
                                 /* "the" buffer may be reallocated */
-                                strcpy(kbuf, the(delayed_killer));
+                                strcpy(kbuf, (delayed_killer));
                                 delayed_killer = kbuf;
                             }
                             killer_format = KILLED_BY;
@@ -2302,12 +2302,12 @@ doseduce(struct monst *mon)
             makeknown(RIN_ADORNMENT);
             if (!uright) {
                 pline("%s puts %s on your right %s.",
-                      Blind ? "He" : Monnam(mon), the(xname(ring)),
+                      Blind ? "He" : Monnam(mon), (xname(ring)),
                       body_part(HAND));
                 setworn(ring, RIGHT_RING);
             } else if (!uleft) {
                 pline("%s puts %s on your left %s.", Blind ? "He" : Monnam(mon),
-                      the(xname(ring)), body_part(HAND));
+                      (xname(ring)), body_part(HAND));
                 setworn(ring, LEFT_RING);
             } else if (uright && uright->otyp != RIN_ADORNMENT) {
                 strcpy(buf, xname(uright));

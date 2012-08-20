@@ -144,7 +144,7 @@ ready_weapon(struct obj *wep)
         if (will_weld(wep)) {
             const char *tmp = xname(wep), *thestr = "The ";
 
-            if (strncmp(tmp, thestr, 4) && !strncmp(The(tmp), thestr, 4))
+            if (strncmp(tmp, thestr, 4) && !strncmp((tmp), thestr, 4))
                 tmp = thestr;
             else
                 tmp = "";
@@ -467,15 +467,15 @@ can_twoweapon(void)
               body_part(HAND), (!uwep && !uswapwep) ? "s are" : " is");
     else if (NOT_WEAPON(uwep) || NOT_WEAPON(uswapwep)) {
         otmp = NOT_WEAPON(uwep) ? uwep : uswapwep;
-        pline("%s %s.", Yname2(otmp),
+        pline("%s %s.", yname(otmp),
               is_plural(otmp) ? "aren't weapons" : "isn't a weapon");
     } else if (bimanual(uwep) || bimanual(uswapwep)) {
         otmp = bimanual(uwep) ? uwep : uswapwep;
-        pline("%s isn't one-handed.", Yname2(otmp));
+        pline("%s isn't one-handed.", yname(otmp));
     } else if (uarms)
         pline("You can't use two weapons while wearing a shield.");
     else if (uswapwep->oartifact)
-        pline("%s %s being held second to another weapon!", Yname2(uswapwep),
+        pline("%s %s being held second to another weapon!", yname(uswapwep),
               otense(uswapwep, "resist"));
     else if (!uarmg && !Stone_resistance &&
              (uswapwep->otyp == CORPSE &&

@@ -1972,7 +1972,7 @@ poisoned(const char *string, int typ, const char *pname, int fatal)
     if ((i = name_to_mon(pname)) >= LOW_PM && mons[i].geno & G_UNIQ) {
         kprefix = KILLED_BY;
         if (!type_is_pname(&mons[i]))
-            pname = the(pname);
+            pname = (pname);
     } else if (!strncmpi(pname, "the ", 4) || !strncmpi(pname, "an ", 3) ||
                !strncmpi(pname, "a ", 2)) {
         /* [ does this need a plural check too? ] */
@@ -2739,7 +2739,7 @@ mimic_hit_msg(struct monst *mtmp, short otyp)
     case M_AP_OBJECT:
         if (otyp == SPE_HEALING || otyp == SPE_EXTRA_HEALING) {
             pline("%s seems a more vivid %s than before.",
-                  The(simple_typename(ap)), c_obj_colors[objects[ap].oc_color]);
+                  (simple_typename(ap)), c_obj_colors[objects[ap].oc_color]);
         }
         break;
     }

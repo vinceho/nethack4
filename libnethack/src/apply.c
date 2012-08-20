@@ -183,7 +183,7 @@ its_dead(int rx, int ry, int *resp)
         } else {
             ttmp = t_at(level, rx, ry);
             pline("%s appears to be in %s health for a statue.",
-                  The(mons[otmp->corpsenm].mname),
+                  (mons[otmp->corpsenm].mname),
                   (ttmp && ttmp->ttyp == STATUE_TRAP) ?
                   "extraordinary" : "excellent");
         }
@@ -774,7 +774,7 @@ use_bell(struct obj **optr)
                                  invocation_pos(&u.uz, u.ux, u.uy) &&
                                  !On_stairs(u.ux, u.uy));
 
-    pline("You ring %s.", the(xname(obj)));
+    pline("You ring %s.", (xname(obj)));
 
     if (Underwater || (u.uswallow && ordinary)) {
         pline("But the sound is muffled.");
@@ -906,12 +906,12 @@ use_candelabrum(struct obj *obj)
     }
     if (obj->spe < 7) {
         pline("There %s only %d %s in %s.", vtense(s, "are"), obj->spe, s,
-              the(xname(obj)));
+              (xname(obj)));
         if (!Blind)
             pline("%s lit.  %s dimly.", obj->spe == 1 ? "It is" : "They are",
                   Tobjnam(obj, "shine"));
     } else {
-        pline("%s's %s burn%s", The(xname(obj)), s,
+        pline("%s's %s burn%s", (xname(obj)), s,
               (Blind ? "." : " brightly!"));
     }
     if (!invocation_pos(&u.uz, u.ux, u.uy) || On_stairs(u.ux, u.uy)) {
@@ -952,17 +952,17 @@ use_candle(struct obj **optr)
         return use_lamp(obj);
     }
 
-    sprintf(qbuf, "Attach %s", the(xname(obj)));
+    sprintf(qbuf, "Attach %s", (xname(obj)));
     sprintf(eos(qbuf), " to %s?",
-            safe_qbuf(qbuf, sizeof (" to ?"), the(xname(otmp)),
-                      the(simple_typename(otmp->otyp)), "it"));
+            safe_qbuf(qbuf, sizeof (" to ?"), (xname(otmp)),
+                      (simple_typename(otmp->otyp)), "it"));
     if (yn(qbuf) == 'n') {
         if (Underwater) {
             pline("Sorry, fire and water don't mix.");
             return 0;
         }
         if (!obj->lamplit)
-            pline("You try to light %s...", the(xname(obj)));
+            pline("You try to light %s...", (xname(obj)));
         return use_lamp(obj);
     } else {
         if ((long)otmp->spe + obj->quan > 7L)
@@ -971,7 +971,7 @@ use_candle(struct obj **optr)
             *optr = 0;
         s = (obj->quan != 1) ? "candles" : "candle";
         pline("You attach %ld%s %s to %s.", obj->quan,
-              !otmp->spe ? "" : " more", s, the(xname(otmp)));
+              !otmp->spe ? "" : " more", s, (xname(otmp)));
         if (!otmp->spe || otmp->age > obj->age)
             otmp->age = obj->age;
         otmp->spe += (int)obj->quan;
@@ -985,7 +985,7 @@ use_candle(struct obj **optr)
                       (obj->quan > 1L) ? "them" : "it",
                       (obj->quan > 1L) ? "them" : "it");
         if (obj->quan < 7L && otmp->spe == 7)
-            pline("%s now has seven%s candles attached.", The(xname(otmp)),
+            pline("%s now has seven%s candles attached.", (xname(otmp)),
                   otmp->lamplit ? " lit" : "");
         /* candelabrum's light range might increase */
         if (otmp->lamplit)
@@ -1035,7 +1035,7 @@ snuff_lit(struct obj * obj)
             obj->otyp == BRASS_LANTERN || obj->otyp == POT_OIL) {
             get_obj_location(obj, &x, &y, 0);
             if (obj->where == OBJ_MINVENT ? cansee(x, y) : !Blind)
-                pline("%s %s out!", Yname2(obj), otense(obj, "go"));
+                pline("%s %s out!", yname(obj), otense(obj, "go"));
             end_burn(obj, TRUE);
             return TRUE;
         }
@@ -1066,7 +1066,7 @@ catch_lit(struct obj * obj)
              obj->otyp == BRASS_LANTERN) && obj->cursed && !rn2(2))
             return FALSE;
         if (obj->where == OBJ_MINVENT ? cansee(x, y) : !Blind)
-            pline("%s %s light!", Yname2(obj), otense(obj, "catch"));
+            pline("%s %s light!", yname(obj), otense(obj, "catch"));
         if (obj->otyp == POT_OIL)
             makeknown(obj->otyp);
         if (obj->unpaid && costly_spot(u.ux, u.uy) &&
@@ -1074,7 +1074,7 @@ catch_lit(struct obj * obj)
             /* if it catches while you have it, then it's your tough luck */
             check_unpaid(obj);
             verbalize("That's in addition to the cost of %s %s, of course.",
-                      Yname2(obj), obj->quan == 1 ? "itself" : "themselves");
+                      yname(obj), obj->quan == 1 ? "itself" : "themselves");
             bill_dummy_object(obj);
         }
         begin_burn(obj, FALSE);
@@ -1134,7 +1134,7 @@ use_lamp(struct obj *obj)
     }
     if (obj->cursed && !rn2(2)) {
         if (Blind)
-            pline("%s %s seem to have lit.", Yname2(obj),
+            pline("%s %s seem to have lit.", yname(obj),
                   obj->quan > 1L ? "don't" : "doesn't");
         else
             pline("%s for a moment, then %s.", Tobjnam(obj, "flicker"),
@@ -1146,7 +1146,7 @@ use_lamp(struct obj *obj)
             check_unpaid(obj);
             pline("%s lamp is now on.", Shk_Your(buf, obj));
         } else {        /* candle(s) */
-            pline("%s flame%s %s%s", s_suffix(Yname2(obj)), plur(obj->quan),
+            pline("%s flame%s %s%s", s_suffix(yname(obj)), plur(obj->quan),
                   otense(obj, "burn"), Blind ? "." : " brightly!");
             if (obj->unpaid && costly_spot(u.ux, u.uy) &&
                 obj->age == 20L * (long)objects[obj->otyp].oc_cost) {
@@ -1931,7 +1931,7 @@ use_stone(struct obj *tstone)
         return 0;
 
     if (obj == tstone && obj->quan == 1) {
-        pline("You can't rub %s on itself.", the(xname(obj)));
+        pline("You can't rub %s on itself.", (xname(obj)));
         return 0;
     }
 
@@ -1943,7 +1943,7 @@ use_stone(struct obj *tstone)
             pline("Oh, wow, look at the pretty shards.");
         else
             pline("A sharp crack shatters %s%s.",
-                  (obj->quan > 1) ? "one of " : "", the(xname(obj)));
+                  (obj->quan > 1) ? "one of " : "", (xname(obj)));
         useup(obj);
         return 1;
     }
@@ -2095,7 +2095,7 @@ use_trap(struct obj *otmp)
         pline("You aren't very skilled at reaching from %s.",
               mon_nam(u.usteed));
         sprintf(buf, "Continue your attempt to set %s?",
-                the(trapexplain[what_trap(ttyp) - 1]));
+                (trapexplain[what_trap(ttyp) - 1]));
         if (yn(buf) == 'y') {
             if (chance) {
                 switch (ttyp) {
@@ -2106,7 +2106,7 @@ use_trap(struct obj *otmp)
                 case BEAR_TRAP:        /* drop it without arming it */
                     reset_trapset();
                     pline("You drop %s!",
-                          the(trapexplain[what_trap(ttyp) - 1]));
+                          (trapexplain[what_trap(ttyp) - 1]));
                     dropx(otmp);
                     return 1;
                 }
@@ -2151,7 +2151,7 @@ set_trap(void)
         }
         if (!trapinfo.force_bungle)
             pline("You finish arming %s.",
-                  the(trapexplain[what_trap(ttyp) - 1]));
+                  (trapexplain[what_trap(ttyp) - 1]));
         if (((otmp->cursed || Fumbling) && (rnl(10) > 5)) ||
             trapinfo.force_bungle)
             dotrap(ttmp, (unsigned)(trapinfo.force_bungle ? FORCEBUNGLE : 0));
@@ -2382,7 +2382,7 @@ use_whip(struct obj *obj)
                     break;
                 default:
                     /* to floor beneath mon */
-                    pline("You yank %s from %s %s!", the(onambuf),
+                    pline("You yank %s from %s %s!", (onambuf),
                           s_suffix(mon_nam(mtmp)), mon_hand);
                     obj_no_longer_held(otmp);
                     place_object(otmp, level, mtmp->mx, mtmp->my);
@@ -2516,7 +2516,7 @@ use_cream_pie(struct obj *obj)
     else
         pline("You immerse your %s in %s%s.", body_part(FACE),
               several ? "one of " : "",
-              several ? makeplural(the(xname(obj))) : the(xname(obj)));
+              several ? makeplural((xname(obj))) : (xname(obj)));
     if (can_blnd(NULL, &youmonst, AT_WEAP, obj)) {
         int blindinc = rnd(25);
 
@@ -3071,7 +3071,7 @@ doapply(struct obj *obj)
                                    || level->locations[u.ux][u.uy].typ >=
                                    ICE) ? "Oops!  %s away from you!" :
                                 "Oops!  %s to the floor!",
-                                The(aobjnam(otmp, "slip")), NULL);
+                                (aobjnam(otmp, "slip")), NULL);
             makeknown(HORN_OF_PLENTY);
         } else
             pline("Nothing happens.");

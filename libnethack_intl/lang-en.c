@@ -10,6 +10,8 @@
 #include "grammar.h"
 #include "lang.h"
 
+static boolean global_simple, global_caps;
+
 enum tense {
     /* "You die", "You have died", "You died", "You are dying", "dying",
        "died", "die", "to die" */
@@ -46,6 +48,28 @@ verb_chains_directly(const char *s)
     if (!strcmp(s, "may")) return TRUE;
     if (!strcmp(s, "should")) return TRUE;
     if (!strcmp(s, "had better")) return TRUE;
+    if (!strcmp(s, "do")) return TRUE;
+    return FALSE;
+}
+
+static boolean
+verb_chains_via_participle(const char *s)
+{
+    if (!strcmp(s, "stop")) return TRUE;
+    return FALSE;
+}
+
+static boolean
+verb_chains_via_passive(const char *s)
+{
+    if (!strcmp(s, "are^passive")) return TRUE;
+    return FALSE;
+}
+
+static boolean
+stem_doubles_consonant(const char* s)
+{
+    if (!strcmp(s, "flag")) return TRUE;
     return FALSE;
 }
 
@@ -61,39 +85,39 @@ anumbername(int n, boolean ordinal)
         free(t);
     } else if (n < 20) {
         switch(n) {
-        case 0: rv = astrcat("", ordinal ? "zero" : "zeroth", "");
-        case 1: rv = astrcat("", ordinal ? "one" : "first", "");
-        case 2: rv = astrcat("", ordinal ? "two" : "second", "");
-        case 3: rv = astrcat("", ordinal ? "three" : "third", "");
-        case 4: rv = astrcat("", ordinal ? "four" : "fourth", "");
-        case 5: rv = astrcat("", ordinal ? "five" : "fifth", "");
-        case 6: rv = astrcat("", ordinal ? "six" : "sixth", "");
-        case 7: rv = astrcat("", ordinal ? "seven" : "seventh", "");
-        case 8: rv = astrcat("", ordinal ? "eight" : "eighth", "");
-        case 9: rv = astrcat("", ordinal ? "nine" : "ninth", "");
-        case 10: rv = astrcat("", ordinal ? "ten" : "tenth", "");
-        case 11: rv = astrcat("", ordinal ? "eleven" : "eleventh", "");
-        case 12: rv = astrcat("", ordinal ? "twelve" : "twelfth", "");
-        case 13: rv = astrcat("", ordinal ? "thirteen" : "thirteenth", "");
-        case 14: rv = astrcat("", ordinal ? "fourteen" : "fourteenth", "");
-        case 15: rv = astrcat("", ordinal ? "fifteen" : "fifteenth", "");
-        case 16: rv = astrcat("", ordinal ? "sixteen" : "sixteenth", "");
-        case 17: rv = astrcat("", ordinal ? "seventeen" : "seventeenth", "");
-        case 18: rv = astrcat("", ordinal ? "eighteen" : "eighteenth", "");
-        case 19: rv = astrcat("", ordinal ? "nineteen" : "nineteenth", "");
+        case 0: rv = astrcat("", !ordinal ? "zero" : "zeroth", ""); break;
+        case 1: rv = astrcat("", !ordinal ? "one" : "first", ""); break;
+        case 2: rv = astrcat("", !ordinal ? "two" : "second", ""); break;
+        case 3: rv = astrcat("", !ordinal ? "three" : "third", ""); break;
+        case 4: rv = astrcat("", !ordinal ? "four" : "fourth", ""); break;
+        case 5: rv = astrcat("", !ordinal ? "five" : "fifth", ""); break;
+        case 6: rv = astrcat("", !ordinal ? "six" : "sixth", ""); break;
+        case 7: rv = astrcat("", !ordinal ? "seven" : "seventh", ""); break;
+        case 8: rv = astrcat("", !ordinal ? "eight" : "eighth", ""); break;
+        case 9: rv = astrcat("", !ordinal ? "nine" : "ninth", ""); break;
+        case 10: rv = astrcat("", !ordinal ? "ten" : "tenth", ""); break;
+        case 11: rv = astrcat("", !ordinal ? "eleven" : "eleventh", ""); break;
+        case 12: rv = astrcat("", !ordinal ? "twelve" : "twelfth", ""); break;
+        case 13: rv = astrcat("", !ordinal ? "thirteen" : "thirteenth", ""); break;
+        case 14: rv = astrcat("", !ordinal ? "fourteen" : "fourteenth", ""); break;
+        case 15: rv = astrcat("", !ordinal ? "fifteen" : "fifteenth", ""); break;
+        case 16: rv = astrcat("", !ordinal ? "sixteen" : "sixteenth", ""); break;
+        case 17: rv = astrcat("", !ordinal ? "seventeen" : "seventeenth", ""); break;
+        case 18: rv = astrcat("", !ordinal ? "eighteen" : "eighteenth", ""); break;
+        case 19: rv = astrcat("", !ordinal ? "nineteen" : "nineteenth", ""); break;
         }
     } else if (n < 100) {
         if (n % 10) t = anumbername(n%10, ordinal);
         else t = 0;
         switch (n / 10) {
-        case 20: rv = astrcat("twenty",  t ? t : "", t ? "-" : "");
-        case 30: rv = astrcat("thirty",  t ? t : "", t ? "-" : "");
-        case 40: rv = astrcat("forty",   t ? t : "", t ? "-" : "");
-        case 50: rv = astrcat("fifty",   t ? t : "", t ? "-" : "");
-        case 60: rv = astrcat("sixty",   t ? t : "", t ? "-" : "");
-        case 70: rv = astrcat("seventy", t ? t : "", t ? "-" : "");
-        case 80: rv = astrcat("eighty",  t ? t : "", t ? "-" : "");
-        case 90: rv = astrcat("ninety",  t ? t : "", t ? "-" : "");
+        case 20: rv = astrcat("twenty",  t ? t : "", t ? "-" : ""); break;
+        case 30: rv = astrcat("thirty",  t ? t : "", t ? "-" : ""); break;
+        case 40: rv = astrcat("forty",   t ? t : "", t ? "-" : ""); break;
+        case 50: rv = astrcat("fifty",   t ? t : "", t ? "-" : ""); break;
+        case 60: rv = astrcat("sixty",   t ? t : "", t ? "-" : ""); break;
+        case 70: rv = astrcat("seventy", t ? t : "", t ? "-" : ""); break;
+        case 80: rv = astrcat("eighty",  t ? t : "", t ? "-" : ""); break;
+        case 90: rv = astrcat("ninety",  t ? t : "", t ? "-" : ""); break;
         }
         free(t);
         if (ordinal && !(n % 10)) {
@@ -191,7 +215,28 @@ vowlish(const char *s)
 static char *
 articulate(char *s, int quan)
 {
-    char *rv;
+    char *rv, *numname;
+    char buf[30];
+    if (quan & (1 << 26)) {
+        /* Counts work like articles in our system. We need to decide between
+           writing the number as digits and writing it as a word; the rule is
+           that we use digits if either simple is set, or caps is not set, /and/
+           the number is 11 or more, and a word otherwise. (So we have digits in
+           menus and similar interface elements, and words in full
+           sentences.) */
+        if (((quan & ((1 << 26) - 1)) >= 11 &&
+             (global_simple || !global_caps)) || (quan & (1 << 28))) {
+            sprintf(buf, "%d", quan & ((1 << 26) - 1));
+            if (quan & (1 << 28)) strcpy(buf, "%d");
+            rv = astrcat(buf, s, " ");
+        } else {
+            numname = anumbername(quan & ((1 << 26) - 1), FALSE);
+            rv = astrcat(numname, s, " ");
+            free(numname);
+        }
+        free(s);
+        return(rv);
+    }
     if (quan & (1 << 30) && quan & (1 << 27)) return s; /* no article */
     if (is_relative_pronoun(s)) return s; /* no article for grammar reasons */
     if (quan & (1 << 30)) {
@@ -224,10 +269,15 @@ resuffix(const char *s, const char *suffix)
     static char resuffix_buffer[BUFSZ];
     char *p = resuffix_buffer;
     while ((*(p++)=*(s++))) {} /* simultaneous strcpy and measure length */
-    p -= 2;
+    p -= 2; /* invariant: p[1] is \0 */
     if (*p == 'y') *p = 'i';
     if (*p == 'e') *(p--) = 0;
     if (*suffix == 'i' && *p == 'i') *p = 'y';
+    if (stem_doubles_consonant(resuffix_buffer)) {
+        p[1] = *p;
+        p[2] = '\0';
+        p++;
+    }
     /* currently, no words double consonants when stemmed */
     strcpy(p+1, suffix);
     return resuffix_buffer;
@@ -461,14 +511,6 @@ static boolean
 special_case_verb(char *obuf, const char *v, enum tense t,
                   boolean plural, enum person p)
 {
-    if (verb_chains_directly(v)) {
-        /* Directly-chaining verbs don't conjugate.
-           They also don't work properly in tenses other than the present, in
-           which case we have to sawp in an entirely different verb (e.g.
-           "be able" rather than "can"), but that's just a TODO for now. */
-        strcpy(obuf, v);
-        return TRUE;
-    }
     if (!strcmp(v, "do")) {
         if (t == present) {
             if (!plural && (p == third)) strcpy(obuf, "does");
@@ -484,6 +526,14 @@ special_case_verb(char *obuf, const char *v, enum tense t,
             return TRUE;
         }
         return FALSE; /* other cases are regular */
+    }
+    if (verb_chains_directly(v)) {
+        /* Directly-chaining verbs don't conjugate. Except for "do".
+           They also don't work properly in tenses other than the present, in
+           which case we have to sawp in an entirely different verb (e.g.
+           "be able" rather than "can"), but that's just a TODO for now. */
+        strcpy(obuf, v);
+        return TRUE;
     }
     if (!strcmp(v, "have")) {
         if (t == present) {
@@ -539,7 +589,7 @@ conjugate(const char *v, enum tense t, int quan, enum person p)
     which_buffer %= 12;
     char *w = conjugation_buffers[which_buffer];
     char *x, *y;
-    boolean plural = (quan &~ ((1 << 30) | (1 << 27))) != 1;
+    boolean plural = !!(quan & 1 << 29);
     /* There are eight possible tenses that we might have to deal with for each
        verb. Some verbs are regular, and can be conjugated entirely using
        resuffix. Many more are irregular, and need a whole load of special
@@ -651,9 +701,12 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                              (negated ? ", but " : ", and ") :
                              (negated ?  " but " :  " and "));
         break;
-    case minus_N: /* "nonweapon" */
+    case minus_N: /* "nonweapon", "not a weapon", "not the weapon" */
         force_unit(u->children[0], t, quan, p);
-        u->content = astrcat("non", u->children[0]->content, "");
+        if (strchr(u->children[0]->content, ' '))
+            u->content = astrcat("not", u->children[0]->content, " ");
+        else
+            u->content = astrcat("non", u->children[0]->content, "");
         break;
     case minus_A:
         /* "not red" or "nonred"; we apply "non" only to literally negating
@@ -665,6 +718,17 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         else
             u->content = astrcat("non", u->children[0]->content, "");
         break;
+    case minus_D: /* "Not slowly" is about the best we can do in general for
+                     verbs. "Not very" is perfect for adjectives. For some
+                     particular construction rules we can do better; for
+                     instance, adverb_tN can be formed using "without". */
+        if (u->children[0]->rule == adverb_tN) {
+            force_unit(u->children[0], t, quan, p);
+            u->content = astrcat(
+                "", u->children[0]->children[0]->content, "without ");
+            break;
+        }
+        /* otherwise fall through */
     case minus_Q:
         /* This can only legally be used in the D{QC} and A{QC} constructs
            anyway, and the negation makes most sense shifted onto the verb; "I
@@ -679,9 +743,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         /* "The dagger on the table", if you negate "on", you get "The dagger
            that is not on the table", or simply "The dagger not on the table".
            Either would be used depending on context in English; we'll just go
-           for the "not" prefix because I'm lazy. Fall through. */
-    case minus_D: /* "not slowly" is about the best we can do for verbs;
-                     "not very" is perfect for adjectives */
+           for the "not" prefix because I'm lazy. */
         force_unit(u->children[0], t, quan, p);
         u->content = astrcat("not", u->children[0]->content, " ");
         /* TODO: special-case -D{tN} and possibly others */
@@ -737,17 +799,19 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                adjective_aN have similar rules: "the stranger at the door",
                etc. adjective_V also moves after the noun, but only when it's
                not a literal verb; "cursed dagger", but "dagger named
-               Vladsbane". Parenthesizing adjectives does not change this
-               rule. Nor does conjuncting them, although in dubious cases
-               like "large and painted blue" we have to make an arbitrary
-               choice (in this case, we go with the first adjective). */
+               Vladsbane". (And adjective_VN moves after the noun for the same
+               reason.) Parenthesizing adjectives does not change this rule. Nor
+               does conjuncting them, although in dubious cases like "large and
+               painted blue" we have to make an arbitrary choice (in this case,
+               we go with the first adjective). */
             a = u->children[1];
             while (a->rule == adjective_pA || a->rule == plus_AA)
                 a = a->children[0];
             if (a->rule == adjective_QC || a->rule == adjective_mN ||
                 a->rule == adjective_lN || a->rule == adjective_aN ||
                 (a->rule == adjective_V &&
-                 a->children[0]->rule != gr_literal)) {
+                 a->children[0]->rule != gr_literal) ||
+                a->rule == adjective_VN) {
                 nounperson = force_unit(u->children[0], t, quan, p);
                 u->content = astrcat(u->children[0]->content,
                                      u->children[1]->content, " ");
@@ -999,6 +1063,10 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             for (v = u; v->rule != gr_literal; v = v->children[0]) {}
             if (verb_chains_directly(v->content))
                 force_unit(u->children[1], secondary_direct, 1, base);
+            else if (verb_chains_via_participle(v->content))
+                force_unit(u->children[1], active_participle, 1, base);
+            else if (verb_chains_via_passive(v->content))
+                force_unit(u->children[1], passive_participle, 1, base);
             else
                 force_unit(u->children[1], secondary_infinitive, 1, base);
             force_unit(u->children[0], t, quan, p);
@@ -1020,12 +1088,13 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
            Deciding between these can be complex. We use the first case if it's
            reasonably simple; to be on the safe side, we use it only for
            single-word literals (constructions like "you quite well know that"
-           are rather awkward). We can't use the fourth case without help
-           from the clause rules, so if we get here at all, we're using the
-           second or third. And the third seems unnatural in pretty much all
-           cases, so we don't use it. (The main case in which we'd want to use
-           the fourth is D{QC}, by the way; and the rule for C{NV} supports this
-           way round of doing things.)
+           are rather awkward), and there are a few literals we also don't allow
+           ("you anyway know that" sounds weird). We can't use the fourth case
+           without help from the clause rules, so if we get here at all, we're
+           using the second or third. And the third seems unnatural in pretty
+           much all cases, so we don't use it. (The main case in which we'd want
+           to use the fourth is D{QC}, by the way; and the rule for C{NV}
+           supports this way round of doing things.)
 
            One other issue is involved with infinitives: "boldly to go" may be
            /technically/ correct (or possibly "to go boldly"), but splitting the
@@ -1035,7 +1104,8 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                    secondary_direct : t, quan, p);
         force_unit(u->children[1], t, quan, p);
         if (u->children[1]->rule != gr_literal ||
-            strchr(u->children[1]->content, ' '))
+            strchr(u->children[1]->content, ' ') ||
+            !strcmp(u->children[1]->content, "anyway"))
             u->content = astrcat(u->children[0]->content,
                                  u->children[1]->content, " ");
         else
@@ -1132,10 +1202,20 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         force_unit(u->children[0], passive_participle, 1, base);
         u->content = astrcat("", u->children[0]->content, "");
         break;
+    case adjective_VN: /* "blessed by the gods" */
+        /* We use the passive participle of the verb, and add a preposition. */
+        force_unit(u->children[0], passive_participle, 1, base);
+        force_unit(u->children[1], subject, u->children[1]->quan, base);
+        u->content = astrcat(u->children[0]->content,
+                             u->children[1]->content, " by ");
+        break;
     case adjective_N: /* "gnome" */
-        /* Be careful not to pass on t or quan; also, suppress "the" */
+        /* Be careful not to pass on t or quan; also, suppress "the"; also,
+           we want to use the singular form of a plural noun but still show
+           the count */
         force_unit(u->children[0], object,
-                   u->children[0]->quan | (1 << 30) | (1 << 27), base);
+                   (u->children[0]->quan | (1 << 30) | (1 << 27)) & ~(1 << 29),
+                   base);
         u->content = astrcat("", u->children[0]->content, "");
         break;
     case adjective_QC: /* "where the dragon sleeps" */
@@ -1147,6 +1227,16 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         force_unit(u->children[1], present, u->children[1]->quan, base);
         u->content = astrcat(u->children[0]->content,
                              u->children[1]->content, " ");
+        break;
+    case adjective_oA: /* "second", "third" */
+        if (u->children[0]->rule != gr_literal ||
+            strspn(u->children[0]->content, "0123456789") !=
+            strlen(u->children[0]->content)) {
+            force_unit(u->children[0], t, quan, p);
+            u->content = astrcat("", u->children[0]->content, "");
+        } else {
+            u->content = anumbername(atoi(u->children[0]->content), TRUE);
+        }
         break;
     case clause_NV:  /* "the goblin kills you" */
     case clause_iNV: /* "the goblin killed you" */
@@ -1195,32 +1285,76 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
            out of the verb. (We can't form the passive of a verb with no object,
            amusing though it would be.) */
     {
-        struct grammarunit *v;
-        char *t;
-        for (v = u; v->children[0]->rule != verb_VN; v = v->children[0])
-            if (v->children[0]->rule == gr_literal) {
-                /* This doesn't make sense... */
-                u->content = astrcat(
-                    "", "(ERROR: passive verb with no object)", "");
-                return base;
+        struct grammarunit *v, *w, *x;
+        boolean move_to_secondaries = FALSE;
+        int cnumber = 0;
+        v = u;
+        while (TRUE) {
+            cnumber = (move_to_secondaries && v->rule == verb_VV) ? 1 : 0;
+
+            if (v->children[cnumber]->rule == gr_literal) {
+                /* This is a little awkward. We get here in the case "something
+                   can kill you" -> "you can be killed" but can't go here
+                   unconditionally because "something wants you to kill" -> "you
+                   are wanted to kill" (In the case where both these happen,
+                   this case isn't met and we get "something wants you to kill a
+                   goblin" -> "you are wanted to kill a goblin" which is
+                   correct.)
+
+                   So what we do is we start again, but this time, if we
+                   encounter a secondary verb, we move to the second child.
+                */
+                if (move_to_secondaries) {
+                    u->content = astrcat(
+                        "", "(ERROR: passive verb with no object)", "");
+                    return base;
+                }
+                move_to_secondaries = TRUE;
+                v = u;
+                cnumber = (move_to_secondaries && v->rule == verb_VV) ? 1 : 0;
             }
-        /* We're changing the tree structure, and need to attach the old
-           v->children[0] to the tree somewhere so that it gets freed, so
-           we use our own [2]. */
-        u->children[2] = v->children[0];
-        v->children[0] = v->children[0]->children[0];
-        u->children[2]->children[0] = 0;
-        nounperson = force_unit(u->children[2]->children[1], subject,
-                                u->children[2]->children[1]->quan, base);
-        force_unit(u->children[0], passive_participle, 1, base);
-        t = astrcat(u->children[2]->children[1]->content,
-                    conjugate("are", 
-                              u->rule == clause_sV  ? present :
-                              u->rule == clause_isV ? imperfect :
-                              u->rule == clause_psV ? perfect : continuous,
-                              u->children[2]->quan, nounperson), " ");
-        u->content = astrcat(t, u->children[0]->content, " ");
-        free(t);
+
+            if (v->children[cnumber]->rule == verb_VN) break;
+            v = v->children[cnumber];
+        }
+        /* We change the old verb to a verb_VV with the old verb as its
+           secondary and "are^passive" as the primary. (Auxiliary verbs chain
+           directly, whereas "are" normally chains via infinitive: "you are to
+           kill" and "you are killed" have quite different meanings.)*/
+        w = malloc(sizeof(struct grammarunit));
+        w->role = gr_verb;
+        w->rule = verb_VV;
+        w->children[0] = malloc(sizeof(struct grammarunit));
+        w->children[0]->role = gr_verb;
+        w->children[0]->rule = gr_literal;
+        w->children[0]->children[0] = 0;
+        w->children[0]->children[1] = 0;
+        w->children[0]->children[2] = 0;
+        w->children[1] = v->children[cnumber];
+        v->children[cnumber] = w;
+        w->children[2] = 0;
+        w->uniquifier = w->children[0]->uniquifier = 0;
+        w->quan = w->children[0]->quan = 1;
+        w->gender = w->children[0]->gender = gg_unknown;
+        w->tagged = w->children[0]->tagged = FALSE;
+        w->content = 0;
+        w->children[0]->content = astrcat("", "are^passive", "");
+
+        /* Eliminate the noun from the verb we found. */
+        x = w->children[1];
+        v = x->children[1];
+        w->children[1] = x->children[0]; /* now x and v are detached, x->0 isn't */
+        x->children[0] = x->children[1] = 0; /* don't free x->0 or v */
+        free_grammarunit(x);
+
+        nounperson = force_unit(v, subject, v->quan, base);
+        force_unit(u->children[0],
+                   u->rule == clause_sV ? present :
+                   u->rule == clause_isV ? imperfect :
+                   u->rule == clause_psV ? perfect : continuous,
+                   v->quan, nounperson);
+        u->content = astrcat(v->content, u->children[0]->content, " ");
+        free_grammarunit(v); /* now free v, x already freed, x->0 still on tree */
         break;
     }
     case clause_iV: /* "go away" */
@@ -1232,90 +1366,119 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
     case clause_qC:
         /* The rules for forming questions are reasonably obnoxious, although
            also reasonably consistent:
-           - If the clause starts with a relative pronoun, we leave it as is;
-             otherwise:
            - If the sentence is using neither a directly chainable verb or
              "are", that verb is made into a secondary verb behind "do" (this
              is the same rule as is used for negation, incidentally), and
            - The primary verb is moved to the start of the sentence (while
-             keeping everything else unchanged), and
+             keeping everything else unchanged; even adverbs stay behind, e.g.
+             "Are you certainly Rodney?" is the most natural question form of
+             "You certainly are Rodney"; arguably this is just attaching the
+             adverb to the complement or secondary, because "are" (which takes
+             a complement) and direct-chainers (which take secondaries) are the
+             only cases in which this can even come up, but adverbs don't
+             normally modify nouns; and prepositions in separable verbs also
+             stay behind, "Had you better do that now?"), and
            - The first relative pronoun that's used as a noun (i.e. N{where}
              rather than Q{where}) is moved to the start of the sentence, before
              the primary verb, if there is one (and if it's used to form an
              adverb, as in "at what time", the whole adverb phrase moves)
 
+           There's also some sort of rule related to relative pronouns being
+           used as subjects ("Who killed the goblin?", not "Who did kill the
+           goblin?"), but it's inconsistent ("Who am I?", not "Who is I?"). So
+           it's left out for the time being, until I can work out what it is;
+           the questions come out reasonable, if a little unnatural, even
+           without it. (Some ideas: in "Who am I?", "who" is the /object/, with
+           the base sentence being "I am whom", but then why isn't it "Whom am
+           I?"; and words like "where" are actually relative /proadverbs/, not
+           /pronouns/, and so can't be used as subjects at all. (Try to
+           construct the base form of a sentence using "where" as a noun. You
+           can't do it.) Hmm, perhaps the rule is as simple as "do" being
+           unneccessary if the statement rearrangement is a no-op, because the
+           reason a secondary verb is added is to give something to rearrange.)
+
            It's also possible to form a question from an imperative, but that is
            (fortunately for my sanity) a no-op, apart from the use of a question
            mark (even if it contains a relative pronoun: "Go where?").
 
-           We start off by finding the subject. This is easy in NV variants;
-           in sV variants, we find it the same way as they do, and for iV,
-           we know we can bail immediately. The only other legal possibility
-           that even parses is qC, which is absurd and doesn't need a
-           translation. */
+           We start off by finding the verb, and the base verb. */
     {
-        struct grammarunit *v;
-        char *tx;
-        v = u;
-        while(TRUE) {
-            switch (v->rule) {
-            case clause_NV:
-            case clause_iNV:
-            case clause_pNV:
-            case clause_cNV:
-            case clause_sV:
-            case clause_isV:
-            case clause_psV:
-            case clause_csV:
-            case clause_qC:
-            case verb_VA:
-            case verb_VD:
-            case verb_VV:
-            case noun_NA:
-            case noun_NEN:
-            case noun_fNA:
-            case noun_oNN:
-            case noun_lNN:
-            case noun_NV:
-                v = v->children[0];
-                continue;
-            case noun_mX:
-                /* We don't move ""who"" to the start of the sentence, it's just
-                   a mention of the relative pronoun */
-                goto break_2;
-            case verb_VN: /* we only get here in the passive case */
-                v = v->children[1];
-                continue;
-            case clause_iV:
-                /* This case is easy :) */
-                force_unit(u->children[0], t, quan, p);
-                u->content = astrcat("", u->children[0]->content, "");
-                return base;
-            case gr_literal:
-                if (v->role == gr_noun || v->role == gr_propernoun) {
-                    /* Looks like we found our subject. Is it a relative
-                       pronoun? */
-                    if (is_relative_pronoun(v->content)) {
-                        force_unit(u->children[0], t, quan, p);
-                        u->content = astrcat("", u->children[0]->content, "");
-                        return base;
-                    }
-                    /* It isn't, we'll have to do things the long way round */
-                    goto break_2;
-                }
-                /* otherwise fall through */
-            default:
-                /* This doesn't make sense... */
-                u->content = astrcat(
-                    "", "(ERROR: question could not find subject)", "");
-                return base;
-            }
+        int cnumber;
+        struct grammarunit *v, *w;
+        char *tx, *ty, r;
+        /* Find the verb phrase. */
+        switch (u->children[0]->rule) {
+        case clause_iV:
+            /* The easy case. */
+            force_unit(u->children[0], t, quan, p);
+            u->content = astrcat("", u->children[0]->content, "");
+            return base;
+        case clause_NV: case clause_iNV: case clause_pNV: case clause_cNV:
+            cnumber = 1;
+            break;
+        case clause_sV: case clause_isV: case clause_psV: case clause_csV:
+            cnumber = 0;
+            break;
+        default: /* clause_qC, literal, etc. */
+            u->content = astrcat("", "(ERROR: unimplemented question)", "");
+            return base;
         }
-    break_2:
-        /* We don't care about the noun now we know it isn't a relative pronoun,
-           but now we have to find the verb, and chain it with "do" if
-           necessary. */
-        u->content = astrcat("", "(ERROR: unimplemented question)", "");
+        /* Find the base verb. */
+        for (v = u->children[0]->children[cnumber];
+             v->rule != gr_literal; v = v->children[0]) {}
+        if (!verb_chains_directly(v->content)) {
+            /* Nest a secondary verb around u->children[cnumber]. */
+            w = malloc(sizeof(struct grammarunit));
+            w->role = gr_verb;
+            w->rule = verb_VV;
+            w->children[0] = malloc(sizeof(struct grammarunit));
+            w->children[0]->role = gr_verb;
+            w->children[0]->rule = gr_literal;
+            w->children[0]->children[0] = 0;
+            w->children[0]->children[1] = 0;
+            w->children[0]->children[2] = 0;
+            w->children[1] = u->children[0]->children[cnumber];
+            u->children[0]->children[cnumber] = w;
+            w->children[2] = 0;
+            w->uniquifier = w->children[0]->uniquifier = 0;
+            w->quan = w->children[0]->quan = 1;
+            w->gender = w->children[0]->gender = gg_unknown;
+            w->tagged = w->children[0]->tagged = FALSE;
+            w->content = 0;
+            w->children[0]->content = astrcat("", "do", "");
+            v = w->children[0]; /* new base verb */
+        }
+        /* To move the primary verb, we mark the verb as needing a special
+           tag, generate the sentence content, then search for it in the
+           sentence afterwards. */
+        v->tagged = TRUE;
+        force_unit(u->children[0], t, quan, p);
+        /* Find the start of the primary verb. */
+        tx = strchr(u->children[0]->content, '\x1d');
+        if (!tx) {
+            u->content = astrcat(
+                "", "(ERROR: verb went missing in question)", "");
+            return base;
+        }
+        if (tx != u->children[0]->content) {
+            /* We only move the verb if it isn't already at the start of the
+               sentence. */
+            if (tx[-1] != ' ') {
+            u->content = astrcat(
+                "", "(ERROR: verb not preceded by space in question)", "");
+            return base;
+            }
+            tx[-1] = '\0';
+            *(tx++) = '\0';
+            /* Find the end of the verb, by looking for the space or punctuation
+               mark after it (or the end of string). */
+            ty = tx + strcspn(tx, " .?!,;()\"");
+            r = *ty; *ty = '\0';
+            tx = astrcat(tx, u->children[0]->content, " ");
+            *ty = r;
+            u->content = astrcat(tx, ty, "");
+            free(tx);
+        }
         break;
     }
     case gr_unknown:
@@ -1327,7 +1490,10 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
     case gr_literal:
         /* Adverbs, adjectives, clauses, relative pronouns not used as nouns,
            prepositions, and sentences aren't declined in English. The main
-           thing we need to do here is decline nouns and conjugate verbs. */
+           thing we need to do here is decline nouns and conjugate verbs.
+           We also need to remove any disambiguators ("^" and anything after
+           it at the end of the word); for the time being, we do that first. */
+        if (strchr(u->content, '^')) *(strchr(u->content, '^')) = '\0';
         switch(u->role) {
         case gr_adjective:
             /* One thing to watch out for here: A{2} translates to "two". */
@@ -1351,9 +1517,10 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                  special-cased grammar and also changes our return value (and
                  likewise, relative pronouns sometimes have special-cased
                  grammar and never take articles);
-               - If quan is anything other than 1 with high bits set, we need to
-                 pluralise the noun (that is, the passed-in quan, not the noun's
-                 quan); and we also need to mark quantity;
+               - If quan is marked as plural, we need to pluralise the noun
+                 (that is, the passed-in quan, not the noun's quan); and if it's
+                 marked as having an explicit count, we also need to mark
+                 quantity;
                - Except for proper nouns, we need "a" for a non-plural noun with
                  the 1 << 30 bit set, and "the" for a plural or singular noun
                  without that bit set - but it needs to go outside adjectives,
@@ -1370,7 +1537,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                articulate(). So we just need to bother about the other three. */
             if (!strcmp(u->content, "it")) {
                 free(u->content);
-                if ((quan &~ (1 << 30 | 1 << 27)) != 1) {
+                if (quan & (1 << 29)) {
                     if (t == subject) u->content = astrcat("", "they", "");
                     else if (t == object) u->content = astrcat("", "them", "");
                     else u->content = astrcat("", "their", "");
@@ -1390,7 +1557,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             }
             if (!strcmp(u->content, "I")) {
                 free(u->content);
-                if ((quan &~ (1 << 30 | 1 << 27)) != 1) {
+                if (quan & (1 << 29)) {
                     if (t == subject) u->content = astrcat("", "we", "");
                     else if (t == object) u->content = astrcat("", "us", "");
                     else u->content = astrcat("", "our", "");
@@ -1419,8 +1586,9 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             }
             if (is_relative_pronoun(u->content))
                 return third;
-            /* If necessary, pluralize. */
-            if ((quan &~ ((1 << 30) | (1 << 27))) != 1) {
+            /* If necessary, pluralize. Also add the count (articulate does
+               this for us). */
+            if (quan & (1 << 29)) {
                 struct grammarunit *n;
                 char *tx;
                 for (n = u; n->rule != gr_literal && n->rule != noun_mX &&
@@ -1456,11 +1624,13 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         case gr_verb:
             /* We need to conjugate the verb to the given number and tense.
                This is factored out into a function conjugate(), because it's
-               needed in other places too. */
+               needed in other places too. If requested, we tag the first word
+               of the verb with \x1d, so that question-forming code can find it
+               in the resulting string. */
         {
             char *c = conjugate(u->content, t, quan, p);
             free(u->content);
-            u->content = astrcat("", c, "");
+            u->content = astrcat(u->tagged ? "\x1d" : "", c, "");
             return base;
         }
         }
@@ -1471,6 +1641,8 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
 static void
 forcecontent_en(struct grammarunit *u, boolean simple, boolean caps)
 {
+    global_simple = simple;
+    global_caps = caps;
     /* Recursively force the content of the unit in question, then initcaps the
        first letter. */
     force_unit(u, simple ? secondary_direct : present,

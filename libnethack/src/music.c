@@ -216,7 +216,7 @@ do_earthquake(int force)
                         pline("%s is shaken loose from %s!", Amonnam(mtmp),
                               mtmp->data ==
                               &mons[PM_TRAPPER] ? "its hiding place" :
-                              the(ceiling(u.ux, u.uy)));
+                              (ceiling(u.ux, u.uy)));
                     else
                         You_hear("a thumping sound.");
                     if (x == u.ux && y == u.uy &&
@@ -362,7 +362,7 @@ do_improvisation(struct obj *instr)
     if (!do_spec)
         pline("What you produce is quite far from music...");
     else
-        pline("You start playing %s.", the(xname(instr)));
+        pline("You start playing %s.", (xname(instr)));
 
     switch (instr->otyp) {
     case MAGIC_FLUTE:  /* Make monster fall asleep */
@@ -411,7 +411,7 @@ do_improvisation(struct obj *instr)
         exercise(A_WIS, FALSE);
         break;
     case BUGLE:        /* Awaken & attract soldiers */
-        pline("You extract a loud noise from %s.", the(xname(instr)));
+        pline("You extract a loud noise from %s.", (xname(instr)));
         awaken_soldiers();
         exercise(A_WIS, FALSE);
         break;
@@ -426,7 +426,7 @@ do_improvisation(struct obj *instr)
         }       /* else FALLTHRU */
     case WOODEN_HARP:  /* May calm Nymph */
         do_spec &= (rn2(ACURR(A_DEX)) + u.ulevel > 25);
-        pline("%s %s.", The(xname(instr)),
+        pline("%s %s.", (xname(instr)),
               do_spec ? "produces a lilting melody" : "twangs");
         if (do_spec)
             calm_nymphs(u.ulevel * 3);
@@ -476,7 +476,7 @@ do_play_instrument(struct obj *instr)
          instr->otyp == MAGIC_FLUTE || instr->otyp == TOOLED_HORN ||
          instr->otyp == FIRE_HORN || instr->otyp == FROST_HORN)) {
         pline("You are incapable of playing %s in your current form!",
-              the(xname(instr)));
+              (xname(instr)));
         return 0;
     }
     if (instr->otyp != LEATHER_DRUM && instr->otyp != DRUM_OF_EARTHQUAKE) {
@@ -495,7 +495,7 @@ do_play_instrument(struct obj *instr)
                     *s = 'B';
             }
         }
-        pline("You extract a strange sound from %s!", the(xname(instr)));
+        pline("You extract a strange sound from %s!", (xname(instr)));
 
         /* Check if there was the Stronghold drawbridge near and if the tune
            conforms to what we're waiting for. */

@@ -320,7 +320,7 @@ ghost_from_bottle(void)
         pline("As you open the bottle, %s emerges!", monnam_is_pname(idx)
               ? monnam_for_index(idx)
               : (idx < SPECIAL_PM && (mons[idx].geno & G_UNIQ))
-              ? the(monnam_for_index(idx))
+              ? (monnam_for_index(idx))
               : an(monnam_for_index(idx)));
     } else {
         pline("As you open the bottle, an enormous ghost emerges!");
@@ -1553,7 +1553,7 @@ get_wet(struct obj * obj)
 
             if (obj->otyp == SPE_BOOK_OF_THE_DEAD) {
                 pline("%s suddenly heats up; steam rises and it remains dry.",
-                      The(xname(obj)));
+                      (xname(obj)));
             } else {
                 if (!Blind) {
                     boolean oq1 = obj->quan == 1L;
@@ -1801,19 +1801,19 @@ dodip(struct obj *potion)
         obj->oinvis = TRUE;
         if (!Blind) {
             if (!See_invisible)
-                pline("Where did %s go?", the(xname(obj)));
+                pline("Where did %s go?", (xname(obj)));
             else
                 pline("You notice a little haziness around %s.",
-                      the(xname(obj)));
+                      (xname(obj)));
         }
         goto poof;
     } else if (potion->otyp == POT_SEE_INVISIBLE && obj->oinvis) {
         obj->oinvis = FALSE;
         if (!Blind) {
             if (!See_invisible)
-                pline("So that's where %s went!", the(xname(obj)));
+                pline("So that's where %s went!", (xname(obj)));
             else
-                pline("The haziness around %s disappears.", the(xname(obj)));
+                pline("The haziness around %s disappears.", (xname(obj)));
         }
         goto poof;
     }
@@ -1824,17 +1824,17 @@ dodip(struct obj *potion)
             char buf[BUFSZ];
 
             if (potion->quan > 1L)
-                sprintf(buf, "One of %s", the(xname(potion)));
+                sprintf(buf, "One of %s", (xname(potion)));
             else
-                strcpy(buf, The(xname(potion)));
-            pline("%s forms a coating on %s.", buf, the(xname(obj)));
+                strcpy(buf, (xname(potion)));
+            pline("%s forms a coating on %s.", buf, (xname(obj)));
             obj->opoisoned = TRUE;
             goto poof;
         } else if (obj->opoisoned &&
                    (potion->otyp == POT_HEALING ||
                     potion->otyp == POT_EXTRA_HEALING ||
                     potion->otyp == POT_FULL_HEALING)) {
-            pline("A coating wears off %s.", the(xname(obj)));
+            pline("A coating wears off %s.", (xname(obj)));
             obj->opoisoned = 0;
             goto poof;
         }
@@ -1851,7 +1851,7 @@ dodip(struct obj *potion)
                 /* catch_lit does all the work if true */
             } else if (obj->oerodeproof || obj_resists(obj, 5, 95) ||
                        !is_flammable(obj) || obj->oclass == FOOD_CLASS) {
-                pline("%s %s to burn for a moment.", Yname2(obj),
+                pline("%s %s to burn for a moment.", yname(obj),
                       otense(obj, "seem"));
             } else {
                 if ((omat == PLASTIC || omat == PAPER) && !obj->oartifact)
@@ -1886,10 +1886,10 @@ dodip(struct obj *potion)
         } else if ((!is_rustprone(obj) && !is_corrodeable(obj)) || is_ammo(obj)
                    || (!obj->oeroded && !obj->oeroded2)) {
             /* uses up potion, doesn't set obj->greased */
-            pline("%s %s with an oily sheen.", Yname2(obj),
+            pline("%s %s with an oily sheen.", yname(obj),
                   otense(obj, "gleam"));
         } else {
-            pline("%s %s less %s.", Yname2(obj), otense(obj, "are"),
+            pline("%s %s less %s.", yname(obj), otense(obj, "are"),
                   (obj->oeroded &&
                    obj->oeroded2) ? "corroded and rusty" : obj->
                   oeroded ? "rusty" : "corroded");
@@ -1922,7 +1922,7 @@ more_dips:
             obj->age = 0;
         }
         if (obj->age > 1000L) {
-            pline("%s %s full.", Yname2(obj), otense(obj, "are"));
+            pline("%s %s full.", yname(obj), otense(obj, "are"));
             potion->in_use = FALSE;     /* didn't go poof */
         } else {
             pline("You fill %s with oil.", yname(obj));

@@ -603,7 +603,7 @@ angrygods(aligntyp resp_god)
     case 5:
         gods_angry(resp_god);
         if (!Blind && !Antimagic)
-            pline("%s glow surrounds you.", An(hcolor("black")));
+            pline("%s glow surrounds you.", an(hcolor("black")));
         rndcurse();
         break;
     case 7:
@@ -765,7 +765,7 @@ gcrownu(void)
             } else if (!already_exists) {
                 obj = mksobj(level, RUNESWORD, FALSE, FALSE);
                 obj = oname(obj, artiname(ART_STORMBRINGER));
-                at_your_feet(An(swordbuf));
+                at_your_feet(an(swordbuf));
                 obj->spe = 1;
                 dropy(obj);
                 u.ugifts++;

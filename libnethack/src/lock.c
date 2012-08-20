@@ -181,7 +181,7 @@ forcelock(void)
     if (!xlock.picktyp && !rn2(3)) {
         long loss = 0L;
 
-        pline("In fact, you've totally destroyed %s.", the(xname(xlock.box)));
+        pline("In fact, you've totally destroyed %s.", (xname(xlock.box)));
 
         /* Put the contents on ground at the hero's feet. */
         while ((otmp = xlock.box->cobj) != 0) {
@@ -328,7 +328,7 @@ pick_lock(struct obj *pick, schar dx, schar dy, schar dz)
             if (Is_box(otmp)) {
                 ++count;
                 if (!can_reach_floor()) {
-                    pline("You can't reach %s from up here.", the(xname(otmp)));
+                    pline("You can't reach %s from up here.", (xname(otmp)));
                     return 0;
                 }
                 it = 0;
@@ -1039,7 +1039,7 @@ chest_shatter_msg(struct obj *otmp)
         disposition = "is destroyed";
         break;
     }
-    pline("%s %s!", An(thing), disposition);
+    pline("%s %s!", an(thing), disposition);
 }
 
 /*lock.c*/

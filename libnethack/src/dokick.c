@@ -500,14 +500,14 @@ kick_object(xchar x, xchar y, schar dx, schar dy)
             if (Blind)
                 pline("It doesn't come loose.");
             else
-                pline("%s %sn't come loose.", The(distant_name(kickobj, xname)),
+                pline("%s %sn't come loose.", (distant_name(kickobj, xname)),
                       otense(kickobj, "do"));
             return !rn2(3) || martial();
         }
         if (Blind)
             pline("It comes loose.");
         else
-            pline("%s %s loose.", The(distant_name(kickobj, xname)),
+            pline("%s %s loose.", (distant_name(kickobj, xname)),
                   otense(kickobj, "come"));
         obj_extract_self(kickobj);
         newsym(x, y);
@@ -571,7 +571,7 @@ kick_object(xchar x, xchar y, schar dx, schar dy)
         kickobj = splitobj(kickobj, 1L);
 
     if (slide && !Blind)
-        pline("Whee!  %s %s %s the %s.", Doname2(kickobj),
+        pline("Whee!  %s %s %s the %s.", doname(kickobj),
               otense(kickobj, air ? "fly" : "slide"),
               air ? "through" : "across", air &&
               Is_waterlevel(&u.uz) ? "bubble" : surface(x, y));
@@ -967,7 +967,7 @@ dokick(void)
                 if (is_plural(treefruit))
                     pline("Some %s fall from the tree!", xname(treefruit));
                 else
-                    pline("%s falls from the tree!", An(xname(treefruit)));
+                    pline("%s falls from the tree!", an(xname(treefruit)));
                 nfall = scatter(x, y, 2, MAY_HIT, treefruit);
                 if (nfall != nfruit) {
                     /* scatter left some in the tree, but treefruit may not

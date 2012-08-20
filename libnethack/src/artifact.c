@@ -555,7 +555,7 @@ touch_artifact(struct obj *obj, struct monst *mon)
 
         if (!yours)
             return 0;
-        pline("You are blasted by %s power!", s_suffix(the(xname(obj))));
+        pline("You are blasted by %s power!", s_suffix((xname(obj))));
         dmg = dice((Antimagic ? 2 : 4), (self_willed ? 10 : 4));
         sprintf(buf, "touching %s", oart->name);
         losehp(dmg, buf, KILLED_BY);
@@ -1064,7 +1064,7 @@ artifact_hit_drainlife(struct monst *magr, struct monst *mdef, struct obj *otmp,
                       mon_nam(mdef));
             else
                 pline("%s draws the life from %s!",
-                      The(distant_name(otmp, xname)), mon_nam(mdef));
+                      (distant_name(otmp, xname)), mon_nam(mdef));
         }
         if (mdef->m_lev == 0) {
             *dmgptr = 2 * mdef->mhp + FATAL_DAMAGE_MODIFIER;
@@ -1089,7 +1089,7 @@ artifact_hit_drainlife(struct monst *magr, struct monst *mdef, struct obj *otmp,
         else if (otmp->oartifact == ART_STORMBRINGER)
             pline("The %s blade drains your life!", hcolor("black"));
         else
-            pline("%s drains your life!", The(distant_name(otmp, xname)));
+            pline("%s drains your life!", (distant_name(otmp, xname)));
         losexp("life drainage");
         if (magr && magr->mhp < magr->mhpmax) {
             magr->mhp += (oldhpmax - u.uhpmax) / 2;
@@ -1254,7 +1254,7 @@ arti_invoke(struct obj *obj)
         /* It's a special power, not "just" a property */
         if (obj->age > moves) {
             /* the artifact is tired :-) */
-            pline("You feel that %s %s ignoring you.", the(xname(obj)),
+            pline("You feel that %s %s ignoring you.", (xname(obj)),
                   otense(obj, "are"));
             /* and just got more so; patience is essential... */
             obj->age += (long)dice(3, 10);
@@ -1434,7 +1434,7 @@ arti_invoke(struct obj *obj)
         if (on && obj->age > moves) {
             /* the artifact is tired :-) */
             u.uprops[oart->inv_prop].extrinsic ^= W_ARTI;
-            pline("You feel that %s %s ignoring you.", the(xname(obj)),
+            pline("You feel that %s %s ignoring you.", (xname(obj)),
                   otense(obj, "are"));
             /* can't just keep repeatedly trying */
             obj->age += (long)dice(3, 10);

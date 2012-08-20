@@ -45,8 +45,8 @@ enum grammarrule {
     adverb_DD, adverb_tN, adverb_lN, adverb_aN, adverb_dN, adverb_mN,
     adverb_eN, adverb_iN, adverb_QC,
     adjective_cA, adjective_sA, adjective_AD, adjective_AV, adjective_QC,
-    adjective_lN, adjective_aN, adjective_V, adjective_N, adjective_pA,
-    adjective_mN,
+    adjective_lN, adjective_aN, adjective_V, adjective_VN, adjective_N,
+    adjective_pA, adjective_mN, adjective_oA,
     clause_NV, clause_iNV, clause_pNV, clause_cNV, clause_qC, clause_iV,
     clause_sV, clause_isV, clause_psV, clause_csV,
     gr_literal, gr_unknown,
@@ -54,15 +54,18 @@ enum grammarrule {
 enum grammargender { gg_male, gg_female, gg_neuter, gg_unknown };
 
 struct grammarunit {
-    enum grammarrole role;
-    enum grammarrule rule;
-    int quan; /* quantity; 1 for unknown, 1 << 29 for unknown plural,
-                 1 << 28 for %d, 1 << 30 bit set if indefinite;
-                 we set 1 << 30 and 1 << 27 for no article */
     char *uniquifier; /* often but not always null or a number */
     char *content;
-    enum grammargender gender;
     struct grammarunit *children[3];
+    enum grammarrole role;
+    enum grammarrule rule;
+    enum grammargender gender;
+    int quan; /* quantity; 1 for unknown, 1 << 29 for plural,
+                 1 << 28 for %d, 1 << 30 bit set if indefinite,
+                 1 << 26 bit for explicit count;
+                 we set 1 << 30 and 1 << 27 for no article */
+    boolean tagged; /* used internally by lang-?? to reorder sentences,
+                       everything else should maintain it at FALSE */
 };
 
 extern void forcecontent(struct grammarunit *, boolean, boolean);

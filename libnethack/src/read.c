@@ -1318,7 +1318,7 @@ litroom(boolean on, struct obj *obj)
             }
             if (uwep && artifact_light(uwep) && uwep->lamplit)
                 pline("Suddenly, the only light left comes from %s!",
-                      the(xname(uwep)));
+                      (xname(uwep)));
             else
                 pline("You are surrounded by darkness!");
         }

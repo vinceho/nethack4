@@ -866,7 +866,7 @@ doengrave_core(struct obj *otmp, int auto_elbereth)
     }
 
     if (zapwand && (otmp->spe < 0)) {
-        pline("%s %sturns to dust.", The(xname(otmp)),
+        pline("%s %sturns to dust.", (xname(otmp)),
               Blind ? "" : "glows violently, then ");
         if (!IS_GRAVE(level->locations[u.ux][u.uy].typ))
             pline

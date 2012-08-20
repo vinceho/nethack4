@@ -862,7 +862,7 @@ carry_count(struct obj *obj,    /* object to pick up */
         /* some message will be given */
         strcpy(obj_nambuf, doname(obj));
         if (container) {
-            sprintf(where, "in %s", the(xname(container)));
+            sprintf(where, "in %s", (xname(container)));
             verb = "carry";
         } else {
             strcpy(where, "lying here");
@@ -1279,7 +1279,7 @@ lootcont:
                     continue;
                 }
 
-                pline("You carefully open %s...", the(xname(cobj)));
+                pline("You carefully open %s...", (xname(cobj)));
                 timepassed |= use_container(cobj, 0);
                 if (multi < 0)
                     return 1;   /* chest trap */
@@ -1540,7 +1540,7 @@ in_container(struct obj *obj)
         /* Prohibit Amulets in containers; if you allow it, monsters can't
            steal them.  It also becomes a pain to check to see if someone has
            the Amulet.  Ditto for the Candelabrum, the Bell and the Book. */
-        pline("%s cannot be confined in such trappings.", The(xname(obj)));
+        pline("%s cannot be confined in such trappings.", (xname(obj)));
         return 0;
     } else if (obj->otyp == LEASH && obj->leashmon != 0) {
         pline("%s attached to your pet.", Tobjnam(obj, "are"));
@@ -1588,8 +1588,8 @@ in_container(struct obj *obj)
          *  use the result of strcpy() within You() --- the order
          *  of evaluation of the parameters is undefined.
          */
-        strcpy(buf, the(xname(obj)));
-        pline("You cannot fit %s into %s.", buf, the(xname(current_container)));
+        strcpy(buf, (xname(obj)));
+        pline("You cannot fit %s into %s.", buf, (xname(current_container)));
         return 0;
     }
 
@@ -1643,7 +1643,7 @@ in_container(struct obj *obj)
     }
 
     if (current_container) {
-        strcpy(buf, the(xname(current_container)));
+        strcpy(buf, (xname(current_container)));
         pline("You put %s into %s.", doname(obj), buf);
 
         /* gold in container always needs to be added to credit */
@@ -1745,7 +1745,7 @@ mbag_item_gone(int held, struct obj *item)
     long loss = 0L;
 
     if (item->dknown)
-        pline("%s %s vanished!", Doname2(item), otense(item, "have"));
+        pline("%s %s vanished!", doname(item), otense(item, "have"));
     else
         pline("You %s %s disappear!", Blind ? "notice" : "see", doname(item));
 
@@ -1798,7 +1798,7 @@ observe_quantum_cat(struct obj *box)
 
             pline("%s%s inside the box%s is dead!",
                   pname ? monnam_for_index(idx)
-                  : The(monnam_for_index(idx)), pname ? "," : "",
+                  : (monnam_for_index(idx)), pname ? "," : "",
                   pname ? "," : "");
         } else {
             pline("The housecat inside the box is dead!");
@@ -1835,7 +1835,7 @@ use_container(struct obj *obj, int held)
         return 0;
     } else if (obj->otrapped) {
         if (held)
-            pline("You open %s...", the(xname(obj)));
+            pline("You open %s...", (xname(obj)));
         chest_trap(obj, HAND, FALSE);
         /* even if the trap fails, you've used up this turn */
         if (multi >= 0) {       /* in case we didn't become paralyzed */
@@ -1869,7 +1869,7 @@ use_container(struct obj *obj, int held)
     obj->owt = weight(obj);     /* in case any items were lost */
 
     if (!cnt)
-        sprintf(emptymsg, "%s is %sempty.", Yname2(obj),
+        sprintf(emptymsg, "%s is %sempty.", yname(obj),
                 quantum_cat ? "now " : "");
 
     if (cnt || flags.menu_style == MENU_FULL) {
@@ -2031,12 +2031,12 @@ in_or_out_menu(const char *prompt, struct obj *obj, boolean outokay,
     int n, nr = 0;
 
     if (outokay) {
-        sprintf(buf, "Take something out of %s", the(xname(obj)));
+        sprintf(buf, "Take something out of %s", (xname(obj)));
         set_menuitem(&items[nr++], 1, MI_NORMAL, buf, 'o', FALSE);
     }
 
     if (inokay) {
-        sprintf(buf, "Put something into %s", the(xname(obj)));
+        sprintf(buf, "Put something into %s", (xname(obj)));
         set_menuitem(&items[nr++], 2, MI_NORMAL, buf, 'i', FALSE);
     }
 

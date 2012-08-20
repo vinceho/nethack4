@@ -117,8 +117,8 @@ cursed_book(struct obj *bp)
         pline("C{i,s,V{V{V{coat},N{book}},D{t,N{N{o,poison},A{contact}}}}}!");
         if (uarmg) {
             if (uarmg->oerodeproof || !is_corrodeable(uarmg)) {
-                pline("C{s,V{V{-,V{V{seem},V{affect}}},"
-                      "N{o,N{*,N{glove}},N=%s}}}.", you);
+                pline("C{s,V{V{seem},V{V{-,V{affect}},"
+                      "N{o,N{*,N{glove}},N=%s}}}}.", you);
             } else if (uarmg->oeroded2 < MAX_ERODE) {
                 if (uarmg->greased) {
                     grease_protect(uarmg, "N{*,N{glove}}", &youmonst);
@@ -782,7 +782,7 @@ spelleffects(int spell, boolean atme)
     }
 
     if (u.uhave.amulet) {
-        pline("C{N=%s,V{V{feel},N{N{Amulet},V{V{drain away},"
+        pline("C{N=%s,V{V{feel},N{a,N{Amulet},V{V{drain away},"
               "N{o,N{o,energy},N=%s}}}}}.", you, you);
         energy += rnd(2 * energy);
     }

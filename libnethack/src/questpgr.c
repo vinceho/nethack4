@@ -228,7 +228,7 @@ convert_arg(char c)
         str = intermed();
         break;
     case 'o':
-        str = the(artiname(urole.questarti));
+        str = (artiname(urole.questarti));
         break;
     case 'n':
         str = neminame();
@@ -303,7 +303,7 @@ convert_line(void)
 
                     /* insert "a"/"an" prefix */
                 case 'A':
-                    strcat(cc, An(cvt_buf));
+                    strcat(cc, an(cvt_buf));
                     cc += strlen(cc);
                     continue;   /* for */
                 case 'a':

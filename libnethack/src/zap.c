@@ -1841,10 +1841,10 @@ backfire(struct obj *otmp)
          * explosion is more violent.
          */
         pline("%s suddently produces a violent outburst of energy!",
-              The(xname(otmp)));
+              (xname(otmp)));
         losehp(dice(otmp->spe + 4, 8), "oubursting wand", KILLED_BY_AN);
     } else {
-        pline("%s suddenly explodes!", The(xname(otmp)));
+        pline("%s suddenly explodes!", (xname(otmp)));
         losehp(dice(otmp->spe + 2, 6), "exploding wand", KILLED_BY_AN);
         useup(otmp);
     }
@@ -1882,7 +1882,7 @@ dozap(struct obj *obj)
     } else if (!(objects[obj->otyp].oc_dir == NODIR) &&
                !getdir(NULL, &dx, &dy, &dz)) {
         if (!Blind)
-            pline("%s glows and fades.", The(xname(obj)));
+            pline("%s glows and fades.", (xname(obj)));
         /* make him pay for knowing !NODIR */
     } else if (!dx && !dy && !dz && !(objects[obj->otyp].oc_dir == NODIR)) {
         if ((damage = zapyourself(obj, TRUE)) != 0) {
@@ -2607,15 +2607,15 @@ hit(const char *str, struct monst *mtmp, const char *force)
     if ((!cansee(bhitpos.x, bhitpos.y) && !canspotmon(mtmp) &&
          !(u.uswallow && mtmp == u.ustuck))
         || !flags.verbose)
-        pline("%s %s it.", The(str), vtense(str, "hit"));
+        pline("%s %s it.", (str), vtense(str, "hit"));
     else
-        pline("%s %s %s%s", The(str), vtense(str, "hit"), mon_nam(mtmp), force);
+        pline("%s %s %s%s", (str), vtense(str, "hit"), mon_nam(mtmp), force);
 }
 
 void
 miss(const char *str, struct monst *mtmp)
 {
-    pline("%s %s %s.", The(str), vtense(str, "miss"),
+    pline("%s %s %s.", (str), vtense(str, "miss"),
           ((cansee(bhitpos.x, bhitpos.y) || canspotmon(mtmp))
            && flags.verbose) ? mon_nam(mtmp) : "it");
 }
@@ -2836,7 +2836,7 @@ beam_hit(int ddx, int ddy, int range,   /* direction and range */
 
             if ((bobj = sobj_at(BOULDER, level, x, y)) != 0) {
                 if (cansee(x, y))
-                    pline("%s hits %s.", The(distant_name(obj, xname)),
+                    pline("%s hits %s.", (distant_name(obj, xname)),
                           an(xname(bobj)));
                 range = 0;
             } else if (obj == uball) {
@@ -2844,7 +2844,7 @@ beam_hit(int ddx, int ddy, int range,   /* direction and range */
                     /* nb: it didn't hit anything directly */
                     if (cansee(x, y))
                         pline("%s jerks to an abrupt halt.",
-                              The(distant_name(obj, xname))); /* lame */
+                              (distant_name(obj, xname))); /* lame */
                     range = 0;
                 } else if (In_sokoban(&u.uz) && (t = t_at(level, x, y)) != 0 &&
                            (t->ttyp == PIT || t->ttyp == SPIKED_PIT ||
@@ -3266,7 +3266,7 @@ burn_floor_paper(struct level *lev, int x, int y,
                     if (delquan > 1)
                         pline("%ld %s burn.", delquan, buf2);
                     else
-                        pline("%s burns.", An(buf1));
+                        pline("%s burns.", an(buf1));
                 }
             }
         }
@@ -3324,7 +3324,7 @@ buzz(int type, int nd, xchar sx, xchar sy, int dx, int dy)
         if (!u.ustuck)
             u.uswallow = 0;
         else
-            pline("%s rips into %s%s", The(fltxt), mon_nam(u.ustuck),
+            pline("%s rips into %s%s", (fltxt), mon_nam(u.ustuck),
                   exclam(tmp));
         /* Using disintegration from the inside only makes a hole... */
         if (tmp == MAGIC_COOKIE)
@@ -3478,7 +3478,7 @@ buzz(int type, int nd, xchar sx, xchar sy, int dx, int dy)
                 goto buzzmonst;
             } else if (zap_hit_check((int)u.uac, 0)) {
                 range -= 2;
-                pline("%s hits you!", The(fltxt));
+                pline("%s hits you!", (fltxt));
                 if (Reflecting) {
                     if (!Blind) {
                         ureflects("But %s reflects from your %s!", "it");
@@ -3491,7 +3491,7 @@ buzz(int type, int nd, xchar sx, xchar sy, int dx, int dy)
                     zap_hit_u(type, nd, fltxt, sx, sy);
                 }
             } else {
-                pline("%s whizzes by you!", The(fltxt));
+                pline("%s whizzes by you!", (fltxt));
             }
             if (abstype == ZT_LIGHTNING && !resists_blnd(&youmonst)) {
                 pline(blinded_by_the_flash);
@@ -3516,7 +3516,7 @@ buzz(int type, int nd, xchar sx, xchar sy, int dx, int dy)
             bounce = 0;
             range--;
             if (range && isok(lsx, lsy) && cansee(lsx, lsy))
-                pline("%s bounces!", The(fltxt));
+                pline("%s bounces!", (fltxt));
             if (!dx || !dy || !rn2(20)) {
                 dx = -dx;
                 dy = -dy;
@@ -3584,7 +3584,7 @@ melt_ice(struct level *lev, xchar x, xchar y)
         Norep("The ice crackles and melts.");
     if ((otmp = sobj_at(BOULDER, level, x, y)) != 0) {
         if (visible)
-            pline("%s settles...", An(xname(otmp)));
+            pline("%s settles...", an(xname(otmp)));
         do {
             obj_extract_self(otmp);     /* boulder isn't being pushed */
             if (!boulder_hits_pool(otmp, x, y, FALSE))
@@ -3899,7 +3899,7 @@ destroy_item(int osym, int dmgtyp)
                 skip++;
                 if (!Blind)
                     pline("%s glows a strange %s, but remains intact.",
-                          The(xname(obj)), hcolor("dark red"));
+                          (xname(obj)), hcolor("dark red"));
             }
             quan = obj->quan;
             switch (osym) {
@@ -4035,7 +4035,7 @@ destroy_mitem(struct monst *mtmp, int osym, int dmgtyp)
                 skip++;
                 if (vis)
                     pline("%s glows a strange %s, but remains intact.",
-                          The(distant_name(obj, xname)), hcolor("dark red"));
+                          (distant_name(obj, xname)), hcolor("dark red"));
             }
             quan = obj->quan;
             switch (osym) {
@@ -4202,7 +4202,7 @@ retry:
 
     if (otmp != &zeroobj) {
         examine_object(otmp);
-        /* The(aobjnam()) is safe since otmp is unidentified -dlc */
+        /* (aobjnam()) is safe since otmp is unidentified -dlc */
         hold_another_object(otmp,
                             u.
                             uswallow ? "Oops!  %s out of your reach!"
@@ -4211,7 +4211,7 @@ retry:
                                level->locations[u.ux][u.uy].typ >=
                                ICE) ? "Oops!  %s away from you!" :
                             "Oops!  %s to the floor!",
-                            The(aobjnam
+                            (aobjnam
                                 (otmp, Is_airlevel(&u.uz) ||
                                  u.uinwater ? "slip" : "drop")), NULL);
         u.ublesscnt += rn1(100, 50);    /* the gods take notice */

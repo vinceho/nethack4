@@ -34,7 +34,7 @@
 %token N P V A D Q E C UNKNOWN END COMMA EOFTOKEN INVALIDCHAR
 %token FCOMMA MCOMMA NCOMMA ICOMMA PCOMMA CCOMMA OCOMMA LCOMMA SCOMMA TCOMMA
 %token ACOMMA DCOMMA ECOMMA QCOMMA MINUSCOMMA PLUSCOMMA STARCOMMA PERCENT_S
-%token NEQUALS AEQUALS VEQUALS SEQUALS
+%token NEQUALS AEQUALS VEQUALS SEQUALS DEQUALS
 %token <s> LITERAL UNIQUIFIER S
 %token <i> COUNTCOMMA
 
@@ -104,6 +104,7 @@ literalinner2:
       $$->uniquifier = 0;
       $$->gender = gg_unknown;
       $$->content = $1;
+      $$->tagged = FALSE;
       $$->children[0] = 0;
       $$->children[1] = 0;
       $$->children[2] = 0;
@@ -144,7 +145,8 @@ nounish:
 | N STARCOMMA nounish END                { $$ = $3; $$->quan |= 1 << 29; }
 | N COUNTCOMMA nounish END               {
       $$ = $3;
-      $$->quan = ($$->quan & (1 << 30)) | $2;
+      $$->quan = ($$->quan & (1 << 30)) | (1 << 26) | $2;
+      if ($2 != 1) $$->quan |= (1 << 29);
   }
 | N nounish COMMA adjectivish END        { $$=mu($2,$4, 0,noun,noun_NA); }
 | N nounish COMMA prepositionish COMMA
@@ -172,6 +174,7 @@ nounish:
 
 adverbish:
   D literalinner                         { $$ = $2; $$->role = gr_adverb; }
+| DEQUALS adverbish                      { $$ = $2; }
 | D adverbish COMMA adverbish END        { $$=mu($2,$4,0,adverb,adverb_DD); }
 | D TCOMMA nounish END                   { $$=mu($3, 0,0,adverb,adverb_tN); }
 | D LCOMMA nounish END                   { $$=mu($3, 0,0,adverb,adverb_lN); }
@@ -183,6 +186,11 @@ adverbish:
 | D relativish COMMA clausish END        { $$=mu($2,$4,0,adverb,adverb_QC); }
 | D MINUSCOMMA adverbish END             { $$=mu($3, 0,0,adverb,minus_D); }
 | D PLUSCOMMA adverbish COMMA adverbish END { $$=mu($3,$5, 0,adverb,plus_DD); }
+| DEQUALS PERCENT_S                      {
+      $$ = mu(0, 0, 0, adverb, gr_literal);
+      $$->content = malloc(3);
+      strcpy($$->content, "%s");
+  }
 ;
 
 adjectivish:
@@ -191,10 +199,12 @@ adjectivish:
 | A CCOMMA adjectivish END          { $$=mu($3, 0,0,adjective,adjective_cA); }
 | A SCOMMA adjectivish END          { $$=mu($3, 0,0,adjective,adjective_sA); }
 | A PCOMMA adjectivish END          { $$=mu($3, 0,0,adjective,adjective_pA); }
+| A OCOMMA adjectivish END          { $$=mu($3, 0,0,adjective,adjective_oA); }
 | A ACOMMA nounish END              { $$=mu($3, 0,0,adjective,adjective_aN); }
 | A LCOMMA nounish END              { $$=mu($3, 0,0,adjective,adjective_lN); }
 | A MCOMMA nounish END              { $$=mu($3, 0,0,adjective,adjective_mN); }
 | A verbish END                     { $$=mu($2, 0,0,adjective,adjective_V ); }
+| A verbish COMMA nounish END       { $$=mu($2,$4,0,adjective,adjective_V ); }
 | A nounish END                     { $$=mu($2, 0,0,adjective,adjective_N ); }
 | A adjectivish COMMA adverbish END { $$=mu($2,$4,0,adjective,adjective_AD); }
 | A adjectivish COMMA verbish END   { $$=mu($2,$4,0,adjective,adjective_AV); }
@@ -257,6 +267,7 @@ sentenceish:
       $$->quan = 1;
       $$->uniquifier = 0;
       $$->gender = gg_unknown;
+      $$->tagged = FALSE;
       $$->content = $1;
       $$->children[0] = 0;
       $$->children[1] = 0;
@@ -304,6 +315,7 @@ makeunit(struct grammarunit *c1, struct grammarunit *c2,
     u->content = 0;
     u->quan = c1 ? c1->quan : 1;
     u->gender = c1 ? c1->gender : gg_unknown;
+    u->tagged = FALSE;
     return u;
 }
 

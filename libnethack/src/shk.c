@@ -1398,7 +1398,7 @@ dopayobj(struct monst *shkp, struct bill_x *bp, struct obj **obj_p,
         char qbuf[BUFSZ];
 
         sprintf(qbuf, "%s for %ld %s.  Pay?",
-                quan == 1L ? Doname2(obj) : doname(obj), ltmp, currency(ltmp));
+                quan == 1L ? doname(obj) : doname(obj), ltmp, currency(ltmp));
         if (yn(qbuf) == 'n') {
             buy = PAY_SKIP;     /* don't want to buy */
         } else if (quan < bp->bquan && !consumed) {     /* partly used goods */
@@ -2149,7 +2149,7 @@ speak:
         char buf[BUFSZ];
 
         if (!ltmp) {
-            pline("%s has no interest in %s.", Monnam(shkp), the(xname(obj)));
+            pline("%s has no interest in %s.", Monnam(shkp), (xname(obj)));
             return;
         }
         strcpy(buf, "\"For you, ");
@@ -2174,11 +2174,11 @@ speak:
                   (quan > 1L) ? "per" : "for this", xname(obj));
             obj->quan = quan;
         } else
-            pline("%s will cost you %ld %s%s.", The(xname(obj)), ltmp,
+            pline("%s will cost you %ld %s%s.", (xname(obj)), ltmp,
                   currency(ltmp), (obj->quan > 1L) ? " each" : "");
     } else if (!silent) {
         if (ltmp)
-            pline("The list price of %s is %ld %s%s.", the(xname(obj)), ltmp,
+            pline("The list price of %s is %ld %s%s.", (xname(obj)), ltmp,
                   currency(ltmp), (obj->quan > 1L) ? " each" : "");
         else
             pline("%s does not notice.", Monnam(shkp));
@@ -2783,7 +2783,7 @@ shkcatch(struct obj *obj, xchar x, xchar y)
         if (cansee(x, y)) {
             pline("%s nimbly%s catches %s.", Monnam(shkp),
                   (x == shkp->mx &&
-                   y == shkp->my) ? "" : " reaches over and", the(xname(obj)));
+                   y == shkp->my) ? "" : " reaches over and", (xname(obj)));
             if (!canspotmon(shkp))
                 map_invisible(x, y);
             win_delay_output();

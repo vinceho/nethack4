@@ -430,8 +430,7 @@ static int artifact_score(struct obj *list,
                 makeknown(otmp->otyp);
                 otmp->known = otmp->dknown = otmp->bknown = otmp->rknown = 1;
                 /* assumes artifacts don't have quan > 1 */
-                sprintf(pbuf, "%s%s (worth %ld %s)",
-                        the_unique_obj(otmp) ? "The " : "",
+                sprintf(pbuf, "%s (worth %ld %s)",
                         otmp->oartifact ?
                         artifact_name(xname(otmp), &dummy) :
                         OBJ_NAME(objects[otmp->otyp]), value, currency(value));
@@ -1033,7 +1032,7 @@ container_contents(struct obj *list, boolean identified, boolean all_containers)
                                 doname(objlist[i]), objlist[i], FALSE);
 
                 free(objlist);
-                sprintf(buf, "Contents of %s:", the(xname(box)));
+                sprintf(buf, "Contents of %s:", (xname(box)));
                 display_objects(items, icount, buf, PICK_NONE, PLHINT_CONTAINER,
                                 NULL);
                 if (all_containers)

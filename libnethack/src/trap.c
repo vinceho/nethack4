@@ -411,7 +411,7 @@ animate_statue(struct obj *statue, xchar x, xchar y, int cause,
                         (statue->spe & STATUE_HISTORIC));
     char statuename[BUFSZ];
 
-    strcpy(statuename, the(xname(statue)));
+    strcpy(statuename, (xname(statue)));
 
     if (statue->oxlth && statue->oattached == OATTACHED_MONST) {
         cc.x = x, cc.y = y;
@@ -696,7 +696,7 @@ dotrap(struct trap *trap, unsigned trflags)
     case ROCKTRAP:
         if (trap->once && trap->tseen && !rn2(15)) {
             pline("A trap door in %s opens, but nothing falls out!",
-                  the(ceiling(u.ux, u.uy)));
+                  (ceiling(u.ux, u.uy)));
             deltrap(level, trap);
             newsym(u.ux, u.uy);
         } else {
@@ -709,7 +709,7 @@ dotrap(struct trap *trap, unsigned trflags)
             otmp->owt = weight(otmp);
 
             pline("A trap door in %s opens and %s falls on your %s!",
-                  the(ceiling(u.ux, u.uy)), an(xname(otmp)), body_part(HEAD));
+                  (ceiling(u.ux, u.uy)), an(xname(otmp)), body_part(HEAD));
 
             if (uarmh) {
                 if (is_metallic(uarmh)) {
@@ -2478,7 +2478,7 @@ dofiretrap(struct obj *box)
 
     if ((box && !carried(box)) ? is_pool(level, box->ox, box->oy) : Underwater) {
         pline("A cascade of steamy bubbles erupts from %s!",
-              the(box ? xname(box) : surface(u.ux, u.uy)));
+              (box ? xname(box) : surface(u.ux, u.uy)));
         if (Fire_resistance)
             pline("You are uninjured.");
         else
@@ -2486,7 +2486,7 @@ dofiretrap(struct obj *box)
         return;
     }
     pline("A %s %s from %s!", tower_of_flame, box ? "bursts" : "erupts",
-          the(box ? xname(box) : surface(u.ux, u.uy)));
+          (box ? xname(box) : surface(u.ux, u.uy)));
     if (Fire_resistance) {
         shieldeff(u.ux, u.uy);
         num = rn2(2);
@@ -2699,7 +2699,7 @@ fire_damage(struct obj *chain, boolean force, boolean here, xchar x, xchar y)
                 continue;
             /* Container is burnt up - dump contents out */
             if (in_sight)
-                pline("%s catches fire and burns.", Yname2(obj));
+                pline("%s catches fire and burns.", yname(obj));
             if (Has_contents(obj)) {
                 if (in_sight)
                     pline("Its contents fall out.");
@@ -2722,12 +2722,12 @@ fire_damage(struct obj *chain, boolean force, boolean here, xchar x, xchar y)
                 continue;
             if (obj->otyp == SPE_BOOK_OF_THE_DEAD) {
                 if (in_sight)
-                    pline("Smoke rises from %s.", the(xname(obj)));
+                    pline("Smoke rises from %s.", (xname(obj)));
                 continue;
             }
             dindx = (obj->oclass == SCROLL_CLASS) ? 2 : 3;
             if (in_sight)
-                pline("%s %s.", Yname2(obj),
+                pline("%s %s.", yname(obj),
                       (obj->quan >
                        1) ? destroy_strings[dindx * 3 +
                                             1] : destroy_strings[dindx * 3]);
@@ -2736,7 +2736,7 @@ fire_damage(struct obj *chain, boolean force, boolean here, xchar x, xchar y)
         } else if (obj->oclass == POTION_CLASS) {
             dindx = 1;
             if (in_sight)
-                pline("%s %s.", Yname2(obj),
+                pline("%s %s.", yname(obj),
                       (obj->quan >
                        1) ? destroy_strings[dindx * 3 +
                                             1] : destroy_strings[dindx * 3]);
@@ -2745,7 +2745,7 @@ fire_damage(struct obj *chain, boolean force, boolean here, xchar x, xchar y)
         } else if (is_flammable(obj) && obj->oeroded < MAX_ERODE &&
                    !(obj->oerodeproof || (obj->blessed && !rnl(4)))) {
             if (in_sight) {
-                pline("%s %s%s.", Yname2(obj), otense(obj, "burn"),
+                pline("%s %s%s.", yname(obj), otense(obj, "burn"),
                       obj->oeroded + 1 ==
                       MAX_ERODE ? " completely" : obj->
                       oeroded ? " further" : "");
@@ -2791,7 +2791,7 @@ water_damage(struct obj * obj, boolean force, boolean here)
             obj->spe = 0;
         } else if (obj->oclass == SPBOOK_CLASS) {
             if (obj->otyp == SPE_BOOK_OF_THE_DEAD)
-                pline("Steam rises from %s.", the(xname(obj)));
+                pline("Steam rises from %s.", (xname(obj)));
             else
                 obj->otyp = SPE_BLANK_PAPER;
         } else if (obj->oclass == POTION_CLASS) {
@@ -3489,7 +3489,7 @@ untrap(boolean force)
 
     if ((ttmp = t_at(level, x, y)) && ttmp->tseen) {
         deal_with_floor_trap = TRUE;
-        strcpy(the_trap, the(trapexplain[ttmp->ttyp - 1]));
+        strcpy(the_trap, (trapexplain[ttmp->ttyp - 1]));
         if (box_here) {
             if (ttmp->ttyp == PIT || ttmp->ttyp == SPIKED_PIT) {
                 pline("You can't do much about %s%s.", the_trap,
@@ -3574,7 +3574,7 @@ untrap(boolean force)
                 if ((otmp->otrapped &&
                      (force || (!confused && rn2(MAXULEV + 1 - u.ulevel) < 10)))
                     || (!force && confused && !rn2(3))) {
-                    pline("You find a trap on %s!", the(xname(otmp)));
+                    pline("You find a trap on %s!", (xname(otmp)));
                     if (!confused)
                         exercise(A_WIS, TRUE);
 
@@ -3603,7 +3603,7 @@ untrap(boolean force)
                         pline("That %s was not trapped.", xname(otmp));
                     return 1;
                 } else {
-                    pline("You find no traps on %s.", the(xname(otmp)));
+                    pline("You find no traps on %s.", (xname(otmp)));
                     return 1;
                 }
             }
@@ -3791,7 +3791,7 @@ chest_trap(struct obj * obj, int bodypart, boolean disarm)
         case 19:
         case 18:
         case 17:
-            pline("A cloud of noxious gas billows from %s.", the(xname(obj)));
+            pline("A cloud of noxious gas billows from %s.", (xname(obj)));
             poisoned("gas cloud", A_STR, "cloud of poison gas", 15);
             exercise(A_CON, FALSE);
             break;
@@ -3844,7 +3844,7 @@ chest_trap(struct obj * obj, int bodypart, boolean disarm)
         case 0:
             pline("A cloud of %s gas billows from %s.",
                   Blind ? blindgas[rn2(SIZE(blindgas))] : rndcolor(),
-                  the(xname(obj)));
+                  (xname(obj)));
             if (!Stunned) {
                 if (Hallucination)
                     pline("What a groovy feeling!");
@@ -3931,7 +3931,7 @@ b_trapped(const char *item, int bodypart)
     int lvl = level_difficulty(&u.uz);
     int dmg = rnd(5 + (lvl < 5 ? lvl : 2 + lvl / 2));
 
-    pline("KABOOM!!  %s was booby-trapped!", The(item));
+    pline("KABOOM!!  %s was booby-trapped!", (item));
     wake_nearby();
     losehp(dmg, "explosion", KILLED_BY_AN);
     exercise(A_STR, FALSE);
@@ -4047,7 +4047,7 @@ lava_effects(void)
                 if (obj->otyp == SPE_BOOK_OF_THE_DEAD) {
                     if (!Blind && usurvive)
                         pline("%s glows a strange %s, but remains intact.",
-                              The(xname(obj)), hcolor("dark red"));
+                              (xname(obj)), hcolor("dark red"));
                     continue;
                 }
                 if (obj->owornmask) {

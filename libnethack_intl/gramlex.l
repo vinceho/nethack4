@@ -38,8 +38,9 @@ LIT [^{},|=%*+\x1c]
 "A="          return AEQUALS;
 "V="          return VEQUALS;
 "S="          return SEQUALS;
+"D="          return DEQUALS;
 "%s"          return PERCENT_S;
-"S{"[^}]+"}"  { yylval->s = malloc(yyleng-2); yytext[yyleng-1] = 0;
+"S{"[^}]*"}"  { yylval->s = malloc(yyleng-2); yytext[yyleng-1] = 0;
                 strcpy(yylval->s, yytext+2); return S; }
 ","           return COMMA;
 "f,"          return FCOMMA;
@@ -66,6 +67,8 @@ LIT [^{},|=%*+\x1c]
                 strcpy(yylval->s, yytext); return UNIQUIFIER; }
 {LIT}+/[^{=]  { yylval->s = malloc(yyleng+1); strcpy(yylval->s, yytext);
                 return LITERAL; }
+"%c" |
+"%d" |
 \x1c[^\x1c]+\x1c  { yylval->s = malloc(yyleng+1); strcpy(yylval->s, yytext);
                 return LITERAL; }
 \x01          return EOFTOKEN;

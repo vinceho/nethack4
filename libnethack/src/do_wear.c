@@ -59,7 +59,7 @@ on_msg(struct obj *otmp)
         if (otmp->otyp == TOWEL)
             sprintf(how, " around your %s", body_part(HEAD));
         pline("You are now wearing %s%s.",
-              obj_is_pname(otmp) ? the(xname(otmp)) : an(xname(otmp)), how);
+              obj_is_pname(otmp) ? (xname(otmp)) : an(xname(otmp)), how);
     }
 }
 
@@ -1759,7 +1759,7 @@ select_off(struct obj *otmp)
             why = uwep;
         }
         if (why) {
-            pline("You cannot %s to take off %s.", buf, the(xname(otmp)));
+            pline("You cannot %s to take off %s.", buf, (xname(otmp)));
             why->bknown = TRUE;
             return 0;
         }

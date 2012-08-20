@@ -64,7 +64,7 @@ throw_obj(struct obj *obj, int shotlimit)
     if (!canletgo(obj, "throw"))
         return 0;
     if (obj->oartifact == ART_MJOLLNIR && obj != uwep) {
-        pline("%s must be wielded before it can be thrown.", The(xname(obj)));
+        pline("%s must be wielded before it can be thrown.", (xname(obj)));
         return 0;
     }
     if ((obj->oartifact == ART_MJOLLNIR && ACURR(A_STR) < STR19(25))
@@ -340,7 +340,7 @@ hitfloor(struct obj *obj)
     if (IS_ALTAR(level->locations[u.ux][u.uy].typ))
         doaltarobj(obj);
     else
-        pline("%s hit%s the %s.", Doname2(obj), (obj->quan == 1L) ? "s" : "",
+        pline("%s hit%s the %s.", doname(obj), (obj->quan == 1L) ? "s" : "",
               surface(u.ux, u.uy));
 
     if (hero_breaks(obj, u.ux, u.uy, TRUE))
@@ -717,7 +717,7 @@ toss_up(struct obj *obj, boolean hitsroof)
 
     if (hitsroof) {
         if (breaktest(obj)) {
-            pline("%s hits the %s.", Doname2(obj), ceiling(u.ux, u.uy));
+            pline("%s hits the %s.", doname(obj), ceiling(u.ux, u.uy));
             breakmsg(obj, !Blind);
             breakobj(obj, u.ux, u.uy, TRUE, TRUE);
             return FALSE;
@@ -726,7 +726,7 @@ toss_up(struct obj *obj, boolean hitsroof)
     } else {
         almost = " almost";
     }
-    pline("%s%s hits the %s, then falls back on top of your %s.", Doname2(obj),
+    pline("%s%s hits the %s, then falls back on top of your %s.", doname(obj),
           almost, ceiling(u.ux, u.uy), body_part(HEAD));
 
     /* object now hits you */
@@ -895,7 +895,7 @@ throwit(struct obj *obj, long wep_mask, /* used to re-equip returning boomerang
         obj->owt > (unsigned)((Upolyd ? u.mh : u.uhp) * 2) &&
         !Is_airlevel(&u.uz)) {
         pline("You have so little stamina, %s drops from your grasp.",
-              the(xname(obj)));
+              (xname(obj)));
         exercise(A_CON, FALSE);
         dx = dy = 0;
         dz = 1;
@@ -1085,7 +1085,7 @@ throwit(struct obj *obj, long wep_mask, /* used to re-equip returning boomerang
         obj_no_longer_held(obj);
         if (mon && mon->isshk && is_pick(obj)) {
             if (cansee(bhitpos.x, bhitpos.y))
-                pline("%s snatches up %s.", Monnam(mon), the(xname(obj)));
+                pline("%s snatches up %s.", Monnam(mon), (xname(obj)));
             if (*u.ushops)
                 check_shop_obj(obj, bhitpos.x, bhitpos.y, FALSE);
             mpickobj(mon, obj); /* may merge and free obj */
@@ -1166,7 +1166,7 @@ tmiss(struct obj *obj, struct monst *mon)
        just landing short of any target (no message in that case), so will
        realize that there is a valid target here anyway. */
     if (!canseemon(mon) || (mon->m_ap_type && mon->m_ap_type != M_AP_MONSTER))
-        pline("%s %s.", The(missile), otense(obj, "miss"));
+        pline("%s %s.", (missile), otense(obj, "miss"));
     else
         miss(missile, mon);
     if (!rn2(3))
@@ -1244,10 +1244,10 @@ thitmonst(struct monst *mon, struct obj *obj)
     if (obj->oclass == GEM_CLASS && is_unicorn(mon->data) && mon->mcanmove &&
         !mon->msleeping && !mon->mburied) {
         if (mon->mtame) {
-            pline("%s catches and drops %s.", Monnam(mon), the(xname(obj)));
+            pline("%s catches and drops %s.", Monnam(mon), (xname(obj)));
             return 0;
         } else {
-            pline("%s catches %s.", Monnam(mon), the(xname(obj)));
+            pline("%s catches %s.", Monnam(mon), (xname(obj)));
             return gem_accept(mon, obj);
         }
     }
@@ -1260,13 +1260,13 @@ thitmonst(struct monst *mon, struct obj *obj)
         mon->mstrategy &= ~STRAT_WAITMASK;
 
         if (mon->mcanmove) {
-            pline("%s catches %s.", Monnam(mon), the(xname(obj)));
+            pline("%s catches %s.", Monnam(mon), (xname(obj)));
             if (mon->mpeaceful) {
                 boolean next2u = monnear(mon, u.ux, u.uy);
 
                 finish_quest(obj);      /* acknowledge quest completion */
                 pline("%s %s %s back to you.", Monnam(mon),
-                      (next2u ? "hands" : "tosses"), the(xname(obj)));
+                      (next2u ? "hands" : "tosses"), (xname(obj)));
                 if (!next2u) {
                     schar dx = sgn(mon->mx - u.ux);
                     schar dy = sgn(mon->my - u.uy);
@@ -1692,7 +1692,7 @@ breakmsg(struct obj *obj, boolean in_view)
         if (!in_view)
             You_hear("something shatter!");
         else
-            pline("%s shatter%s%s!", Doname2(obj), (obj->quan == 1) ? "s" : "",
+            pline("%s shatter%s%s!", doname(obj), (obj->quan == 1) ? "s" : "",
                   to_pieces);
         break;
     case EGG:
