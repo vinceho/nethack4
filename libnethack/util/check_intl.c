@@ -26,6 +26,7 @@ main(int argc, char **argv) {
         FILE* f = fopen(*argv, "rt");
         boolean firstline = TRUE;
         boolean prev_newline = FALSE;
+        boolean prev_slash = FALSE;
         boolean preprocline = FALSE;
         int linecount = 1;
         if (!f) {
@@ -36,7 +37,9 @@ main(int argc, char **argv) {
             /* There are some situations in which we don't want to recognise
                strings. The very first line of each file is a modeline, which
                contains double quotes. Likewise, #include statements can contain
-               filenames surrounded by double quotes. */
+               filenames surrounded by double quotes. Finally, code that
+               manipulates grammartree may need to write fragments; we mark
+               these with a comment "nointl". */
             if (prev_newline && c == '#') preprocline = TRUE;
             prev_newline = (c == '\n');
             if (prev_newline) {
@@ -59,12 +62,13 @@ main(int argc, char **argv) {
                         if (c == '\n') linecount++;
                 } while (c == '"');
                 str[i] = 0;
-                if (i) { /* not the null string */
+                if (i && !prev_slash) { /* not the null string, not a nointl */
                     char *parsed = malloc_parsestring(str, FALSE, TRUE);
                     printf("%s:%d: %s\n\t%s\n", *argv, linecount, str, parsed);
                     free(parsed);
                 }
             }
+            prev_slash = (c == '/');
         }
         fclose(f);
     }

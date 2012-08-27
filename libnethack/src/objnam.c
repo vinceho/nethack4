@@ -59,7 +59,6 @@
 #define SCHAR_LIM 127
 #define NUMOBUF   12
 
-static char *strprepend(char *, const char *);
 static boolean wishymatch(const char *, const char *, boolean);
 static char *nextobuf(void);
 
@@ -119,7 +118,7 @@ reuniquify(int uniquifier, int otyp, const char *oldnoun) {
     static char working[BUFSZ];
     char *r = working, *s, c;
     strcpy(working, oldnoun);
-    while(*r && *r != '}' && !strncmp(r, "N{m,", 4)) r++;
+    while(*r && *r != '}' && !strncmp(r, /*nointl*/"N{m,", 4)) r++;
     if (!*r) {
         impossible("S{string '%s' is not a properly formed noun}",
                    oldnoun);
@@ -137,7 +136,7 @@ reuniquify(int uniquifier, int otyp, const char *oldnoun) {
     c = *r; *r = 0;
     strcpy(buf, working);
     *r = c;
-    sprintf(eos(buf), uniquifier ? "%d|" : "t%d|",
+    sprintf(eos(buf), uniquifier ? /*nointl*/"%d|" : /*nointl*/"t%d|",
             uniquifier ? uniquifier : otyp);
     strcat(buf, s);
     return buf;
@@ -152,7 +151,7 @@ remodify(char modifier, const char *oldnoun) {
     static char working[BUFSZ];
     char *r = working, c;
     strcpy(working, oldnoun);
-    while(*r && *r != '}' && !strncmp(r, "N{m,", 4)) r++;
+    while(*r && *r != '}' && !strncmp(r, /*nointl*/"N{m,", 4)) r++;
     if (!*r) {
         impossible("S{string '%s' is not a properly formed noun}",
                    oldnoun);
@@ -170,7 +169,7 @@ remodify(char modifier, const char *oldnoun) {
     strcpy(buf, working);
     *r = c;
     if (r[-2] != modifier && (r < working + 4 || r[-4] != modifier))
-        sprintf(eos(buf), "%c,", modifier);
+        sprintf(eos(buf), /*nointl*/"%c,", modifier);
     strcat(buf, r);
     return buf;
 }
@@ -240,27 +239,27 @@ generic_typename(int otyp, boolean show_notes, boolean desc_known,
         }
     dn_noun:
         if (!desc_known) /* we don't get a uniquifier if we can't see it */
-            sprintf(buf, "%s", basetype);
+            sprintf(buf, "N=%s", basetype);
         else if (nn || !dn) {
             /* identified or always-identified */
             if (!dn || !strcmp(dn, UNID_ADJ) || !show_notes) {
-                if (un) sprintf(buf, "N{%s,%s}", RU(actualn), called);
-                else sprintf(buf, "%s", RU(actualn));
+                if (un) sprintf(buf, "N{N=%s,A=%s}", RU(actualn), called);
+                else sprintf(buf, "N=%s", RU(actualn));
             } else {
-                if (un) sprintf(buf, "N{N{%s,A{p,%s}},%s}",
+                if (un) sprintf(buf, "N{N{N=%s,A{p,A=%s}},A=%s}",
                                 RU(actualn), dn, called);
-                else sprintf(buf, "N{%s,A{p,%s}}", RU(actualn), dn);
+                else sprintf(buf, "N{N=%s,A{p,A=%s}}", RU(actualn), dn);
             }
         } else {
             /* not identified */
             if (un) {
                 if (!strcmp(dn, UNID_ADJ) || !show_notes)
-                    sprintf(buf, "N{%s,%s}", RU(basetype), called);
+                    sprintf(buf, "N{N=%s,A=%s}", RU(basetype), called);
                 else
-                    sprintf(buf, "N{N{%s,A{p,%s}},%s}", RU(basetype),
+                    sprintf(buf, "N{N{N=%s,A{p,A=%s}},A=%s}", RU(basetype),
                             dn, called);
             } else
-                sprintf(buf, "N{%s,%s}", RU(basetype), dn);
+                sprintf(buf, "N{N=%s,A=%s}", RU(basetype), dn);
         }
         return buf;
 
@@ -276,47 +275,47 @@ generic_typename(int otyp, boolean show_notes, boolean desc_known,
             if (otyp >= LUCKSTONE && otyp <= FLINT) {
                 /* Gray stones */
                 if (!desc_known)
-                    sprintf(buf, "%s", "N{stone}");
+                    sprintf(buf, "N=%s", "N{stone}");
                 else if (nn && otyp == FLINT)
-                    sprintf(buf, "N{%s,A{%s}}", RU("N{stone}"), actualn);
-                else if (nn) sprintf(buf, "%s", actualn);
-                else sprintf(buf, "N{%s,A{%s}}", RU("N{stone}"), dn);
+                    sprintf(buf, "N{N=%s,A=%s}", RU("N{stone}"), actualn);
+                else if (nn) sprintf(buf, "N=%s", actualn);
+                else sprintf(buf, "N{N=%s,A=%s}", RU("N{stone}"), dn);
             } else if (!nn || !desc_known) {
                 /* unidentified glass looks like unidentified gems */
                 if (!desc_known)
-                    sprintf(buf, "%s", "N{gem}");
+                    sprintf(buf, "N=%s", "N{gem}");
                 else if (un && show_notes)
-                    sprintf(buf, "N{N{%s,A{p,%s}},%s}",
+                    sprintf(buf, "N{N{N=%s,A{p,A=%s}},A=%s}",
                             RU("N{gem}"), dn, called);
-                else if (un) sprintf(buf, "N{%s,%s}", RU("N{gem}"), called);
-                else sprintf(buf, "N{%s,%s}", RU("N{gem}"), dn);
+                else if (un) sprintf(buf, "N{N=%s,A=%s}", RU("N{gem}"), called);
+                else sprintf(buf, "N{N=%s,A=%s}", RU("N{gem}"), dn);
             } else if (otyp >= WORTHLESS_PIECE_OF_WHITE_GLASS &&
                        otyp <= WORTHLESS_PIECE_OF_VIOLET_GLASS) {
                 /* IDed worthless glass doesn't have a color reminder,
                    because it doesn't need one, and 'a (red) piece of
                    worthless red glass' looks silly */
                 if (un && show_notes)
-                    sprintf(buf, "N{%s,A{p,%s}}", RU(actualn), called);
+                    sprintf(buf, "N{N=%s,A{p,A=%s}}", RU(actualn), called);
                 else 
-                    sprintf(buf, "%s", RU(actualn));
+                    sprintf(buf, "N=%s", RU(actualn));
             } else if (GemStone(otyp)) {
                 /* append "stone" to the name */
                 if (!show_notes)
-                    sprintf(buf, "N{%s,A{%s}}", RU("N{stone}"), actualn);
+                    sprintf(buf, "N{N=%s,A=%s}", RU("N{stone}"), actualn);
                 else if (un)
-                    sprintf(buf, "N{N{N{%s,A{%s}},A{p,%s}},A{p,%s}}",
+                    sprintf(buf, "N{N{N{N=%s,A=%s},A{p,A=%s}},A{p,A=%s}}",
                             RU("N{stone}"), actualn, dn, called);
                 else
-                    sprintf(buf, "N{N{%s,A{%s}},A{p,%s}}",
+                    sprintf(buf, "N{N{N=%s,A=%s},A{p,A=%s}}",
                             RU("N{stone}"), actualn, dn);
             } else {
                 if (!show_notes)
-                    sprintf(buf, "%s", RU(actualn));
+                    sprintf(buf, "N=%s", RU(actualn));
                 else if (un)
-                    sprintf(buf, "N{N{N{%s},A{p,%s}},A{p,%s}}",
+                    sprintf(buf, "N{N{N=%s,A{p,A=%s}},A{p,A=%s}}",
                             RU(actualn), dn, called);
                 else
-                    sprintf(buf, "N{%s,A{p,%s}}", RU(actualn), dn);
+                    sprintf(buf, "N{N=%s,A{p,A=%s}}", RU(actualn), dn);
             }
             return buf;
         } /* otherwise it's a rock, fall through */
@@ -329,7 +328,7 @@ generic_typename(int otyp, boolean show_notes, boolean desc_known,
     case CHAIN_CLASS:
     case COIN_CLASS:
     case ROCK_CLASS:
-        sprintf(buf, "%s", RU(actualn));
+        sprintf(buf, "N=%s", RU(actualn));
         return buf;
 
         /* 'generictype of magicspell', always random appearance */
@@ -347,22 +346,23 @@ generic_typename(int otyp, boolean show_notes, boolean desc_known,
         if (!dn) break; /* fall through to impossible */
 
         if (!desc_known)
-            sprintf(buf, "%s", basetype);
+            sprintf(buf, "N=%s", basetype);
         else if (!nn && !un)
-            sprintf(buf, "N{%s,%s}", RU(basetype), dn);
+            sprintf(buf, "N{N=%s,A=%s}", RU(basetype), dn);
         else if (!nn) {
             if (show_notes)
-                sprintf(buf, "N{N{%s,A{p,%s}},%s}", RU(basetype), dn, called);
+                sprintf(buf, "N{N{N=%s,A{p,A=%s}},A=%s}",
+                        RU(basetype), dn, called);
             else
-                sprintf(buf, "N{%s,%s}", RU(basetype), called);
+                sprintf(buf, "N{N=%s,A=%s}", RU(basetype), called);
         } else if (!un || !show_notes) {
             if (show_notes)
-                sprintf(buf, "N{q,N{%s,A{p,%s}},%s}",
+                sprintf(buf, "N{q,N{N=%s,A{p,A=%s}},N=%s}",
                         RU(basetype), dn, actualn);
             else
-                sprintf(buf, "N{q,%s,%s}", RU(basetype), actualn);
+                sprintf(buf, "N{q,N=%s,N=%s}", RU(basetype), actualn);
         } else
-            sprintf(buf, "N{N{q,N{%s,A{p,%s}},%s},A{p,%s}}",
+            sprintf(buf, "N{N{q,N{N=%s,A{p,A=%s}},N=%s},A{p,A=%s}}",
                     RU(basetype), dn, actualn, called);
         return buf;
 
@@ -378,21 +378,21 @@ generic_typename(int otyp, boolean show_notes, boolean desc_known,
                    'scroll of mail (called foo and labeled KIRJE)' */
         if (!dn) break; /* fall through to impossible */
         if (!nn && !un)
-            sprintf(buf, "N{%s,A{V{V{label},%s}}}", RU(basetype), dn);
+            sprintf(buf, "N{N=%s,A{V{V{label},N=%s}}}", RU(basetype), dn);
         else if (!nn) {
             if (show_notes)
-                sprintf(buf, "N{N{%s,%s},A{p,A{V{V{label},%s}}}}",
+                sprintf(buf, "N{N{N=%s,A=%s},A{p,A{V{V{label},N=%s}}}}",
                         RU(basetype), called, dn);
             else
-                sprintf(buf, "N{%s,%s}", RU(basetype), called);
+                sprintf(buf, "N{N=%s,A=%s}", RU(basetype), called);
         } else if (!un || !show_notes) {
             if (show_notes)
-                sprintf(buf, "N{N{q,%s,%s},A{p,A{V{V{label},%s}}}}",
+                sprintf(buf, "N{N{q,N=%s,N=%s},A{p,A{V{V{label},N=%s}}}}",
                         RU(basetype), actualn, dn);
             else
-                sprintf(buf, "N{q,%s,%s}", RU(basetype), actualn);
+                sprintf(buf, "N{q,N=%s,N=%s}", RU(basetype), actualn);
         } else
-            sprintf(buf, "N{N{q,%s,%s},A{p,A{+,%s,A{V{V{label},%s}}}}}",
+            sprintf(buf, "N{N{q,N=%s,N=%s},A{p,A{+,A=%s,A{V{V{label},N=%s}}}}}",
                     RU(basetype), actualn, called, dn);
         return buf;
     }
@@ -456,17 +456,17 @@ char *
 fruitname(boolean juice)
 {
     char *buf = nextobuf();
-    const char *fruit_nam = strstri(pl_fruit, " of ");
+    const char *fruit_nam = strstri(pl_fruit, /*nointl*/" of ");
 
     if (fruit_nam)
-        fruit_nam += 4; /* skip past " of " */
+        fruit_nam += 4; /* skip past ' of ' */
     else
         fruit_nam = pl_fruit;   /* use it as is */
 
     if (juice)
-        sprintf(buf, "N{N{juice},A{N{\x1c%s\x1c}}", fruit_nam);
+        sprintf(buf, /*nointl*/"N{N{juice},A{N{\x1c%s\x1c}}", fruit_nam);
     else
-        sprintf(buf, "N{\x1c%s\x1c}", fruit_nam);
+        sprintf(buf, /*nointl*/"N{\x1c%s\x1c}", fruit_nam);
     return buf;
 }
 
@@ -490,24 +490,24 @@ examine_object(struct obj *obj)
         obj->bknown = TRUE;
 }
 
-#define ADD_ADJECTIVE(s) do {                   \
-        buf -= 2;                               \
-        buf[0] = 'N'; buf[1] = '{';             \
-        sprintf(eos(buf), ",%s}", (s));         \
-    }                                           \
+#define ADD_ADJECTIVE(s) do {                           \
+        buf -= 2;                                       \
+        buf[0] = 'N'; buf[1] = '{';                     \
+        sprintf(eos(buf), /*nointl*/",%s}", (s));       \
+    }                                                   \
     while(0)
-#define ADD_NOUN_MOD(c,s) do {                  \
-        buf -= 4;                               \
-        buf[0] = 'N'; buf[1] = '{';             \
-        buf[2] = c; buf[3] = ',';               \
-        sprintf(eos(buf), ",%s}", (s));         \
-    }                                           \
+#define ADD_NOUN_MOD(c,s) do {                          \
+        buf -= 4;                                       \
+        buf[0] = 'N'; buf[1] = '{';                     \
+        buf[2] = c; buf[3] = ',';                       \
+        sprintf(eos(buf), /*nointl*/",%s}", (s));       \
+    }                                                   \
     while(0)
-#define ADD_PREPOSITION(e,n) do {               \
-        buf -= 2;                               \
-        buf[0] = 'N'; buf[1] = '{';             \
-        sprintf(eos(buf), ",%s,%s}", (e), (n)); \
-    }                                           \
+#define ADD_PREPOSITION(e,n) do {                               \
+        buf -= 2;                                               \
+        buf[0] = 'N'; buf[1] = '{';                             \
+        sprintf(eos(buf), /*nointl*/",%s,%s}", (e), (n));       \
+    }                                                           \
     while(0)
 
 /* Name one particular object. This acts approximately like 3.4.3's xname() if
@@ -548,9 +548,9 @@ generic_xname(const struct obj *obj, boolean ignore_oquan,
        else ourselves, though.
 
        Small exception: with Amulets of Yendor (and the fake variety), we force
-       !nn if the "known" flag isn't set. (In other words, each has to be IDed
+       !nn if the 'known' flag isn't set. (In other words, each has to be IDed
        individually.) */
-    sprintf(buf, "%s", generic_typename(
+    sprintf(buf, "N=%s", generic_typename(
                 typ, FALSE, dknown, TRUE,
                 (typ == AMULET_OF_YENDOR ||
                  typ == FAKE_AMULET_OF_YENDOR) && !known,
@@ -566,7 +566,7 @@ generic_xname(const struct obj *obj, boolean ignore_oquan,
                 /* We need to add the uniquifier by hand here; and we need to
                    escape the name to mark it as user-entered (and in case it
                    contains grammartree metacharacters). */
-                sprintf(buf, "N{%d|\x1c%s\x1c}", obj->o_id, f->fname);
+                sprintf(buf, /*nointl*/"N{%d|\x1c%s\x1c}", obj->o_id, f->fname);
                 break;
             }
         }
@@ -595,9 +595,9 @@ generic_xname(const struct obj *obj, boolean ignore_oquan,
              (obj->oclass == RING_CLASS && objects[typ].oc_charged) ||
              is_weptool(obj))) {
             if (obj->spe >= 0)
-                sprintf(tbuf, "A{+%d}", obj->spe);
+                sprintf(tbuf, /*nointl*/"A{+%d}", obj->spe);
             else
-                sprintf(tbuf, "A{-%d}", -obj->spe);
+                sprintf(tbuf, /*nointl*/"A{-%d}", -obj->spe);
             ADD_ADJECTIVE(tbuf);
         }
         /* ...or charge counts */
@@ -679,7 +679,7 @@ generic_xname(const struct obj *obj, boolean ignore_oquan,
         sprintf(tbuf, "A{N=%s}", mons[obj->corpsenm].mname);
         ADD_ADJECTIVE(tbuf);
         if (obj->spe && precise_adjectives) {
-            sprintf(tbuf, "A{V{V{lay},N=%s}}", you);
+            sprintf(tbuf, "A{V{lay},N=%s}", you);
             ADD_ADJECTIVE(tbuf);
         }
     }
@@ -692,13 +692,13 @@ generic_xname(const struct obj *obj, boolean ignore_oquan,
     /* Tins have contents. The player might know what they are. */
     if (typ == TIN && known) {
         if (obj->spe > 0)
-            ADD_NOUN_MOD('l', "N{spinach}");
+            ADD_NOUN_MOD('l', "N{o,spinach}");
         else if (obj->corpsenm == NON_PM)
             ADD_ADJECTIVE("A{empty}");
         else if (vegetarian(&mons[obj->corpsenm]))
-            ADD_NOUN_MOD('l', mons[obj->corpsenm].mname);
+            ADD_NOUN_MOD('l', remodify('o',mons[obj->corpsenm].mname));
         else {
-            sprintf(tbuf, "N{N{meat},A{N=%s}}", mons[obj->corpsenm].mname);
+            sprintf(tbuf, "N{N{o,meat},A{N=%s}}", mons[obj->corpsenm].mname);
             ADD_NOUN_MOD('l', tbuf);
         }
     }
@@ -724,12 +724,12 @@ generic_xname(const struct obj *obj, boolean ignore_oquan,
         if (obj->oclass == POTION_CLASS && dknown && obj->odiluted)
             ADD_ADJECTIVE("A{V{dilute}}");
         if (obj->oclass == FOOD_CLASS && obj->orotten)
-            ADD_ADJECTIVE("A{V{rot}}");
+            ADD_ADJECTIVE("A{rotten}");
         if (is_rustprone(obj)) {
             switch(obj->oeroded) {
-            case 1: ADD_ADJECTIVE("A{V{rust}}"); break;
-            case 2: ADD_ADJECTIVE("A{A{V{rust}},D{very}}"); break;
-            case 3: ADD_ADJECTIVE("A{A{V{rust}},D{thoroughly}}"); break;
+            case 1: ADD_ADJECTIVE("A{rusty}"); break;
+            case 2: ADD_ADJECTIVE("A{A{rusty},D{very}}"); break;
+            case 3: ADD_ADJECTIVE("A{A{rusty},D{thoroughly}}"); break;
             }
         }
         if (is_flammable(obj)) {
@@ -748,9 +748,9 @@ generic_xname(const struct obj *obj, boolean ignore_oquan,
         }
         if (is_rottable(obj)) {
             switch(obj->oeroded2) {
-            case 1: ADD_ADJECTIVE("A{V{rot}}"); break;
-            case 2: ADD_ADJECTIVE("A{A{V{rot}},D{very}}"); break;
-            case 3: ADD_ADJECTIVE("A{A{V{rot}},D{thoroughly}}"); break;
+            case 1: ADD_ADJECTIVE("A{rotten}"); break;
+            case 2: ADD_ADJECTIVE("A{A{rotten},D{very}}"); break;
+            case 3: ADD_ADJECTIVE("A{A{rotten},D{thoroughly}}"); break;
             }
         }
         if (rknown && obj->oerodeproof) {
@@ -771,7 +771,7 @@ generic_xname(const struct obj *obj, boolean ignore_oquan,
         if (ignitable(obj) && obj->lamplit) ADD_ADJECTIVE("A{V{light}}");
 
         /* Blessed or cursed, if the player knows about it.
-           TODO: We could really do with a better word for "uncursed". */
+           TODO: We could really do with a better word for 'uncursed'. */
         if (bknown) {
             if (obj->cursed) ADD_ADJECTIVE("A{V{curse}}");
             else if (obj->blessed) ADD_ADJECTIVE("A{V{bless}}");
@@ -821,7 +821,7 @@ generic_xname(const struct obj *obj, boolean ignore_oquan,
         ADD_NOUN_MOD('f',"N{set}");
 
     if (obj->onamelth && dknown) {
-        sprintf(tbuf, "A{V{V{name},N{\x1c%s\x1c}}}", ONAME(obj));
+        sprintf(tbuf, /*nointl*/"A{V{V{name},N{\x1c%s\x1c}}}", ONAME(obj));
         ADD_ADJECTIVE(tbuf);
     }
 
@@ -953,9 +953,9 @@ killer_xname(const struct obj *obj_orig)
     obj->bknown = obj->rknown = obj->greased = 0;
     /* if character is a priest[ess], bknown will get toggled back on */
     obj->blessed = obj->cursed = 0;
-    /* "killed by poisoned <obj>" would be misleading when poison is not the
-       cause of death and "poisoned by poisoned <obj>" would be redundant when
-       it is, so suppress "poisoned" prefix */
+    /* 'killed by poisoned <obj>' would be misleading when poison is not the
+       cause of death and 'poisoned by poisoned <obj>' would be redundant when
+       it is, so suppress 'poisoned' prefix */
     obj->opoisoned = 0;
     /* strip user-supplied name; artifacts keep theirs */
     if (!obj->oartifact)
@@ -1002,7 +1002,7 @@ an(const char *str)
 }
 
 
-/* returns "your xname(obj)" or "Foobar's xname(obj)" or "the xname(obj)" */
+/* returns 'your xname(obj)' or 'Foobar's xname(obj)' or 'the xname(obj)' */
 char *
 yname(const struct obj *obj)
 {
@@ -1014,7 +1014,7 @@ yname(const struct obj *obj)
     return outbuf;
 }
 
-/* returns "your simple_typename(obj->otyp)", etc */
+/* returns 'your simple_typename(obj->otyp)', etc */
 
 char *
 ysimple_name(const struct obj *obj)
@@ -1049,7 +1049,7 @@ char *
 makeplural(const char *oldstr)
 {
     char *obuf = nextobuf();
-    sprintf(obuf, "N{*,%s}", oldstr);
+    sprintf(obuf, "N{*,N=%s}", oldstr);
     return obuf;
 }
 
@@ -2212,7 +2212,7 @@ typfnd:
         artifact_exists(otmp, ONAME(otmp), FALSE);
         obfree(otmp, NULL);
         otmp = &zeroobj;
-        pline("C{V{fail},N{wish}}!");
+        pline("C{N{wish},V{fail}}!");
     }
 
     if (halfeaten && otmp->oclass == FOOD_CLASS) {

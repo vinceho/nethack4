@@ -33,7 +33,8 @@
 
 %token N P V A D Q E C UNKNOWN END COMMA EOFTOKEN INVALIDCHAR
 %token FCOMMA MCOMMA NCOMMA ICOMMA PCOMMA CCOMMA OCOMMA LCOMMA SCOMMA TCOMMA
-%token ACOMMA DCOMMA ECOMMA QCOMMA MINUSCOMMA PLUSCOMMA STARCOMMA PERCENT_S
+%token ACOMMA DCOMMA ECOMMA QCOMMA MINUSCOMMA PLUSCOMMA STARCOMMA
+%token PERCENT_S PC_COMMA
 %token NEQUALS AEQUALS VEQUALS SEQUALS DEQUALS
 %token <s> LITERAL UNIQUIFIER S
 %token <i> COUNTCOMMA
@@ -114,6 +115,7 @@ literalinner2:
 literalinner:
   literalinner2               { $$ = $1; }
 | UNIQUIFIER literalinner2    { $$ = $2; $$->uniquifier = $1;    }
+| PC_COMMA literalinner       { $$ = $2; }
 | FCOMMA literalinner         { $$ = $2; $$->gender = gg_female; }
 | MCOMMA literalinner         { $$ = $2; $$->gender = gg_male;   }
 | NCOMMA literalinner         { $$ = $2; $$->gender = gg_neuter; }
@@ -128,6 +130,7 @@ verbish:
 | V verbish COMMA adjectivish END        { $$=mu($2,$4,0,verb,verb_VA); }
 | V verbish COMMA adverbish END          { $$=mu($2,$4,0,verb,verb_VD); }
 | V verbish COMMA verbish END            { $$=mu($2,$4,0,verb,verb_VV); }
+| V SCOMMA verbish COMMA verbish END     { $$=mu($3,$5,0,verb,verb_sVV); }
 | V MINUSCOMMA verbish END               { $$=mu($3, 0,0,verb,minus_V); }
 | V PLUSCOMMA verbish COMMA verbish END  { $$=mu($3,$5,0,verb,plus_VV); }
 | VEQUALS PERCENT_S                      {
@@ -159,6 +162,7 @@ nounish:
 | N MCOMMA anything END                  { $$=mu($3, 0, 0,noun,noun_mX); }
 | N nounish COMMA verbish END            { $$=mu($2,$4, 0,noun,noun_NV); }
 | N ACOMMA nounish COMMA verbish END     { $$=mu($3,$5, 0,noun,noun_aNV); }
+| N SCOMMA clausish END                  { $$=mu($3, 0, 0,noun,noun_sC); }
 | N MINUSCOMMA nounish END               { $$=mu($3, 0, 0,noun,minus_N); }
 | N PLUSCOMMA nounish COMMA nounish END  { $$=mu($3,$5, 0,noun,plus_NN); }
 | N SCOMMA FCOMMA nounish COMMA adjectivish END {

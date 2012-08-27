@@ -886,15 +886,17 @@ do_permonst(const char *outfile)
         fprintf(ofp, "\n#define\tPM_PLAYERMON\t(-1)");
 
     for (i = 0; mons[i].mlet; i++) {
+        char *monnam = malloc_parsestring(mons[i].mname, TRUE, FALSE);
         fprintf(ofp, "\n#define\tPM_");
-        if (mons[i].mlet == S_HUMAN && !strncmp(mons[i].mname, "were", 4))
+        if (mons[i].mlet == S_HUMAN && !strncmp(monnam, "were", 4))
             fprintf(ofp, "HUMAN_");
-        for (nam = c = tmpdup(mons[i].mname); *c; c++)
+        for (nam = c = monnam; *c; c++)
             if (*c >= 'a' && *c <= 'z')
                 *c -= (char)('a' - 'A');
             else if (*c < 'A' || *c > 'Z')
                 *c = '_';
         fprintf(ofp, "%s\t%d", nam, i);
+        free(monnam);
     }
     fprintf(ofp, "\n\n#define\tNUMMONS\t%d\n", i);
     fprintf(ofp, "\n#endif /* PM_H */\n");

@@ -67,7 +67,7 @@ V{V{open},D{slowly}}
 "slowly opens"
 
 VV                                 Verb with secondary verb
-V{V{can},V{open}}
+V{V{can},V{V{open},N{door}}}
 "can open the door"
 
 (In English, secondary verbs are either chained with the primary, as in "can
@@ -81,12 +81,13 @@ Primary verbs whose secondary is chained directly in English:
 can, had better, should, may
 
 Primary verbs whose secondary is chained via an infinitive in English:
-are, begin, want, choose, strain, have, fail, wait for, try, pick
+are, begin, want, choose, strain, have, fail, wait for, try, pick, see
 
 Primary verbs whose secondary is chained via a participle in English:
-stop
+stop, like
 (also many verbs in the previous list, but the infinitive tends to be more
-natural)
+natural; "like" can just-about work with the infinitive, but the participle is
+more natural, especially in the passive)
 
 "do" and "have" used as grammatical entities in English have their own rules,
 but don't appear in the trees. Also, chained-directly primaries tend to be
@@ -107,6 +108,14 @@ with this that don't form their imperfect with -d (ending in -e) or -ed
 before their imperfect, are listed here:
 are, have, read
 
+sVV                                Verb with passive secondary verb
+V{V{can},V{open}}
+"can be opened"
+V{V{begin},V{open}}
+"begins to be opened"
+V{V{stop},V{open}}
+"stops being opened"
+
 NA, PA                             Noun with adjective
 N{N{potion},A{orange}}
 "orange potion"
@@ -120,8 +129,9 @@ N{2,N{123|dagger}}           N{*,N{rune}}
 "2 daggers", "two daggers"   "runes"
 
 f,N,A, f,N,N                       Noun with fractional quantity
-N{f,N{*,N{dagger}},A{2}}                       N{f,N{cake},N{slice}}
+N{f,N{*,N{dagger}},A{2}}                       N{f,N{slice},N{cake}}
 "2 of the daggers", "two of the daggers"       "slice of cake"
+(Note that f,N,N is backwards; this is to get the articles right.)
 
 s,f,N,A                            Noun with unit quanitity
 N{s,f,N{*,N{dagger}},A{1}}
@@ -139,7 +149,7 @@ l,N,N                              Noun with limitation
 N{l,N{information},N{dungeoneering}}
 "information about dungeoneering"
 Choosing between "about" and "of" is problematic. So far, this is used with:
-of: knowledge, imitation
+of: knowledge, imitation, a given type
 about:
 
 m,anything                         Mention a sentence fragment
@@ -172,11 +182,11 @@ D{D{slowly},D{excruciatingly}}
 t,N                                Item used to perform something
 D{t,N{i,hammer}}
 "with a hammer"
-English also allows a contraction if this is used on a participle:
-C{s,p,V{V{damage},?{},D{t,N{water}}}}
-"it is damaged with water", "it is damaged by water", or "it is water-damaged"
-The first case is a little unnatural, and the second is probably hard to
-automate without a dictionary of special cases, so let's use the third :)
+D{t,N{o,water}}
+"by water"
+The choice between "with" and "by" is awkward; "by" is mostly used on abstract
+nouns. The choice is made in this engine via looking at the article; if it's
+excluded by o, then "by" is used, otherwise "with".
 
 l,N, a,N                           Location where something happens
 D{l,N{door}}     D{a,P{Gehennom}}
@@ -238,6 +248,12 @@ noun they're modifying in English, rather than just before like most adjectives.
 a,NV                               A noun that is verbing
 N{a,N{1|newt},V{V{hit},P{12|Dudley}}}
 "The newt hitting you", "The newt hitting Dudley"
+
+s,C                                The object of a clause
+N{s,C{P{12|Dudley},V{V{hit},N{1|newt}}}}
+"The newt that you hit", "The newt that Dudley hits"
+N{s,C{c,P{12|Dudley},V{V{hit},N{1|newt}}}}
+"The newt that you are hitting", "The newt that Dudley is hitting"
 
 NN                                 A noun limited by a noun
 N{N{corpse},N{gnome}}

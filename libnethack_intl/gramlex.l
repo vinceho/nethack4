@@ -40,6 +40,7 @@ LIT [^{},|=%*+\x1c]
 "S="          return SEQUALS;
 "D="          return DEQUALS;
 "%s"          return PERCENT_S;
+"%c,"         return PC_COMMA;
 "S{"[^}]*"}"  { yylval->s = malloc(yyleng-2); yytext[yyleng-1] = 0;
                 strcpy(yylval->s, yytext+2); return S; }
 ","           return COMMA;
@@ -63,6 +64,7 @@ LIT [^{},|=%*+\x1c]
 "?{}"         return UNKNOWN;
 [0-9]+","     yylval->i = atoi(yytext); return COUNTCOMMA;
 "%d,"         yylval->i = (1 << 28); return COUNTCOMMA;
+"%ld,"        yylval->i = (1 << 28); return COUNTCOMMA;
 {UI}"|"       { yylval->s = malloc(yyleng); yytext[yyleng-1] = 0;
                 strcpy(yylval->s, yytext); return UNIQUIFIER; }
 {LIT}+/[^{=]  { yylval->s = malloc(yyleng+1); strcpy(yylval->s, yytext);

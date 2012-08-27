@@ -56,6 +56,7 @@ static boolean
 verb_chains_via_participle(const char *s)
 {
     if (!strcmp(s, "stop")) return TRUE;
+    if (!strcmp(s, "like")) return TRUE;
     return FALSE;
 }
 
@@ -66,10 +67,14 @@ verb_chains_via_passive(const char *s)
     return FALSE;
 }
 
+/* Verbs where the final consonant is repeated when suffixed, e.g. "flagged",
+   not "flaged", is the passive participle of "flag" */
 static boolean
 stem_doubles_consonant(const char* s)
 {
     if (!strcmp(s, "flag")) return TRUE;
+    if (!strcmp(s, "rot")) return TRUE;
+    if (!strcmp(s, "equip")) return TRUE;
     return FALSE;
 }
 
@@ -547,9 +552,28 @@ special_case_verb(char *obuf, const char *v, enum tense t,
         }
         return FALSE; /* other cases are regular */
     }
+    if (!strcmp(v, "burn")) {
+        /* "I burned", "I have burned", but "I am burnt"; we don't currently
+           cover the second case because it isn't used and we don't have
+           enough information to distinguish it from the third */
+        if (t == passive_participle) { strcpy(obuf, "burnt"); return TRUE; }
+        return FALSE; /* other cases are regular */
+    }
     if (!strcmp(v, "know")) {
         if (t == imperfect) { strcpy(obuf, "knew"); return TRUE; }
         if (t == passive_participle) { strcpy(obuf, "known"); return TRUE; }
+        return FALSE; /* other cases are regular */
+    }
+    if (!strcmp(v, "lay")) {
+        if (t == imperfect || t == passive_participle) {
+            strcpy(obuf, "laid");
+            return TRUE;
+        }
+        return FALSE; /* other cases are regular */
+    }
+    if (!strcmp(v, "eat")) {
+        if (t == passive_participle) { strcpy(obuf, "eaten"); return TRUE; }
+        if (t == imperfect) { strcpy(obuf, "ate"); return TRUE; }
         return FALSE; /* other cases are regular */
     }
     if (!strcmp(v, "are")) {
@@ -855,12 +879,6 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                              u->children[0]->content, " of ");
         return nounperson;
     case noun_fNN: /* "the slice of cake" */
-        nounperson = force_unit(u->children[1], t, quan, p);
-        force_unit(u->children[0], t,
-                   u->children[0]->quan | (1 << 30) | (1 << 27), p);
-        u->content = astrcat(u->children[1]->content,
-                             u->children[0]->content, " of ");
-        return nounperson;
     case noun_qNN: /* "boots of speed" */
         nounperson = force_unit(u->children[0], t, quan, p);
         force_unit(u->children[1], object,
@@ -1028,7 +1046,8 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
            V{V{V{choose},V{cast}},N{i,spell}} means the /former/ (the latter is
            V{V{choose},V{V{cast},N{i,spell}}}). */
         if (u->children[0]->rule == verb_VD ||
-            u->children[0]->rule == verb_VV) {
+            u->children[0]->rule == verb_VV ||
+            u->children[0]->rule == verb_sVV) {
             struct grammarunit *temp_child = u->children[1];
             enum grammarrule temp_rule = u->rule;
             u->children[1] = u->children[0]->children[1];
@@ -1039,9 +1058,43 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         }
         force_unit(u->children[0], t, quan, p);
         force_unit(u->children[1], object, u->children[1]->quan, base);
-        u->content = astrcat(u->children[0]->content,
-                             u->children[1]->content, " ");
+        /* If the noun is tagged, surround it with \x1e. */
+        if (u->children[1]->tagged) {
+            char *tx;
+            tx = astrcat(u->children[0]->content,
+                         u->children[1]->content, " \x1e");
+            u->content = astrcat(tx, "\x1e", "");
+            free(tx);
+        } else
+            u->content = astrcat(u->children[0]->content,
+                                 u->children[1]->content, " ");
         break;
+    case verb_sVV:
+        /* We change this to a verb_VV with the secondary verb behind
+           "are^passive", then tail-recurse. */
+    {
+        struct grammarunit *w;
+        w = malloc(sizeof(struct grammarunit));
+        w->role = gr_verb;
+        w->rule = verb_VV;
+        w->children[0] = malloc(sizeof(struct grammarunit));
+        w->children[0]->role = gr_verb;
+        w->children[0]->rule = gr_literal;
+        w->children[0]->children[0] = 0;
+        w->children[0]->children[1] = 0;
+        w->children[0]->children[2] = 0;
+        w->children[1] = u->children[1];
+        u->children[1] = w;
+        w->children[2] = 0;
+        w->uniquifier = w->children[0]->uniquifier = 0;
+        w->quan = w->children[0]->quan = 1;
+        w->gender = w->children[0]->gender = gg_unknown;
+        w->tagged = w->children[0]->tagged = FALSE;
+        w->content = 0;
+        w->children[0]->content = astrcat("", "are^passive", "");
+        u->rule = verb_VV;
+        return force_unit(u, t, quan, p);
+    }
     case verb_VV:
         /* Move VD outside VV, for the same reason we move both outside VN and
            VA. */
@@ -1123,9 +1176,12 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         u->content = astrcat(u->children[1]->content,
                              u->children[0]->content, " ");
         break;
-    case adverb_tN: /* "with a hammer" */
+    case adverb_tN: /* "with a hammer", "by water" */
         force_unit(u->children[0], object, u->children[0]->quan, base);
-        u->content = astrcat("", u->children[0]->content, "with ");
+        if (u->children[0]->quan & (1 << 27))
+            u->content = astrcat("", u->children[0]->content, "by ");
+        else
+            u->content = astrcat("", u->children[0]->content, "with ");
         break;
     case adverb_lN: /* "at the door" */
     case adjective_lN:
@@ -1233,7 +1289,10 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             strspn(u->children[0]->content, "0123456789") !=
             strlen(u->children[0]->content)) {
             force_unit(u->children[0], t, quan, p);
-            u->content = astrcat("", u->children[0]->content, "");
+            if (!strcmp(u->children[0]->content, "%d"))
+                u->content = astrcat("", "%dth", "");
+            else 
+                u->content = astrcat("", u->children[0]->content, "");
         } else {
             u->content = anumbername(atoi(u->children[0]->content), TRUE);
         }
@@ -1290,7 +1349,8 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         int cnumber = 0;
         v = u;
         while (TRUE) {
-            cnumber = (move_to_secondaries && v->rule == verb_VV) ? 1 : 0;
+            cnumber = (move_to_secondaries &&
+                       (v->rule == verb_VV || v->rule == verb_sVV)) ? 1 : 0;
 
             if (v->children[cnumber]->rule == gr_literal) {
                 /* This is a little awkward. We get here in the case "something
@@ -1311,7 +1371,8 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                 }
                 move_to_secondaries = TRUE;
                 v = u;
-                cnumber = (move_to_secondaries && v->rule == verb_VV) ? 1 : 0;
+                cnumber = (move_to_secondaries &&
+                           (v->rule == verb_VV || v->rule == verb_sVV)) ? 1 : 0;
             }
 
             if (v->children[cnumber]->rule == verb_VN) break;
@@ -1353,8 +1414,82 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                    u->rule == clause_isV ? imperfect :
                    u->rule == clause_psV ? perfect : continuous,
                    v->quan, nounperson);
-        u->content = astrcat(v->content, u->children[0]->content, " ");
+        if (v->tagged) {
+            char *tx = astrcat("\x1e", "\x1e", v->content);
+            u->content = astrcat(tx, u->children[0]->content, " ");
+            free(tx);
+        } else
+            u->content = astrcat(v->content, u->children[0]->content, " ");
         free_grammarunit(v); /* now free v, x already freed, x->0 still on tree */
+        break;
+    }
+    case noun_sC: /* "the newt that you hit" */
+    {
+        /* This is basically a case of tagging the object, and moving it to
+           the start of the sentence after forcing. We find the object much
+           the same way as for passive clauses. (Note that noun_sC works on
+           passive clauses themselves; we mark the object, and it gets moved
+           to the start of the sentence, then to the start of the sentence
+           again, and the main difference is the addition of "that".) */
+        struct grammarunit *v, *w;
+        boolean move_to_secondaries = FALSE;
+        int cnumber = 0;
+        v = u->children[0];
+        if (v->rule == clause_NV  || v->rule == clause_iNV ||
+            v->rule == clause_pNV || v->rule == clause_cNV)
+            v = v->children[1];
+        else v = v->children[0];
+        w = v;
+        while (TRUE) {
+            cnumber = (move_to_secondaries &&
+                       (v->rule == verb_VV || v->rule == verb_sVV)) ? 1 : 0;
+
+            if (v->children[cnumber]->rule == gr_literal) {
+                if (move_to_secondaries) {
+                    u->content = astrcat(
+                        "", "(ERROR: noun_sC with no object)", "");
+                    return base;
+                }
+                move_to_secondaries = TRUE;
+                v = w;
+                cnumber = (move_to_secondaries &&
+                           (v->rule == verb_VV || v->rule == verb_sVV)) ? 1 : 0;
+            }
+
+            if (v->children[cnumber]->rule == verb_VN) break;
+            v = v->children[cnumber];
+        }
+        v->children[cnumber]->children[1]->tagged = TRUE; /* tag it */
+        force_unit(u->children[0], present, 1, base);
+        /* Look for the \x1e markers. We want to remove them, the noun
+           between them, and one surrounding space. We remove the space
+           before the first \x1e, unless it's at the start of the sentence. */
+        if (*u->children[0]->content == '\x1e') {
+            char *tx = strchr(u->children[0]->content+1, '\x1e');
+            if (!tx) {
+                u->content = astrcat("", "(ERROR: unmatched \\x1e)", "");
+                return base;
+            }
+            *tx = '\0'; tx++;
+            u->content = astrcat(u->children[0]->content+1, tx, " that");
+        } else {
+            char *tx = strchr(u->children[0]->content, '\x1e');
+            char *ty;
+            if (!tx) {
+                u->content = astrcat("", "(ERROR: missing \\x1e)", "");
+                return base;
+            }
+            tx[-1] = '\0';
+            ty = strchr(tx+1, '\x1e');
+            if (!ty) {
+                u->content = astrcat("", "(ERROR: unmatched \\x1e)", "");
+                return base;
+            }
+            *ty = '\0'; ty++;
+            ty = astrcat(u->children[0]->content, ty, "");
+            u->content = astrcat(tx+1, ty, " that ");
+            free(ty);
+        }
         break;
     }
     case clause_iV: /* "go away" */

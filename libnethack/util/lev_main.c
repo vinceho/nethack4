@@ -331,9 +331,15 @@ get_monster_id(char *s, char c)
         return ERR;
 
     for (i = LOW_PM; i < NUMMONS; i++)
-        if (!class || class == mons[i].mlet)
-            if (!strcmp(s, mons[i].mname))
+        if (!class || class == mons[i].mlet) {
+            char *name;
+            name = malloc_parsestring(mons[i].mname, TRUE, FALSE);
+            if (!strcmp(s, name)) {
+                free(name);
                 return i;
+            }
+            free(name);
+        }
     return ERR;
 }
 

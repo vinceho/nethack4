@@ -47,12 +47,14 @@ do_mname(void)
     char qbuf[QBUFSZ];
 
     if (Hallucination) {
-        pline("You would never recognize it anyway.");
+        pline("C{-,C{N=%s,V{V{can},V{V{tell apart},N{*,N{i,monster}}}}}}!", you);
         return 0;
     }
     cc.x = u.ux;
     cc.y = u.uy;
-    if (getpos(&cc, FALSE, "the monster you want to name") < 0 ||
+    /* literal 'you' is OK in getpos */
+    if (getpos(&cc, FALSE,
+               "N{s,C{N{you},V{V{want},V{V{name},N{monster}}}}}") < 0 ||
         (cx = cc.x) < 0)
         return 0;
     cy = cc.y;
@@ -61,10 +63,13 @@ do_mname(void)
         if (u.usteed && canspotmon(u.usteed))
             mtmp = u.usteed;
         else {
-            pline("This %s creature is called %s and cannot be renamed.",
-                  ACURR(A_CHA) >
-                  14 ? (flags.female ? "beautiful" : "handsome") : "ugly",
-                  plname);
+            pline("C{+,C{s,V{V{V{call},N{m,S{\x1c%s\x1c}}},"
+                  "N{N{%c,x%dy%d|creature},A=%s}}},"
+                  "C{-,C{N{%c,x%dy%d|creature},V{s,V{can},V{rename}}}}}.",
+                  plname, flags.female ? 'f' : 'm', u.ux, u.uy,
+                  ACURR(A_CHA) > 14 ?
+                  (flags.female ? "A{beautiful}" : "A{handsome}") :
+                  "A{ugly}", flags.female ? 'f' : 'm', u.ux, u.uy);
             return 0;
         }
     } else
@@ -75,12 +80,13 @@ do_mname(void)
          (!(cansee(cx, cy) || see_with_infrared(mtmp)) || mtmp->mundetected ||
           mtmp->m_ap_type == M_AP_FURNITURE || mtmp->m_ap_type == M_AP_OBJECT ||
           (mtmp->minvis && !See_invisible)))) {
-        pline("I see no monster there.");
+        pline("C{-,C{N{I},V{V{V{see},N{i,monster}},D{there}}}}.");
         return 0;
     }
     /* special case similar to the one in lookat() */
-    distant_monnam(mtmp, ARTICLE_THE, buf);
-    sprintf(qbuf, "What do you want to call %s?", buf);
+    distant_monnam(mtmp, buf);
+    sprintf(qbuf, "C{q,C{N=%s,V{V{want},V{V{V{call},N=%s},N{what}}}}}?",
+            you, buf);
     getlin(qbuf, buf);
     if (!*buf || *buf == '\033')
         return 0;
@@ -88,9 +94,9 @@ do_mname(void)
     mungspaces(buf);
 
     if (mtmp->data->geno & G_UNIQ) {
-        distant_monnam(mtmp, ARTICLE_THE, buf);
+        distant_monnam(mtmp, buf);
         *buf = highc(*buf);
-        pline("%s doesn't like being called names!", buf);
+        pline("C{-,C{N=%s,V{s,V{like},V{V{call},N{*,N{i,name}}}}}}!", buf);
     } else
         christen_monst(mtmp, buf);
     return 0;
@@ -108,8 +114,8 @@ do_oname(struct obj *obj)
     const char *aname;
     short objtyp;
 
-    sprintf(qbuf, "What do you want to name %s %s?",
-            is_plural(obj) ? "these" : "this", xname(obj));
+    sprintf(qbuf, "C{q,C{N=%s,V{V{want},V{V{V{name},N=%s},N{what}}}}}?",
+            you, xname(obj));
     getlin(qbuf, buf);
     if (!*buf || *buf == '\033')
         return;
@@ -121,7 +127,7 @@ do_oname(struct obj *obj)
         strcpy(buf, aname);
 
     if (obj->oartifact) {
-        pline("The artifact seems to resist the attempt.");
+        pline("C{N{artifact},V{V{seem},V{V{resist},N{attempt}}}}.");
         return;
     } else if (restrict_name(obj, buf) || exist_artifact(obj->otyp, buf)) {
         int n = rn2((int)strlen(buf));
@@ -132,9 +138,8 @@ do_oname(struct obj *obj)
             c2 = 'a' + rn2('z' - 'a' + 1);
         while (c1 == c2);
         buf[n] = (buf[n] == c1) ? c2 : highc(c2);       /* keep same case */
-        pline("While engraving your %s slips.", body_part(HAND));
-        win_pause_output(P_MESSAGE);
-        pline("You engrave: \"%s\".", buf);
+        pline("C{N{o,N=%s,N=%s},V{V{slip},D{Q{while},C{N=%s,V{engrave}}}}}.",
+              body_part(HAND), you, you);
     }
     oname(obj, buf);
 }
@@ -245,7 +250,7 @@ oname(struct obj *obj, const char *name)
         /* can't dual-wield with artifact as secondary weapon */
         if (obj == uswapwep)
             untwoweapon();
-        /* activate warning if you've just named your weapon "Sting" */
+        /* activate warning if you've just named your weapon 'Sting' */
         if (obj == uwep)
             set_artifact_intrinsic(obj, TRUE, W_WEP);
     }
@@ -266,13 +271,9 @@ docall_inner(int otyp)
     char **str1;
     char *ot = obj_typename(otyp);
 
-    strcpy(qbuf, "Call ");
-    if (strstr(ot, " boots") || strstr(ot, " gloves"))
-        strncpy(qbuf + 5, ot, QBUFSZ - 7);
-    else
-        strncpy(qbuf + 5, an(ot), QBUFSZ - 7);
-    qbuf[QBUFSZ - 2] = '\0';
-    strcpy(eos(qbuf), ":");
+    /* to help make it more intuitive what Cn does, we pluralize:
+       'Call orange potions:' */
+    sprintf(qbuf, "C{i,V{V{call},N{*,N=%s}}}:", simple_typename(otyp));
     getlin(qbuf, buf);
     if (!*buf || *buf == '\033')
         return;
@@ -308,20 +309,27 @@ do_naming(void)
 
     init_menulist(&menu);
 
-    add_menuitem(&menu, 1, "Name a monster", 'C', FALSE);
-    add_menuitem(&menu, 2, "Name the current level", 'f', FALSE);
-    add_menuitem(&menu, 3, "Name an individual item", 'y', FALSE);
-    add_menuitem(&menu, 4, "Name all items of a certain type", 'n', FALSE);
-    add_menuitem(&menu, 5, "Name an item type by appearance", 'A', FALSE);
+    add_menuitem(&menu, 1, "C{i,V{V{name},N{i,monster}}}", 'C', FALSE);
+    add_menuitem(&menu, 2, "C{i,V{V{name},N{N{level},A{current}}}}",
+                 'f', FALSE);
+    add_menuitem(&menu, 3, "C{i,V{V{name},N{N{i,item},A{individual}}}}",
+                 'y', FALSE);
+    add_menuitem(&menu, 4, "C{i,V{V{name},"
+                 "N{l,N{N{*,N{i,item}},A{all}},N{N{i,type},A{given}}}}}",
+                 'n', FALSE);
+    add_menuitem(&menu, 5, "C{i,V{V{V{name},N{N{i,type},A{N{item}}}},"
+                 "D{t,N{o,appearance}}}}", 'A', FALSE);
     if (flags.recently_broken_otyp != STRANGE_OBJECT) {
         char buf[BUFSZ];
 
-        sprintf(buf, "Name %s (recently broken)",
-                an(obj_typename(flags.recently_broken_otyp)));
+        sprintf(buf, "C{i,V{V{name},N{N{*,N{i,item}},"
+                "E{like},N{N=%s,A{p,A{A{broken},D{recently}}}}}}}",
+                obj_typename(flags.recently_broken_otyp));
         add_menuitem(&menu, 6, buf, 'V', FALSE);
     }
 
-    n = display_menu(menu.items, menu.icount, "What do you wish to name?",
+    n = display_menu(menu.items, menu.icount,
+                     "C{q,C{N{you},V{V{wish},V{V{name},N{what}}}}}?",
                      PICK_ONE, PLHINT_ANYWHERE, selected);
     free(menu.items);
     if (n)
@@ -342,19 +350,20 @@ do_naming(void)
 
         /* cases 2 & 3 duplicated from ddocall() */
     case 2:
-        obj = getobj(allowall, "name");
+        obj = getobj(allowall, "V{name}");
         if (obj)
             do_oname(obj);
         break;
     case 3:
-        obj = getobj(callable, "call");
+        obj = getobj(callable, "V{call}");
         if (obj) {
             /* behave as if examining it in inventory; this might set dknown if 
                it was picked up while blind and the hero can now see */
             xname(obj);
 
             if (!obj->dknown) {
-                pline("You would never recognize another one.");
+                pline("C{-,C{N=%s,V{V{can},V{V{V{see},N=%s},V{compare}}}}}.",
+                      you, xname(obj));
                 return 0;
             }
             docall_inner(obj->otyp);
@@ -405,8 +414,9 @@ do_naming(void)
             }
         }
         n = display_menu(menu.items, menu.icount,
-                         "Name items with which appearance?", PICK_ONE,
-                         PLHINT_INVENTORY, selected);
+                         "C{q,C{i,V{V{name},N{N{*,N{i,item}},"
+                         "E{with},N{N{o,appearance},A{which}}}}}}?",
+                         PICK_ONE, PLHINT_INVENTORY, selected);
         free(menu.items);
         if (n == 1)
             docall_inner(selected[0]);
@@ -434,13 +444,15 @@ docall(struct obj *obj)
     otemp.oxlth = 0;
     if (objects[otemp.otyp].oc_class == POTION_CLASS && otemp.fromsink)
         /* kludge, meaning it's sink water */
-        sprintf(buf,
-                "(You can name a stream of %s fluid from the item naming menu.)",
-                OBJ_DESCR(objects[otemp.otyp]));
+        sprintf(buf, "(C{N=%s,V{V{V{can},V{V{name},"
+                "N{f,N{i,stream},N{N{o,fluid},A=%s}}}},"
+                "D{t,N{N{menu},A{N{N{naming},A{N{item}}}}}}}})."
+                you, OBJ_DESCR(objects[otemp.otyp]));
     else
-        sprintf(buf, "(You can name %s from the item naming menu.)",
+        sprintf(buf, "(C{N=%s,V{V{V{can},V{V{name},N=%s}},"
+                "D{t,N{N{menu},A{N{N{naming},A{N{item}}}}}}}}).",
                 an(xname(&otemp)));
-    pline("%s", buf);
+    pline(/*nointl*/"%s", buf);
     flags.recently_broken_otyp = otemp.otyp;
 }
 
@@ -448,11 +460,12 @@ docall(struct obj *obj)
 static const char *const ghostnames[] = {
     /* these names should have length < PL_NSIZ */
     /* Capitalize the names for aesthetics -dgk */
-    "Adri", "Andries", "Andreas", "Bert", "David", "Dirk", "Emile",
-    "Frans", "Fred", "Greg", "Hether", "Jay", "John", "Jon", "Karnov",
-    "Kay", "Kenny", "Kevin", "Maud", "Michiel", "Mike", "Peter", "Robert",
-    "Ron", "Tom", "Wilmar", "Nick Danger", "Phoenix", "Jiro", "Mizue",
-    "Stephan", "Lance Braccus", "Shadowhawk"
+    "P{Adri}", "P{Andries}", "P{Andreas}", "P{Bert}", "P{David}", "P{Dirk}",
+    "P{Emile}", "P{Frans}", "P{Fred}", "P{Greg}", "P{Hether}", "P{Jay}",
+    "P{John}", "P{Jon}", "P{Karnov}", "P{Kay}", "P{Kenny}", "P{Kevin}",
+    "P{Maud}", "P{Michiel}", "P{Mike}", "P{Peter}", "P{Robert}", "P{Ron}",
+    "P{Tom}", "P{Wilmar}", "P{Nick Danger}", "P{Phoenix}", "P{Jiro}",
+    "P{Mizue}", "P{Stephan}", "P{Lance Braccus}", "P{Shadowhawk}"
 };
 
 /* ghost names formerly set by x_monnam(), now by makemon() instead */
@@ -761,9 +774,8 @@ Amonnam(const struct monst *mtmp)
 
 /* used for monster ID by the '/', ';', and 'C' commands to block remote
    identification of the endgame altars via their attending priests */
-/* article: only ARTICLE_NONE and ARTICLE_THE are handled here */
 char *
-distant_monnam(const struct monst *mon, int article, char *outbuf)
+distant_monnam(const struct monst *mon, char *outbuf)
 {
     /* high priest(ess)'s identity is concealed on the Astral Plane, unless
        you're adjacent (overridden for hallucination which does its own
