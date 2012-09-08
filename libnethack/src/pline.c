@@ -46,9 +46,7 @@ vpline(const char *line, va_list the_args)
     if (u.ux)
         flush_screen();
 
-    translated_line = malloc_parsestring(line);
-    strcpy(toplines[curline], translated_line);
-    free(translated_line);
+    strcpy(toplines[curline], line);
     line = toplines[curline++];
 
     if (no_repeat && !strcmp(line, toplines[curline]))

@@ -1164,6 +1164,8 @@ extern char *cxname2(const struct obj *obj);
 extern char *killer_xname(const struct obj *obj_orig);
 extern const char *singular(struct obj *, char *(*)(const struct obj *));
 extern char *an(const char *);
+extern char *remove_the(const char *);
+extern char *add_uniquifier(int uniquifier, const char *oldnoun);
 extern char *yname(const struct obj *);
 extern char *ysimple_name(const struct obj *);
 extern char *makesingular(const char *);

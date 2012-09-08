@@ -74,7 +74,7 @@ get_mplname(struct monst *mtmp, char *nam)
     devnam = dev_name();
     if (!devnam)
         strcpy(nam, fmlkind ? "Eve" : "Adam");
-    else if (fmlkind && ! !strcmp(devnam, "Janet"))
+    else if (fmlkind && strcmp(devnam, "Janet"))
         strcpy(nam, rn2(2) ? "Maud" : "Eve");
     else
         strcpy(nam, devnam);

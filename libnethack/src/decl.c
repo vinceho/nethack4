@@ -142,22 +142,22 @@ struct monst *migrating_mons;
 struct mvitals mvitals[NUMMONS];
 
 const char *const c_obj_colors[] = {
-    "black",    /* CLR_BLACK */
-    "red",      /* CLR_RED */
-    "green",    /* CLR_GREEN */
-    "brown",    /* CLR_BROWN */
-    "blue",     /* CLR_BLUE */
-    "magenta",  /* CLR_MAGENTA */
-    "cyan",     /* CLR_CYAN */
-    "gray",     /* CLR_GRAY */
-    "transparent",      /* no_color */
-    "orange",   /* CLR_ORANGE */
-    "bright green",     /* CLR_BRIGHT_GREEN */
-    "yellow",   /* CLR_YELLOW */
-    "bright blue",      /* CLR_BRIGHT_BLUE */
-    "bright magenta",   /* CLR_BRIGHT_MAGENTA */
-    "bright cyan",      /* CLR_BRIGHT_CYAN */
-    "white",    /* CLR_WHITE */
+    "A{black}",    /* CLR_BLACK */
+    "A{red}",      /* CLR_RED */
+    "A{green}",    /* CLR_GREEN */
+    "A{brown}",    /* CLR_BROWN */
+    "A{blue}",     /* CLR_BLUE */
+    "A{magenta}",  /* CLR_MAGENTA */
+    "A{cyan}",     /* CLR_CYAN */
+    "A{gray}",     /* CLR_GRAY */
+    "A{transparent}",      /* no_color */
+    "A{orange}",   /* CLR_ORANGE */
+    "A{A{green},D{bright}}",     /* CLR_BRIGHT_GREEN */
+    "A{yellow}",   /* CLR_YELLOW */
+    "A{A{blue},D{bright}}",      /* CLR_BRIGHT_BLUE */
+    "A{A{magenta},D{bright}}",   /* CLR_BRIGHT_MAGENTA */
+    "A{A{cyan},D{bright}}",      /* CLR_BRIGHT_CYAN */
+    "A{white}",    /* CLR_WHITE */
 };
 
 const char *const the_your[] = { "the", "your" };
@@ -165,10 +165,12 @@ const char *const the_your[] = { "the", "your" };
 /* NOTE: the order of these words exactly corresponds to the
    order of oc_material values #define'd in objclass.h. */
 const char *const materialnm[] = {
-    "mysterious", "liquid", "wax", "organic", "flesh",
-    "paper", "cloth", "leather", "wooden", "bone", "dragonhide",
-    "iron", "metal", "copper", "silver", "gold", "platinum", "mithril",
-    "plastic", "glass", "gemstone", "stone"
+    "A{mysterious}", "A{liquid}", "A{N{o,wax}}", "A{organic}", "A{N{o,flesh}}",
+    "A{N{o,paper}}", "A{N{o,cloth}}", "A{N{o,leather}}", "A{N{o,wooden}",
+    "A{N{o,bone}}", "A{N{o,dragonhide}}", "A{N{o,iron}}", "A{N{o,metal}}",
+    "A{N{o,copper}}", "A{N{o,silver}}", "A{N{o,gold}}", "A{N{o,platinum}}",
+    "A{N{o,mithril}}", "A{N{o,plastic}}", "A{N{o,glass}}", "A{N{o,gemstone}}",
+    "A{N{o,stone}}"
 };
 
 /* Vision */
@@ -178,7 +180,11 @@ char **viz_array;       /* used in cansee() and couldsee() macros */
 char *fqn_prefix[PREFIX_COUNT] = { NULL, NULL, NULL, NULL, NULL };
 
 const char *const fqn_prefix_names[PREFIX_COUNT] = {
-    "bonesdir", "datadir", "scoredir", "lockdir", "troubledir"
+    /*nointl*/"bonesdir",
+    /*nointl*/"datadir",
+    /*nointl*/"scoredir",
+    /*nointl*/"lockdir",
+    /*nointl*/"troubledir"
 };
 
 

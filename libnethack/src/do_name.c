@@ -84,7 +84,7 @@ do_mname(void)
         return 0;
     }
     /* special case similar to the one in lookat() */
-    distant_monnam(mtmp, buf);
+    distant_monnam(mtmp, ARTICLE_THE, buf);
     sprintf(qbuf, "C{q,C{N=%s,V{V{want},V{V{V{call},N=%s},N{what}}}}}?",
             you, buf);
     getlin(qbuf, buf);
@@ -94,7 +94,7 @@ do_mname(void)
     mungspaces(buf);
 
     if (mtmp->data->geno & G_UNIQ) {
-        distant_monnam(mtmp, buf);
+        distant_monnam(mtmp, ARTICLE_THE, buf);
         *buf = highc(*buf);
         pline("C{-,C{N=%s,V{s,V{like},V{V{call},N{*,N{i,name}}}}}}!", buf);
     } else
@@ -269,7 +269,6 @@ docall_inner(int otyp)
 {
     char buf[BUFSZ], qbuf[QBUFSZ];
     char **str1;
-    char *ot = obj_typename(otyp);
 
     /* to help make it more intuitive what Cn does, we pluralize:
        'Call orange potions:' */
@@ -446,12 +445,12 @@ docall(struct obj *obj)
         /* kludge, meaning it's sink water */
         sprintf(buf, "(C{N=%s,V{V{V{can},V{V{name},"
                 "N{f,N{i,stream},N{N{o,fluid},A=%s}}}},"
-                "D{t,N{N{menu},A{N{N{naming},A{N{item}}}}}}}})."
+                "D{t,N{N{menu},A{N{N{naming},A{N{item}}}}}}}}).",
                 you, OBJ_DESCR(objects[otemp.otyp]));
     else
         sprintf(buf, "(C{N=%s,V{V{V{can},V{V{name},N=%s}},"
                 "D{t,N{N{menu},A{N{N{naming},A{N{item}}}}}}}}).",
-                an(xname(&otemp)));
+                you, an(xname(&otemp)));
     pline(/*nointl*/"%s", buf);
     flags.recently_broken_otyp = otemp.otyp;
 }
@@ -496,12 +495,8 @@ rndghostname(void)
 char *
 x_monnam(const struct monst *mtmp,
          int article, /* ARTICLE_NONE, ARTICLE_THE, ARTICLE_A: obvious
-                         ARTICLE_YOUR: "your" on pets, "the" on
-                         everything else
-                         If the monster would be referred to as "it"
-                         or if the monster has a name _and_ there is
-                         no adjective, "invisible", "saddled", etc.,
-                         override this and always use no article. */
+                         ARTICLE_YOUR: 'your' on pets,'the' on
+                         everything else */
          const char *adjective,
          int suppress,   /* SUPPRESS_IT, SUPPRESS_INVISIBLE,
                             SUPPRESS_HALLUCINATION,
@@ -513,8 +508,7 @@ x_monnam(const struct monst *mtmp,
 
     const struct permonst *mdat = mtmp->data;
     boolean do_hallu, do_invis, do_it, do_saddle;
-    boolean name_at_start, has_adjectives;
-    char *bp;
+    char *bp, *sn;
 
     if (program_state.gameover)
         suppress |= SUPPRESS_HALLUCINATION;
@@ -529,12 +523,16 @@ x_monnam(const struct monst *mtmp,
         !(suppress & SUPPRESS_IT);
     do_saddle = !(suppress & SUPPRESS_SADDLE);
 
-    buf[0] = 0;
+    bp = buf + 12; /* leave room for 6 adjectives */
+    bp[0] = 0;
 
-    /* unseen monsters, etc.  Use "it" */
+    /* unseen monsters, etc. We have a marker for this nowadays. (It doesn't
+       get a uniquifier for the time being so that the player can't track
+       out-of-sight monsters via pronouns. We might want to change that,
+       though; it'll just take careful consideration before we do.) */
     if (do_it) {
-        strcpy(buf, "it");
-        return buf;
+        strcpy(bp, "?{}");
+        return bp;
     }
 
     /* priests and minions: don't even use this function */
@@ -554,124 +552,99 @@ x_monnam(const struct monst *mtmp,
             priestmon->minvis = 0;
         name = priestname(priestmon, priestnambuf);
         EHalluc_resistance = save_prop;
-        if (article == ARTICLE_NONE && !strncmp(name, "the ", 4))
-            name += 4;
-        strcpy(buf, name);
+        if (article == ARTICLE_NONE) name = remove_the(name);
+        strcpy(bp, name);
         free(priestmon);
-        return buf;
+        return add_uniquifier(mtmp->m_id, bp);
     }
 
     /* Shopkeepers: use shopkeeper name.  For normal shopkeepers, just
-       "Asidonhopo"; for unusual ones, "Asidonhopo the invisible shopkeeper" or 
-       "Asidonhopo the blue dragon".  If hallucinating, none of this applies. */
+       'Asidonhopo'; for unusual ones, 'Asidonhopo the invisible shopkeeper' or 
+       'Asidonhopo the blue dragon'.  If hallucinating, none of this applies. */
     if (mtmp->isshk && !do_hallu) {
-        if (adjective && article == ARTICLE_THE) {
-            /* pathological case: "the angry Asidonhopo the blue dragon" sounds 
-               silly */
-            strcpy(buf, "the ");
-            strcat(strcat(buf, adjective), " ");
-            strcat(buf, shkname(mtmp));
-            return buf;
+        /* 3.4.3 has a pathological case here that needs sorting out:
+           'Asidonhopo'
+           "P{Asidonhopo}"
+           'Asidonhopo the blue dragon'
+           "N{P{Asidonhopo},A{N{N{dragon},A{blue}}}}"
+           'the angry Asidonhopo'
+           "N{P{Asidonhopo},A{angry}}"
+           'Asidonhopo the angry blue dragon'
+           "N{N{P{Asidonhopo},A{N{N{dragon},A{blue}}}},A{angry}}"
+           Instead of trying to handle this ourselves, we push it onto the
+           grammar code. (Especially because languages other than English may
+           use different rules.) */
+        sn = shkname(mtmp);
+        if (mdat == &mons[PM_SHOPKEEPER] && !do_invis) {
+            strcpy(bp, sn);
+            return add_uniquifier(mtmp->m_id, bp);
         }
-        strcat(buf, shkname(mtmp));
-        if (mdat == &mons[PM_SHOPKEEPER] && !do_invis)
-            return buf;
-        strcat(buf, " the ");
         if (do_invis)
-            strcat(buf, "invisible ");
-        strcat(buf, mdat->mname);
-        return buf;
+            sprintf(bp, "N{N{N=%s,A{N=%s}},A{invisible}}", sn, mdat->mname);
+        else
+            sprintf(bp, "N{N=%s,A{N=%s}}", sn, mdat->mname);
+        return add_uniquifier(mtmp->m_id, bp);
     }
 
-    /* Put the adjectives in the buffer */
-    if (adjective)
-        strcat(strcat(buf, adjective), " ");
-    if (do_invis)
-        strcat(buf, "invisible ");
-
-    if (do_saddle && (mtmp->misc_worn_check & W_SADDLE) && !Blind &&
-        !Hallucination)
-        strcat(buf, "saddled ");
-
-    if (buf[0] != 0)
-        has_adjectives = TRUE;
-    else
-        has_adjectives = FALSE;
-
-    /* Put the actual monster name or type into the buffer now */
-    /* Be sure to remember whether the buffer starts with a name */
+    /* Put the actual monster name or type into the buffer */
     if (do_hallu) {
         int idx = rndmonidx();
 
-        strcat(buf, monnam_for_index(idx));
-        name_at_start = monnam_is_pname(idx);
+        strcpy(bp, monnam_for_index(idx));
     } else if (mtmp->mnamelth) {
         char *name = NAME(mtmp);
 
         if (mdat == &mons[PM_GHOST]) {
-            sprintf(eos(buf), "%s ghost", s_suffix(name));
-            name_at_start = TRUE;
+            sprintf(bp, /*nointl*/"N{o,N{ghost},P{\x1c%s\x1c}}", name);
         } else if (called) {
-            sprintf(eos(buf), "%s called %s", mdat->mname, name);
-            name_at_start = (boolean) type_is_pname(mdat);
-        } else if (is_mplayer(mdat) && (bp = strstri(name, " the ")) != 0) {
-            /* <name> the <adjective> <invisible> <saddled> <rank> */
-            char pbuf[BUFSZ];
-
-            strcpy(pbuf, name);
-            pbuf[bp - name + 5] = '\0'; /* adjectives right after " the " */
-            if (has_adjectives)
-                strcat(pbuf, buf);
-            strcat(pbuf, bp + 5);       /* append the rest of the name */
-            strcpy(buf, pbuf);
-            article = ARTICLE_NONE;
-            name_at_start = TRUE;
+            sprintf(bp, "N{N=%s,A{V{V{call},N{m,S{\x1c%s\x1c}}}}}",
+                    mdat->mname, name);
+        } else if (is_mplayer(mdat)) {
+            /* Player-monster names are written in grammartree, unlike
+               other monster names which are written raw. */
+            strcpy(bp, name);
         } else {
-            strcat(buf, name);
-            name_at_start = TRUE;
+            sprintf(bp, /*nointl*/"P{\x1c%s\x1c}", name);
         }
     } else if (is_mplayer(mdat) && !In_endgame(&u.uz)) {
-        char pbuf[BUFSZ];
-
-        strcpy(pbuf,
-               rank_of((int)mtmp->m_lev, monsndx(mdat),
-                       (boolean) mtmp->female));
-        strcat(buf, lcase(pbuf));
-        name_at_start = FALSE;
+        strcpy(bp, rank_of((int)mtmp->m_lev, monsndx(mdat),
+                           (boolean) mtmp->female));
     } else {
-        strcat(buf, mdat->mname);
-        name_at_start = (boolean) type_is_pname(mdat);
+        strcpy(bp, mdat->mname);
     }
 
-    if (name_at_start && (article == ARTICLE_YOUR || !has_adjectives)) {
-        if (mdat == &mons[PM_WIZARD_OF_YENDOR])
-            article = ARTICLE_THE;
-        else
-            article = ARTICLE_NONE;
-    } else if ((mdat->geno & G_UNIQ) && article == ARTICLE_A) {
+    /* Put the adjectives in the buffer */
+    if (adjective) {
+        *(bp--) = '{'; *(bp--) = 'N';
+        sprintf(eos(bp), /*nointl*/",A=%s}", adjective);
+    }
+    if (do_invis) {
+        *(bp--) = '{'; *(bp--) = 'N';
+        strcat(buf, /*nointl*/",A{invisible}}");
+    }
+
+    if (do_saddle && (mtmp->misc_worn_check & W_SADDLE) &&
+        !Blind && !Hallucination) {
+        *(bp--) = '{'; *(bp--) = 'N';
+        strcat(buf, /*nointl*/",A{V{saddle}}}");
+    }
+
+    if ((mdat->geno & G_UNIQ) && article == ARTICLE_A) {
         article = ARTICLE_THE;
     }
 
-    {
-        char buf2[BUFSZ];
-
-        switch (article) {
-        case ARTICLE_YOUR:
-            strcpy(buf2, "your ");
-            strcat(buf2, buf);
-            strcpy(buf, buf2);
-            return buf;
-        case ARTICLE_THE:
-            strcpy(buf2, "the ");
-            strcat(buf2, buf);
-            strcpy(buf, buf2);
-            return buf;
-        case ARTICLE_A:
-            return an(buf);
-        case ARTICLE_NONE:
-        default:
-            return buf;
-        }
+    switch (article) {
+    case ARTICLE_YOUR:
+        *(bp--) = ','; *(bp--) = 'o'; *(bp--) = '{'; *(bp--) = 'N';
+        sprintf(eos(bp), /*nointl*/",N=%s}", you);
+        /* fall through */
+    case ARTICLE_THE:
+        return add_uniquifier(mtmp->m_id, bp);
+    case ARTICLE_A:
+        return add_uniquifier(mtmp->m_id, an(bp));
+    case ARTICLE_NONE:
+    default:
+        return add_uniquifier(mtmp->m_id, remove_the(bp));
     }
 }
 
@@ -731,14 +704,14 @@ m_monnam(const struct monst *mtmp)
     return x_monnam(mtmp, ARTICLE_NONE, NULL, EXACT_NAME, FALSE);
 }
 
-/* pet name: "your little dog" */
+/* pet name: 'your little dog' */
 char *
 y_monnam(const struct monst *mtmp)
 {
     int prefix, suppression_flag;
 
     prefix = mtmp->mtame ? ARTICLE_YOUR : ARTICLE_THE;
-    /* "saddled" is redundant when mounted */
+    /* 'saddled' is redundant when mounted */
     suppression_flag = (mtmp->mnamelth ||
                         mtmp == u.usteed) ? SUPPRESS_SADDLE : 0;
 
@@ -775,197 +748,165 @@ Amonnam(const struct monst *mtmp)
 /* used for monster ID by the '/', ';', and 'C' commands to block remote
    identification of the endgame altars via their attending priests */
 char *
-distant_monnam(const struct monst *mon, char *outbuf)
+distant_monnam(const struct monst *mon, int article, char *outbuf)
 {
     /* high priest(ess)'s identity is concealed on the Astral Plane, unless
        you're adjacent (overridden for hallucination which does its own
        obfuscation) */
     if (mon->data == &mons[PM_HIGH_PRIEST] && !Hallucination &&
         Is_astralevel(&u.uz) && distu(mon->mx, mon->my) > 2) {
-        strcpy(outbuf, article == ARTICLE_THE ? "the " : "");
-        strcat(outbuf, mon->female ? "high priestess" : "high priest");
+        strcpy(outbuf, mon->female ?
+               "N{N{f,i,priestess},A{high^rank}}" :
+               "N{N{m,i,priest},A{high^rank}}");
+        /* Hack to change articles: repeat the gender if we really do want 'the'
+           (normal article handling won't apply because we got rid of the
+           uniquifiers) */
+        if (article == ARTICLE_THE) outbuf[6] = outbuf[4];
+        if (article == ARTICLE_NONE) outbuf[6] = 'o';
     } else {
         strcpy(outbuf, x_monnam(mon, article, NULL, 0, TRUE));
     }
     return outbuf;
 }
 
+/* Note: these are intentionally not grammartree'ised apart from N{} or P{}
+   article tags. This is because this section's full of references which would
+   become inaccurate if the grammar changed around even a bit. */
 static struct {
     const char *name;
     const boolean pname;
 } bogusmons[] = {
     /* misc. */
-    {
-    "jumbo shrip", FALSE}, {
-    "giant pigmy", FALSE}, {
-    "gnu", FALSE}, {
-    "killer penguin", FALSE}, {
-    "giant cockroach", FALSE}, {
-    "giant slug", FALSE}, {
-    "maggot", FALSE}, {
-    "pterodactyl", FALSE}, {
-    "tyrannosaurus rex", FALSE}, {
-    "basilisk", FALSE}, {
-    "beholder", FALSE}, {
-    "nightmare", FALSE}, {
-    "efreeti", FALSE}, {
-    "marid", FALSE}, {
-    "rot grub", FALSE}, {
-    "bookworm", FALSE}, {
-    "master lichen", FALSE}, {
-    "shadow", FALSE}, {
-    "hologram", FALSE}, {
-    "jester", FALSE}, {
-    "attorney", FALSE}, {
-    "sleazoid", FALSE}, {
-    "killer tomato", FALSE}, {
-    "amazon", FALSE}, {
-    "robot", FALSE}, {
-    "battlemech", FALSE}, {
-    "rhinovirus", FALSE}, {
-    "harpy", FALSE}, {
-    "lion-dog", FALSE}, {
-    "rat-ant", FALSE}, {
-    "Y2K bug", FALSE},
+    {"N{jumbo shrimp}", FALSE},
+    {"N{giant pigmy}", FALSE},
+    {"N{gnu}", FALSE},
+    {"N{killer penguin}", FALSE},
+    {"N{giant cockroach}", FALSE},
+    {"N{giant slug}", FALSE},
+    {"N{maggot}", FALSE},
+    {"N{pterodactyl}", FALSE},
+    {"N{tyrannosaurus rex}", FALSE},
+    {"N{basilisk}", FALSE},
+    {"N{beholder}", FALSE},
+    {"N{nightmare}", FALSE},
+    {"N{efreeti}", FALSE},
+    {"N{marid}", FALSE},
+    {"N{rot grub}", FALSE},
+    {"N{bookworm}", FALSE},
+    {"N{master lichen}", FALSE},
+    {"N{shadow}", FALSE},
+    {"N{hologram}", FALSE},
+    {"N{jester}", FALSE},
+    {"N{attorney}", FALSE},
+    {"N{sleazoid}", FALSE},
+    {"N{killer tomato}", FALSE},
+    {"N{amazon}", FALSE},
+    {"N{robot}", FALSE},
+    {"N{battlemech}", FALSE},
+    {"N{rhinovirus}", FALSE},
+    {"N{harpy}", FALSE},
+    {"N{lion-dog}", FALSE},
+    {"N{rat-ant}", FALSE},
+    {"N{Y2K bug}", FALSE},
         /* Quendor (Zork, &c.) */
-    {
-    "grue", FALSE}, {
-    "Christmas-tree monster", FALSE}, {
-    "luck sucker", FALSE}, {
-    "paskald", FALSE}, {
-    "brogmoid", FALSE}, {
-    "dornbeast", FALSE},
+    {"N{grue}", FALSE},
+    {"N{Christmas-tree monster}", FALSE},
+    {"N{luck sucker}", FALSE},
+    {"N{paskald}", FALSE},
+    {"N{brogmoid}", FALSE},
+    {"N{dornbeast}", FALSE},
         /* Moria */
-    {
-    "Ancient Multi-Hued Dragon", FALSE}, {
-    "Evil Iggy", FALSE},
+    {"N{Ancient Multi-Hued Dragon}", FALSE},
+    {"N{Evil Iggy}", FALSE},
         /* Rogue */
-    {
-    "emu", FALSE}, {
-    "kestrel", FALSE}, {
-    "xeroc", FALSE}, {
-    "venus flytrap", FALSE},
+    {"N{emu}", FALSE},
+    {"N{kestrel}", FALSE},
+    {"N{xeroc}", FALSE},
+    {"N{venus flytrap}", FALSE},
         /* Wizardry */
-    {
-    "creeping coins", FALSE},
+    {"N{creeping coins}", FALSE},
         /* Greek legend */
-    {
-    "hydra", FALSE}, {
-    "siren", FALSE},
+    {"N{hydra}", FALSE},
+    {"N{siren}", FALSE},
         /* Monty Python */
-    {
-    "killer bunny", FALSE},
+    {"N{killer bunny}", FALSE},
         /* The Princess Bride */
-    {
-    "rodent of unusual size", FALSE},
-        /* "Only you can prevent forest fires!" */
-    {
-    "Smokey the bear", TRUE},
+    {"N{rodent of unusual size}", FALSE},
+        /* 'Only you can prevent forest fires!' */
+    {"P{Smokey the bear}", TRUE},
         /* Discworld */
-    {
-    "Luggage", FALSE},
+    {"N{Luggage}", FALSE},
         /* Lord of the Rings */
-    {
-    "Ent", FALSE},
+    {"N{Ent}", FALSE},
         /* Xanth */
-    {
-    "tangle tree", FALSE}, {
-    "nickelpede", FALSE}, {
-    "wiggle", FALSE},
+    {"N{tangle tree}", FALSE},
+    {"N{nickelpede}", FALSE},
+    {"N{wiggle}", FALSE},
         /* Lewis Carroll */
-    {
-    "white rabbit", FALSE}, {
-    "snark", FALSE},
+    {"N{white rabbit}", FALSE},
+    {"N{snark}", FALSE},
         /* Dr. Dolittle */
-    {
-    "pushmi-pullyu", FALSE},
+    {"N{pushmi-pullyu}", FALSE},
         /* The Smurfs */
-    {
-    "smurf", FALSE},
+    {"N{smurf}", FALSE},
         /* Star Trek */
-    {
-    "tribble", FALSE}, {
-    "Klingon", FALSE}, {
-    "Borg", FALSE},
+    {"N{tribble}", FALSE},
+    {"N{Klingon}", FALSE},
+    {"N{Borg}", FALSE},
         /* Star Wars */
-    {
-    "Ewok", FALSE},
+    {"N{Ewok}", FALSE},
         /* Tonari no Totoro */
-    {
-    "Totoro", FALSE},
+    {"N{Totoro}", FALSE},
         /* Nausicaa */
-    {
-    "ohmu", FALSE},
+    {"N{ohmu}", FALSE},
         /* Sailor Moon */
-    {
-    "youma", FALSE},
+    {"N{youma}", FALSE},
         /* Pokemon (Meowth) */
-    {
-    "nyaasu", FALSE},
+    {"N{nyaasu}", FALSE},
         /* monster movies */
-    {
-    "Godzilla", TRUE}, {
-    "King Kong", TRUE},
+    {"P{Godzilla}", TRUE},
+    {"P{King} Kong", TRUE},
         /* old L of SH */
-    {
-    "earthquake beast", FALSE},
+    {"N{earthquake beast}", FALSE},
         /* Robotech */
-    {
-    "Invid", FALSE},
+    {"N{Invid}", FALSE},
         /* The Terminator */
-    {
-    "Terminator", FALSE},
+    {"N{Terminator}", FALSE},
         /* Bubblegum Crisis */
-    {
-    "boomer", FALSE},
-        /* Dr. Who ("Exterminate!") */
-    {
-    "Dalek", FALSE},
+    {"N{boomer}", FALSE},
+        /* Dr. Who ('Exterminate!') */
+    {"N{Dalek}", FALSE},
         /* Hitchhiker's Guide to the Galaxy */
-    {
-    "microscopic space fleet", FALSE}, {
-    "Ravenous Bugblatter Beast of Traal", FALSE},
+    {"N{microscopic space fleet}", FALSE},
+    {"N{Ravenous Bugblatter Beast of Traal}", FALSE},
         /* TMNT */
-    {
-    "teenage mutant ninja turtle", FALSE},
+    {"N{teenage mutant ninja turtle}", FALSE},
         /* Usagi Yojimbo */
-    {
-    "samurai rabbit", FALSE},
+    {"N{samurai rabbit}", FALSE},
         /* Cerebus */
-    {
-    "aardvark", FALSE},
+    {"N{aardvark}", FALSE},
         /* Little Shop of Horrors */
-    {
-    "Audrey II", TRUE},
+    {"P{Audrey II}", TRUE},
         /* 50's rock 'n' roll */
-    {
-    "witch doctor", FALSE}, {
-    "one-eyed one-horned flying purple people eater", FALSE},
+    {"N{witch doctor}", FALSE},
+    {"N{one-eyed one-horned flying purple people eater}", FALSE},
         /* saccharine kiddy TV */
-    {
-    "Barney the dinosaur", TRUE},
+    {"P{Barney the dinosaur}", TRUE},
         /* Angband */
-    {
-    "Morgoth", TRUE},
+    {"P{Morgoth}", TRUE},
         /* Babylon 5 */
-    {
-    "Vorlon", FALSE},
+    {"N{Vorlon}", FALSE},
         /* King Arthur */
-    {
-    "questing beast", FALSE},
+    {"N{questing beast}", FALSE},
         /* Movie */
-    {
-    "Predator", FALSE},
+    {"N{Predator}", FALSE},
         /* common pest */
-    {
-    "mother-in-law", FALSE},
+    {"N{mother-in-law}", FALSE},
         /* Battlestar Galactica */
-    {
-"cylon", FALSE},};
+    {"N{cylon}", FALSE},
+};
 
-
-/* Return a random monster name, for hallucination.
- */
+/* Return a random monster name, for hallucination. */
 int
 rndmonidx(void)
 {
@@ -1000,9 +941,12 @@ roguename(void)
 {       /* Name of a Rogue player */
     char *i, *opts;
 
-    if ((opts = nh_getenv("ROGUEOPTS")) != 0) {
+    /* The strings here are nointl because they're used by Rogue, not (usually)
+       by NetHack; we're checking for the name of a Rogue player by seeing if
+       the current account has Rogue options set. */
+    if ((opts = nh_getenv(/*nointl*/"ROGUEOPTS")) != 0) {
         for (i = opts; *i; i++)
-            if (!strncmp("name=", i, 5)) {
+            if (!strncmp(/*nointl*/"name=", i, 5)) {
                 char *j;
 
                 if ((j = strchr(i + 5, ',')) != 0)
@@ -1010,27 +954,27 @@ roguename(void)
                 return i + 5;
             }
     }
-    return rn2(3) ? (rn2(2) ? "Michael Toy" : "Kenneth Arnold")
-        : "Glenn Wichman";
+    return rn2(3) ? (rn2(2) ? "P{Michael Toy}" : "P{Kenneth Arnold}")
+        : "P{Glenn Wichman}";
 }
 
 static const char *const hcolors[] = {
-    "ultraviolet", "infrared", "bluish-orange",
-    "reddish-green", "dark white", "light black", "sky blue-pink",
-    "salty", "sweet", "sour", "bitter",
-    "striped", "spiral", "swirly", "plaid", "checkered", "argyle",
-    "paisley", "blotchy", "guernsey-spotted", "polka-dotted",
-    "square", "round", "triangular",
-    "cabernet", "sangria", "fuchsia", "wisteria",
-    "lemon-lime", "strawberry-banana", "peppermint",
-    "romantic", "incandescent"
+    "A{ultraviolet}", "A{infrared}", "A{bluish-orange}", "A{reddish-green}",
+    "A{dark white}", "A{light black}", "A{sky blue-pink}", "A{salty}",
+    "A{sweet}", "A{sour}", "A{bitter}", "A{striped}", "A{spiral}", "A{swirly}",
+    "A{plaid}", "A{checkered}", "A{argyle}", "A{paisley}", "A{blotchy}",
+    "A{guernsey-spotted}", "A{polka-dotted}", "A{square}", "A{round}",
+    "A{triangular}", "A{cabernet}", "A{sangria}", "A{fuchsia}", "A{wisteria}",
+    "A{lemon-lime}", "A{strawberry-banana}", "A{peppermint}", "A{romantic}",
+    "A{incandescent}"
 };
 
+/* return colorpref, unless hallucinating in which case return a random color */
 const char *
 hcolor(const char *colorpref)
 {
-    return (Hallucination ||
-            !colorpref) ? hcolors[display_rng(SIZE(hcolors))] : colorpref;
+    return (Hallucination || !colorpref) ?
+        hcolors[display_rng(SIZE(hcolors))] : colorpref;
 }
 
 /* return a random real color unless hallucinating */
@@ -1039,32 +983,32 @@ rndcolor(void)
 {
     int k = rn2(CLR_MAX);
 
-    return Hallucination ? hcolor(NULL) : (k ==
-                                           NO_COLOR) ? "colorless" :
-        c_obj_colors[k];
+    return Hallucination ? hcolor(NULL) :
+        (k == NO_COLOR) ? "colorless" : c_obj_colors[k];
 }
 
 /* Aliases for road-runner nemesis
  */
 static const char *const coynames[] = {
-    "Carnivorous Vulgaris", "Road-Runnerus Digestus",
-    "Eatibus Anythingus", "Famishus-Famishus",
-    "Eatibus Almost Anythingus", "Eatius Birdius",
-    "Famishius Fantasticus", "Eternalii Famishiis",
-    "Famishus Vulgarus", "Famishius Vulgaris Ingeniusi",
-    "Eatius-Slobbius", "Hardheadipus Oedipus",
-    "Carnivorous Slobbius", "Hard-Headipus Ravenus",
-    "Evereadii Eatibus", "Apetitius Giganticus",
-    "Hungrii Flea-Bagius", "Overconfidentii Vulgaris",
-    "Caninus Nervous Rex", "Grotesques Appetitus",
-    "Nemesis Riduclii", "Canis latrans"
+    "S{Carnivorous Vulgaris}", "S{Road-Runnerus Digestus}",
+    "S{Eatibus Anythingus}", "S{Famishus-Famishus}",
+    "S{Eatibus Almost Anythingus}", "S{Eatius Birdius}",
+    "S{Famishius Fantasticus}", "S{Eternalii Famishiis}",
+    "S{Famishus Vulgarus}", "S{Famishius Vulgaris Ingeniusi}",
+    "S{Eatius-Slobbius}", "S{Hardheadipus Oedipus}",
+    "S{Carnivorous Slobbius}", "S{Hard-Headipus Ravenus}",
+    "S{Evereadii Eatibus}", "S{Apetitius Giganticus}",
+    "S{Hungrii Flea-Bagius}", "S{Overconfidentii Vulgaris}",
+    "S{Caninus Nervous Rex}", "S{Grotesques Appetitus}",
+    "S{Nemesis Riduclii}", "S{Canis latrans}"
 };
 
+/* Returns a grammartree anything string, not a noun. */
 char *
 coyotename(const struct monst *mtmp, char *buf)
 {
     if (mtmp && buf) {
-        sprintf(buf, "%s - %s", x_monnam(mtmp, ARTICLE_NONE, NULL, 0, TRUE),
+        sprintf(buf, "N=%s - S=%s", x_monnam(mtmp, ARTICLE_NONE, NULL, 0, TRUE),
                 mtmp->mcan ? coynames[SIZE(coynames) - 1] :
                 coynames[display_rng(SIZE(coynames) - 1)]);
     }

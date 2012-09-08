@@ -814,9 +814,61 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         }
         break;
     case noun_NA: /* "the tame kitten" */
-        force_unit(u->children[1], t, quan, p);
         {
             struct grammarunit *a;
+            /* Proper nouns are specialcased when interacting with adjective_N;
+               instead of "the blue dragon Asidonhopo", we want "Asidonhopo the
+               blue dragon". Also, any non-adjective_N adjectives that would be
+               applied get pushed inside the adjective_N. */
+            for (a = u->children[0];
+                 a->rule != gr_literal && a->rule != noun_mX &&
+                     a->rule != gr_unknown;
+                 a = a->children[0]) {}
+            if (a->role != gr_noun) {
+                /* Look for an adjective_N being applied. */
+                struct grammarunit *a_N = 0;
+                for (a = u; a->rule == noun_NA; a = a->children[0]) {
+                    if (a->children[1]->rule == adjective_N) {
+                        a_N = a->children[1];
+                        break;
+                    }
+                }
+                if (a_N) {
+                    for (a = u; a->rule == noun_NA; a = a->children[0]) {
+                        /* Move an adjective from the proper noun to
+                           the modifier: "the angry Asidonhopo the blue
+                           dragon" -> "Asidonhopo the angry blue dragon" */
+                        while (a->children[1]->rule != adjective_N) {
+                            struct grammarunit *b = a->children[0];
+                            struct grammarunit *c = a->children[1];
+                            *a = *b; /* detaches b, c */
+                            /* We're effectively freeing then mallocing b;
+                               so instead we just overwrite every field */
+                            b->rule = noun_NA;
+                            b->children[0] = a_N->children[0];
+                            b->children[1] = c; /* reattaches c */
+                            b->children[2] = 0;
+                            b->role = gr_noun;
+                            b->content = 0;
+                            b->uniquifier = 0;
+                            b->gender = b->children[0]->gender;
+                            b->quan = b->children[0]->quan;
+                            b->tagged = FALSE;
+                            a_N->children[0] = b;
+                        }
+                    }
+                    /* a_N is now u->children[1] */
+                    force_unit(u->children[1]->children[0], t,
+                               u->children[1]->children[0]->
+                               quan & ~(1 << 30), p);
+                    nounperson = force_unit(u->children[0], t, quan, p);
+                    u->content = astrcat(u->children[0]->content,
+                                         u->children[1]->children[0]->content,
+                                         " ");
+                    return nounperson;
+                }
+            }
+
             /* Be careful of the adjective_QC case: "the cave where the dragon
                sleeps", not "the where the dragon sleeps cave" (which is cute
                and understandable but nonidiomatic). adjective_lN and
@@ -828,6 +880,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                does conjuncting them, although in dubious cases like "large and
                painted blue" we have to make an arbitrary choice (in this case,
                we go with the first adjective). */
+            force_unit(u->children[1], t, quan, p);
             a = u->children[1];
             while (a->rule == adjective_pA || a->rule == plus_AA)
                 a = a->children[0];
@@ -843,8 +896,9 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                 /* We need to move any "the" or "a"/"an" to before the
                    /adjective/. We do this by suppressing the article on the
                    noun (this is what the 1<<30 | 1<<27 means), and adding it
-                   here ourself. We need to ensure we don't eventually end up
-                   with a proper noun before adding the article, though. */
+                   here ourself. With a proper noun, we always want to add
+                   "the", unless the article is suppressed or it's plural
+                   ("Vlad", "two Vlads", "the poor Vlad", "two poor Vlads"). */
                 struct grammarunit *n;
                 nounperson = force_unit(u->children[0], t,
                                         quan | (1 << 30) | (1 << 27), p);
@@ -854,6 +908,11 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                          n->rule != gr_unknown; n = n->children[0]) {}
                 if (n->role == gr_noun && n->rule != gr_unknown)
                     u->content = articulate(u->content, quan);
+                else if (quan & (1 << 29))
+                    u->content = articulate(
+                        u->content, quan | (1 << 27) | (1 << 30));
+                else if (!(quan & (1 << 27)))
+                    u->content = articulate(u->content, quan & ~(1 << 30));
             }
         }
         return nounperson;
@@ -974,9 +1033,13 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         /* If it's a literal that chains directly, or "are", we simply
            conjugate it and add "not". */
         if (verb_chains_directly(u->children[0]->content) ||
-            !strcmp(u->children[0]->content, "are")) {
+            !strcmp(u->children[0]->content, "are") ||
+            !strcmp(u->children[0]->content, "are^passive")) {
+            char *r = strchr(u->children[0]->content, '^'), c;
+            if (r) {c = *r; *r = 0;}
             u->content = astrcat(conjugate(u->children[0]->content, t, quan, p),
                                  "not", " ");
+            if (r) *r = c;
             return base;
         }
         /* It's a literal, so we have to conjugate it.

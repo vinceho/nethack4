@@ -142,6 +142,11 @@ reuniquify(int uniquifier, int otyp, const char *oldnoun) {
     return buf;
 }
 
+char *
+add_uniquifier(int uniquifier, const char *oldnoun) {
+    return reuniquify(uniquifier, 0, oldnoun);
+}
+
 #define RU(s) reuniquify(uniquifier, otyp, (s))
 
 /* Like reuniquify, but for modifiers, like i, and f,. */
@@ -1001,6 +1006,11 @@ an(const char *str)
     return remodify('i', str);
 }
 
+char *
+remove_the(const char *str)
+{
+    return remodify('o', str);
+}
 
 /* returns 'your xname(obj)' or 'Foobar's xname(obj)' or 'the xname(obj)' */
 char *
