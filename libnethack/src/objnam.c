@@ -4,7 +4,7 @@
 
 #include "hack.h"
 
-/* Summary of all NetHack's object naming functions:
+/* Summary of all NetHack 4's object naming functions:
    obj_typename(otyp): entry in discovery list, from player's point of view
    '(orange) potion of speed'
    simple_typename(otyp): object type's actual name or appearance, ignoring
@@ -30,16 +30,8 @@
    'scroll of mail' (even if un-IDed)
    singular(obj,func): name one object of a stack as per func
    an(str): prefix 'a' or 'an' to str, if necessary
-   aobjnam(obj, verb): general-purpose name with precise stack sizes, and
-   optional combined verb; otherwise like cxname
    '4 horse corpses', '3 orange potions shatter!', 'speed boots burn'
-   Tobjnam(obj, verb): general-purpose name with imprecise stack sizes,
-   prepended 'The', and optional combined verb; otherwise like xname
    'The corpses', 'The orange potions shatter!', 'The speed boots burn'
-   otense(obj, verb): Conjugate verb as if obj was verbing
-   'shatters' (stack size 1), 'shatter' (stack size 2)
-   vtense(subj, verb): Conjgate verb as if subj was verbing
-   'they','shatter' -> 'shatter'; 'it','shatter' -> 'shatters'
    yname(obj): like xname(), but incorporates ownership details
    'your potions called Y', 'Medusa's potion of oil', 'the apple named X'
    ysimple_name(obj): like simple_typename(), with ownership details

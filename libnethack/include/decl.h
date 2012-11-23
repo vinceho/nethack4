@@ -226,8 +226,6 @@ extern struct mvitals {
 /* The names of the colors used for gems, etc. */
 extern const char *const c_obj_colors[];
 
-extern const char *const the_your[];
-
 /* material strings */
 extern const char *const materialnm[];
 

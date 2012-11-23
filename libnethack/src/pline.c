@@ -33,7 +33,6 @@ static void
 vpline(const char *line, va_list the_args)
 {
     char pbuf[BUFSZ];
-    char *translated_line;
 
     if (!line || !*line)
         return;

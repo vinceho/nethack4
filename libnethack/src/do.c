@@ -28,7 +28,7 @@ dodrop(struct obj *obj)
     if (*u.ushops)
         sellobj_state(SELL_DELIBERATE);
     if (!obj)
-        obj = getobj(&drop_types[i], "drop");
+        obj = getobj(&drop_types[i], "V{drop}");
     result = drop(obj);
     if (*u.ushops)
         sellobj_state(SELL_NORMAL);
@@ -46,10 +46,12 @@ boolean
 boulder_hits_pool(struct obj * otmp, int rx, int ry, boolean pushing)
 {
     if (!otmp || otmp->otyp != BOULDER)
-        impossible("Not a boulder?");
+        impossible("S{Not a boulder?}");
     else if (!Is_waterlevel(&u.uz) &&
              (is_pool(level, rx, ry) || is_lava(level, rx, ry))) {
         boolean lava = is_lava(level, rx, ry), fills_up;
+        /* what contains a uniquifier, so we get appropriate adverbs
+           in some of the cases below */
         const char *what = waterbody_name(rx, ry);
         schar ltyp = level->locations[rx][ry].typ;
         int chance = rn2(10);   /* water: 90%; lava: 10% */
@@ -75,25 +77,29 @@ boulder_hits_pool(struct obj * otmp, int rx, int ry, boolean pushing)
             if (pushing) {
                 if (u.usteed) {
                     char *bp = y_monnam(u.usteed);
-
-                    *bp = highc(*bp);   /* bp points to a static buffer */
-                    pline("%s pushes %s into the %s.", bp, (xname(otmp)),
-                          what);
-                } else
-                    pline("You push %s into the %s.", (xname(otmp)), what);
+                    pline("C{N=%s,V{V{V{push},N=%s},D{e,E{into},N=%s}}}.",
+                          bp, (xname(otmp)), what);
+                } else {
+                    pline("C{N=%s,V{V{V{push},N=%s},D{e,E{into},N=%s}}}.",
+                          you, (xname(otmp)), what);
+                }
+                /* 'You can cross it now!', 'He can cross it now!'. 'It can
+                   cross it now!' will be broken by pronoun tiebreakers,
+                   i.e. 'Dudley the newt can cross the pool now!' */
                 if (flags.verbose && !Blind)
-                    pline("Now you can cross it!");
+                    pline("C{N=%s,V{V{V{can},V{V{cross},N=%s}},D{now}}}!",
+                          you, what);
                 /* no splashing in this case */
             }
         }
         if (!fills_up || !pushing) {    /* splashing occurs */
             if (!u.uinwater) {
                 if (pushing ? !Blind : cansee(rx, ry)) {
-                    pline("There is a large splash as %s %s the %s.",
-                          (xname(otmp)), fills_up ? "fills" : "falls into",
+                    pline("C{N=%s,V{V{V=%s,N=%s},D{o,N{N{i,splash},A{loud}}}}}.",
+                          xname(otmp), fills_up ? "V{fill}" : "V{fall into}",
                           what);
                 } else if (flags.soundok)
-                    You_hear("a%s splash.", lava ? " sizzling" : "");
+                    You_hear(lava ? "N{N{i,splash},A{sizzling}}" : "N{i,splash}");
                 wake_nearto(rx, ry, 40);
             }
 
@@ -101,16 +107,17 @@ boulder_hits_pool(struct obj * otmp, int rx, int ry, boolean pushing)
                 u.uinwater = 0;
                 doredraw();
                 vision_full_recalc = 1;
-                pline("You find yourself on dry land again!");
+                pline("C{N=%s,V{V{V{V{find},N=%s},D{e,E{on},N{N{o,land},A{dry}}}},"
+                      "D{again}}}!", you, you);
             } else if (lava && distu(rx, ry) <= 2) {
-                pline("You are hit by molten lava%c",
-                      Fire_resistance ? '.' : '!');
+                pline("C{s,V{V{V{hit},D{t,N{N{o,lava},A{molten}}}},N=%s}}%c",
+                      you, Fire_resistance ? '.' : '!');
                 burn_away_slime();
-                losehp(dice((Fire_resistance ? 1 : 3), 6), "molten lava",
-                       KILLED_BY);
+                losehp(dice((Fire_resistance ? 1 : 3), 6),
+                       "N{N{o,lava},A{molten}}", KILLED_BY);
             } else if (!fills_up && flags.verbose &&
                        (pushing ? !Blind : cansee(rx, ry)))
-                pline("It sinks without a trace!");
+                pline("C{N=%s,V{V{sink},D{-,D{t,N{i,trace}}}}}!", xname(otmp));
         }
 
         /* boulder is now gone */
@@ -135,7 +142,7 @@ flooreffects(struct obj * obj, int x, int y, const char *verb)
     struct monst *mtmp;
 
     if (obj->where != OBJ_FREE)
-        panic("flooreffects: obj not free");
+        panic("S{flooreffects: obj not free}");
 
     /* make sure things like water_damage() have no pointers to follow */
     obj->nobj = obj->nexthere = NULL;
@@ -148,8 +155,7 @@ flooreffects(struct obj * obj, int x, int y, const char *verb)
         if (((mtmp = m_at(lev, x, y)) && mtmp->mtrapped) ||
             (u.utrap && u.ux == x && u.uy == y)) {
             if (*verb)
-                pline("The boulder %s into the pit%s.", vtense(NULL, verb),
-                      (mtmp) ? "" : " with you");
+                pline("C{N{boulder},V{V=%s,D{e,E{into},N{pit}}}}.", verb);
             if (mtmp) {
                 if (!passes_walls(mtmp->data) && !throws_rocks(mtmp->data)) {
                     if (hmon(mtmp, obj, TRUE) && !is_whirly(mtmp->data))
@@ -158,7 +164,7 @@ flooreffects(struct obj * obj, int x, int y, const char *verb)
                 mtmp->mtrapped = 0;
             } else {
                 if (!Passes_walls && !throws_rocks(youmonst.data)) {
-                    losehp(rnd(15), "squished under a boulder",
+                    losehp(rnd(15), "V{V{squish},D{e,E{under},N{i,boulder}}}",
                            NO_KILLER_PREFIX);
                     return FALSE;       /* player remains trapped */
                 } else
@@ -169,16 +175,22 @@ flooreffects(struct obj * obj, int x, int y, const char *verb)
             if (Blind && couldsee(x, y)) {
                 if (flags.soundok) {
                     if ((x == u.ux) && (y == u.uy))
-                        You_hear("a CRASH! beneath you.");
+                        You_hear("N{N{i,CRASH},E{beneath},N=%s}.", you);
                     else
-                        You_hear("a nearby CRASH!");
+                        You_hear("N{N{i,CRASH},A{nearby}}!");
                 }
             } else if (cansee(x, y)) {
-                pline("The boulder %s%s.", t->tseen ? "" : "triggers and ",
-                      t->ttyp == TRAPDOOR ? "plugs a trap door" : t->ttyp ==
-                      HOLE ? "plugs a hole" : "fills a pit");
+                char *verb = t->ttyp == TRAPDOOR ? "V{V{plug},N{i,trap door}}"
+                    : t->ttyp == HOLE ? "V{V{plug},N{i,hole}}"
+                    : "V{V{fill},N{i,pit}}";
+                /* TODO: This produces the right output only coincidentally,
+                   and should really be rewritten with proper uniquifiers. */
+                if (t->tseen)
+                    pline("C{N{boulder},V{+,V{trigger},V=%s}}.", verb);
+                else
+                    pline("C{N{boulder},V=%s}", verb);
             } else if (flags.soundok) {
-                You_hear("a distant CRASH!");
+                You_hear("N{N{i,CRASH},A{distant}}!");
             }
         }
         deltrap(lev, t);
@@ -196,9 +208,9 @@ flooreffects(struct obj * obj, int x, int y, const char *verb)
             ((x == u.ux) && (y == u.uy))) {
             if (!Underwater) {
                 if (weight(obj) > 9) {
-                    pline("Splash!");
+                    pline("S{Splash!}");
                 } else if (Levitation || Flying) {
-                    pline("Plop!");
+                    pline("S{Plop!}");
                 }
             }
             map_background(x, y, 0);
@@ -210,11 +222,10 @@ flooreffects(struct obj * obj, int x, int y, const char *verb)
                (t->ttyp == PIT || t->ttyp == SPIKED_PIT)) {
         /* you escaped a pit and are standing on the precipice */
         if (Blind && flags.soundok)
-            You_hear("%s %s downwards.", (xname(obj)),
-                     otense(obj, "tumble"));
+            You_hear("N{a,N=%s,V{V{tumble},D{downwards}}}.", xname(obj));
         else
-            pline("%s %s into %s pit.", (xname(obj)), otense(obj, "tumble"),
-                  the_your[t->madeby_u]);
+            pline("C{N=%s,V{V{tumble},D{e,E{into},N=%s}}}.", xname(obj),
+                  the_your("N{pit}",t->madeby_u));
     }
     return FALSE;
 }
@@ -230,13 +241,14 @@ doaltarobj(struct obj *obj)
     u.uconduct.gnostic++;
 
     if ((obj->blessed || obj->cursed) && obj->oclass != COIN_CLASS) {
-        pline("There is %s flash as %s %s the altar.",
-              an(hcolor(obj->blessed ? "amber" : "black")), doname(obj),
-              otense(obj, "hit"));
+        pline("C{N{x%dy%d|altar},V{V{V{flash},A=%s},D{Q{as},"
+              "C{N=%s,V{V{hit},N{x%dy%d|altar}}}}}}.", u.ux, u.uy,
+              hcolor(obj->blessed ? "A{amber}" : "A{black}"),
+              doname(obj), u.ux, u.uy);
         if (!Hallucination)
             obj->bknown = 1;
     } else {
-        pline("%s %s on the altar.", doname(obj), otense(obj, "land"));
+        pline("C{N=%s,V{V{land},D{e,E{on},N{altar}}}}.", doname(obj));
         obj->bknown = 1;
     }
     /* Also BCU one level deep inside containers */
@@ -251,11 +263,13 @@ doaltarobj(struct obj *obj)
                 otmp->bknown = 1;
         }
         if (bcucount == 1) {
-            pline("Looking inside %s, you see a colored flash.",
-                  (xname(obj)));
+            pline("C{N=%s,V{V{see},"
+                  "N{N{N{i,flash},A{V{color}}},E{inside},N=%s}}}.",
+                  you, xname(obj));
         } else if (bcucount > 1) {
-            pline("Looking inside %s, you see colored flashes.",
-                  (xname(obj)));
+            pline("C{N=%s,V{V{see},"
+                  "N{N{N{*,N{i,flash}},A{V{color}}},E{inside},N=%s}}}.",
+                  you, xname(obj));
         }
     }
 
@@ -274,53 +288,56 @@ dosinkring(struct obj *obj)
     struct obj *otmp, *otmp2;
     boolean ideed = TRUE;
 
-    pline("You drop %s down the drain.", doname(obj));
+    pline("C{N=%s,V{V{V{drop},N=%s},D{e,E{down},N{drain}}}}.",
+          you, doname(obj));
     obj->in_use = TRUE; /* block free identification via interrupt */
     switch (obj->otyp) {        /* effects that can be noticed without eyes */
     case RIN_SEARCHING:
-        pline("You thought your %s got lost in the sink, but there it is!",
-              xname(obj));
+        pline("C{N=%s,V{V{V{V{find},N=%s},D{easily}},D{again}}}!",
+              you, xname(obj));
         goto giveback;
     case RIN_SLOW_DIGESTION:
-        pline("The ring is regurgitated!");
+        pline("C{s,V{V{regurgitate},N{ring}}}!");
     giveback:
         obj->in_use = FALSE;
         dropx(obj);
         trycall(obj);
         return;
     case RIN_LEVITATION:
-        pline("The sink quivers upward for a moment.");
+        pline("C{N{sink},V{V{V{quiver},D{upward}},D{d,N{i,moment}}}}.");
         break;
     case RIN_POISON_RESISTANCE:
-        pline("You smell rotten %s.", makeplural(fruitname(FALSE)));
+        pline("C{N=%s,V{V{smell},N{N{*,N=%s},A{V{rot}}}}}.", you,
+              fruitname(FALSE));
         break;
     case RIN_AGGRAVATE_MONSTER:
-        pline("Several flies buzz angrily around the sink.");
+        pline("C{N{N{*,N{i,fly}},A{several}},"
+              "V{V{V{buzz},D{angrily}},D{e,E{around},N{sink}}}}.");
         break;
     case RIN_SHOCK_RESISTANCE:
-        pline("Static electricity surrounds the sink.");
+        pline("C{N{o,static electricity},V{V{surround},N{sink}}}.");
         break;
     case RIN_CONFLICT:
-        You_hear("loud noises coming from the drain.");
+        You_hear("N{a,N{N{*,N{i,noise}},A{loud}},V{V{come from},N{drain}}}.");
         break;
     case RIN_SUSTAIN_ABILITY:  /* KMH */
-        pline("The water flow seems fixed.");
+        pline("C{N{water flow},V{V{seem},A{V{fix}}}}.");
         break;
     case RIN_GAIN_STRENGTH:
-        pline("The water flow seems %ser now.",
-              (obj->spe < 0) ? "weak" : "strong");
+        pline("C{N{water flow},V{V{V{seem},A{c,A=%s}},D{now}}}.",
+              (obj->spe < 0) ? "A{weak}" : "A{strong}");
         break;
     case RIN_GAIN_CONSTITUTION:
-        pline("The water flow seems %ser now.",
-              (obj->spe < 0) ? "less" : "great");
+        pline("C{N{water flow},V{V{V{seem},A{c,A=%s}},D{now}}}.",
+              (obj->spe < 0) ? "A{less}" : "A{great}");
         break;
     case RIN_INCREASE_ACCURACY:        /* KMH */
-        pline("The water flow %s the drain.",
-              (obj->spe < 0) ? "misses" : "hits");
+        pline("C{N{water flow},V{V=%s,N{drain}}}.",
+              (obj->spe < 0) ? "V{miss}" : "V{hit}");
         break;
     case RIN_INCREASE_DAMAGE:
-        pline("The water's force seems %ser now.",
-              (obj->spe < 0) ? "small" : "great");
+        pline("C{N{o,N{force},N{water}},V{V{V{seem},A{c,A=%s}},D{now}}}.",
+              (obj->spe < 0) ? "A{small}" : "A{great}");
         break;
     case RIN_HUNGER:
         ideed = FALSE;
@@ -328,8 +345,7 @@ dosinkring(struct obj *obj)
             otmp2 = otmp->nexthere;
             if (otmp != uball && otmp != uchain && !obj_resists(otmp, 1, 99)) {
                 if (!Blind) {
-                    pline("Suddenly, %s %s from the sink!", doname(otmp),
-                          otense(otmp, "vanish"));
+                    pline("C{N=%s,V{V{vanish from},N{sink}}}!", doname(otmp));
                     ideed = TRUE;
                 }
                 delobj(otmp);
@@ -338,7 +354,8 @@ dosinkring(struct obj *obj)
         break;
     case MEAT_RING:
         /* Not the same as aggravate monster; besides, it's obvious. */
-        pline("Several flies buzz around the sink.");
+        pline("C{N{N{*,N{i,fly}},A{several}},"
+              "V{V{buzz},D{e,E{around},N{sink}}}}.");
         break;
     default:
         ideed = FALSE;
@@ -348,60 +365,68 @@ dosinkring(struct obj *obj)
         ideed = TRUE;
         switch (obj->otyp) {    /* effects that need eyes */
         case RIN_ADORNMENT:
-            pline("The faucets flash brightly for a moment.");
+            pline("C{N{*,N{faucet}},V{V{V{flash},D{brightly}},"
+                  "D{d,N{i,moment}}}}.");
             break;
         case RIN_REGENERATION:
-            pline("The sink looks as good as new.");
+            pline("C{N{sink},V{V{look},A{as good as new}}}.");
             break;
         case RIN_INVISIBILITY:
-            pline("You don't see anything happen to the sink.");
+            pline("C{N=%s,V{-,V{V{V{see},N{o,anything}},"
+                  "V{V{happen to},N{sink}}}}}.", you);
             break;
         case RIN_FREE_ACTION:
-            pline("You see the ring slide right down the drain!");
+            pline("C{N{ring},V{V{slide},D{e,E{right down},N{drain}}}}!");
             break;
         case RIN_SEE_INVISIBLE:
-            pline("You see some air in the sink.");
+            pline("C{N=%s,V{V{V{see},N{N{o,air},A{some}}},D{a,N{sink}}}}.",
+                  you);
             break;
         case RIN_STEALTH:
-            pline("The sink seems to blend into the floor for a moment.");
+            pline("C{N{sink},V{V{V{seem},V{V{blend into},N{floor}}},"
+                  "D{d,N{i,moment}}}}.");
             break;
         case RIN_FIRE_RESISTANCE:
-            pline("The hot water faucet flashes brightly for a moment.");
+            pline("C{N{N{faucet},A{N{N{water},A{hot}}}},"
+                  "V{V{V{flash},D{brightly}},D{d,N{i,moment}}}}.");
             break;
         case RIN_COLD_RESISTANCE:
-            pline("The cold water faucet flashes brightly for a moment.");
+            pline("C{N{N{faucet},A{N{N{water},A{cold}}}},"
+                  "V{V{V{flash},D{brightly}},D{d,N{i,moment}}}}.");
             break;
         case RIN_PROTECTION_FROM_SHAPE_CHANGERS:
-            pline("The sink looks nothing like a fountain.");
+            pline("C{N{sink},V{-,V{V{look like},N{i,fountain}}}}.");
             break;
         case RIN_PROTECTION:
-            pline("The sink glows %s for a moment.",
-                  hcolor((obj->spe < 0) ? "black" : "silver"));
+            pline("C{N{sink},V{V{V{glow},A=%s},D{d,N{i,moment}}}}.",
+                  hcolor((obj->spe < 0) ? "A{black}" : "A{silver}"));
             break;
         case RIN_WARNING:
-            pline("The sink glows %s for a moment.", hcolor("white"));
+            pline("C{N{sink},V{V{V{glow},A=%s},D{d,N{i,moment}}}}.",
+                  hcolor("A{white}"));
             break;
         case RIN_TELEPORTATION:
-            pline("The sink momentarily vanishes.");
+            pline("C{N{sink},V{V{vanish},D{momentarily}}}");
             break;
         case RIN_TELEPORT_CONTROL:
-            pline("The sink looks like it is being beamed aboard somewhere.");
+            verbalize("S{Beam the sink up, Scotty!}");
             break;
         case RIN_POLYMORPH:
-            pline("The sink momentarily looks like a fountain.");
+            pline("C{N{sink},V{V{V{look like},N{i,fountain}},D{momentarily}}}.");
             break;
         case RIN_POLYMORPH_CONTROL:
-            pline
-                ("The sink momentarily looks like a regularly erupting geyser.");
+            pline("C{N{sink},V{V{V{look like},"
+                  "N{a,N{i,geyser},V{V{erupt},D{regularly}}}},"
+                  "D{momentarily}}}.");
             break;
         }
     }
     if (ideed)
         trycall(obj);
     else
-        You_hear("the ring bouncing down the drainpipe.");
+        You_hear("N{a,N{ring},V{V{bounce down},N{drainpipe}}}.");
     if (!rn2(20)) {
-        pline("The sink backs up, leaving %s.", doname(obj));
+        pline("N{N{sink},V{+,V{back up},V{V{leave},N=%s}}}.", doname(obj));
         obj->in_use = FALSE;
         dropx(obj);
     } else
@@ -415,7 +440,9 @@ canletgo(struct obj *obj, const char *word)
 {
     if (obj->owornmask & (W_ARMOR | W_RING | W_AMUL | W_TOOL)) {
         if (*word)
-            Norep("You cannot %s something you are wearing.", word);
+            Norep("C{N=%s,V{-,V{V{can},"
+                  "V{V=%s,N{s,C{c,N=%s,V{V{wear},N{o,something}}}}}}}}.",
+                  you, word, you);
         return FALSE;
     }
     if (obj->otyp == LOADSTONE && obj->cursed) {
@@ -424,10 +451,11 @@ canletgo(struct obj *obj, const char *word)
         if (*word) {
             /* getobj() ignores a count for throwing since that is implicitly
                forced to be 1; replicate its kludge... */
-            if (!strcmp(word, "throw") && obj->quan > 1L)
+            if (!strcmp(word, "V{throw}") && obj->quan > 1L)
                 obj->corpsenm = 1;
-            pline("For some reason, you cannot %s%s the stone%s!", word,
-                  obj->corpsenm ? " any of" : "", plur(obj->quan));
+            pline("C{N=%s,V{-,V{V{can},V{V=%s,N=%s}}}}!", you, word,
+                  obj->corpsenm ? "N{f,N{*,N{stone}},A{any}}" :
+                  obj->quan > 1 ? "N{*,N{stone}}" : "N{stone}");
         }
         obj->corpsenm = 0;      /* reset */
         obj->bknown = 1;
@@ -435,12 +463,17 @@ canletgo(struct obj *obj, const char *word)
     }
     if (obj->otyp == LEASH && obj->leashmon != 0) {
         if (*word)
-            pline("The leash is tied around your %s.", body_part(HAND));
+            pline("C{s,V{V{V{tie},N{leash}},D{e,E{around},N{o,N=%s,N=%s}}}}.",
+                  you, body_part(HAND));
         return FALSE;
     }
     if (obj->owornmask & W_SADDLE) {
+        /* Literal 'something', we don't want 'you cannot drop it you
+           are sitting on' */
         if (*word)
-            pline("You cannot %s something you are sitting on.", word);
+            pline("C{N=%s,V{-,V{V{can},V{V=%s,"
+                  "N{s,C{c,N=%s,V{V{sit on},N{o,something}}}}}}}}.",
+                  you, word, you);
         return FALSE;
     }
     return TRUE;
@@ -451,7 +484,7 @@ drop(struct obj *obj)
 {
     if (!obj)
         return 0;
-    if (!canletgo(obj, "drop"))
+    if (!canletgo(obj, "V{drop}"))
         return 0;
     if (obj == uwep) {
         if (welded(uwep)) {
@@ -470,12 +503,9 @@ drop(struct obj *obj)
     if (u.uswallow) {
         /* barrier between you and the floor */
         if (flags.verbose) {
-            char buf[BUFSZ];
-
-            /* doname can call s_suffix, reusing its buffer */
-            strcpy(buf, s_suffix(mon_nam(u.ustuck)));
-            pline("You drop %s into %s %s.", doname(obj), buf,
-                  mbodypart(u.ustuck, STOMACH));
+            pline("C{N=%s,V{V{V{drop},N=%s},D{e,E{into},N{o,N=%s,N=%s}}}}.",
+                  you, doname(obj), mbodypart(u.ustuck, STOMACH),
+                  mon_nam(u.ustuck));
         }
     } else {
         if ((obj->oclass == RING_CLASS || obj->otyp == MEAT_RING) &&
@@ -485,7 +515,7 @@ drop(struct obj *obj)
         }
         if (!can_reach_floor()) {
             if (flags.verbose)
-                pline("You drop %s.", doname(obj));
+                pline("C{N=%s,V{V{drop},N=%s}}.", you, doname(obj));
 
             /* Ensure update when we drop gold objects */
             if (obj->oclass == COIN_CLASS)
@@ -495,7 +525,7 @@ drop(struct obj *obj)
             return 1;
         }
         if (!IS_ALTAR(level->locations[u.ux][u.uy].typ) && flags.verbose)
-            pline("You drop %s.", doname(obj));
+            pline("C{N=%s,V{V{drop},N=%s}}.", you, doname(obj));
     }
     dropx(obj);
     return 1;
@@ -529,7 +559,7 @@ dropy(struct obj *obj)
     if (obj == uswapwep)
         setuswapwep(NULL);
 
-    if (!u.uswallow && flooreffects(obj, u.ux, u.uy, "drop"))
+    if (!u.uswallow && flooreffects(obj, u.ux, u.uy, "V{drop}"))
         return;
     /* uswallow check done by GAN 01/29/87 */
     if (u.uswallow) {
@@ -638,7 +668,8 @@ menu_drop(int retry)
         all_categories = (retry == -2);
     } else if (flags.menu_style == MENU_FULL) {
         all_categories = FALSE;
-        n = query_category("Drop what type of items?", invent,
+        n = query_category("C{q,C{i,V{V{drop},N{l,N{N{o,type},A{which}},"
+                           "N{*,N{o,item}}}}}}?", invent,
                            UNPAID_TYPES | ALL_TYPES | CHOOSE_ALL | UNIDENTIFIED
                            | BUC_BLESSED | BUC_CURSED | BUC_UNCURSED |
                            BUC_UNKNOWN, pick_list, PICK_ANY);
@@ -661,8 +692,9 @@ menu_drop(int retry)
         }
     } else {
         /* should coordinate with perm invent, maybe not show worn items */
-        n = query_objlist("What would you like to drop?", invent,
-                          USE_INVLET | INVORDER_SORT, &obj_pick_list, PICK_ANY,
+        n = query_objlist("C{q,C{i,V{V{drop},N{N{*,N{o,item}},A{which}}}}}?",
+                          invent, USE_INVLET | INVORDER_SORT, &obj_pick_list,
+                          PICK_ANY,
                           all_categories ? allow_all : allow_category);
         if (n > 0) {
             for (i = 0; i < n; i++) {
@@ -702,10 +734,10 @@ dodown(void)
                                                u.uy == level->dnladder.sy);
 
     if (u.usteed && !u.usteed->mcanmove) {
-        pline("%s won't move!", Monnam(u.usteed));
+        pline("C{N=%s,V{-,V{V{will},V{move}}}}!", mon_nam(u.usteed));
         return 0;
     } else if (u.usteed && u.usteed->meating) {
-        pline("%s is still eating.", Monnam(u.usteed));
+        pline("C{c,N=%s,V{V{eat},D{still}}}.", mon_nam(u.usteed));
         return 0;
     } else if (Levitation) {
         if ((HLevitation & I_SPECIAL) || (ELevitation & W_ARTI)) {
@@ -731,10 +763,11 @@ dodown(void)
                 level->locations[u.ux][u.uy].typ == S_dnstair;
             boolean known_ladder = ladder_down &&
                 level->locations[u.ux][u.uy].typ == S_dnladder;
-            floating_above(known_stairs ? "stairs" : known_ladder ? "ladder" :
+            floating_above(known_stairs ? "N{*,N{stair}}" :
+                           known_ladder ? "N{ladder}" :
                            surface(u.ux, u.uy));
         } else {
-            pline("You are floating high in the air.");
+            pline("C{c,N=%s,V{V{float},D{D{a,N{air}},D{high}}}}.", you);
         }
         return 0;       /* didn't move */
     }
@@ -750,29 +783,38 @@ dodown(void)
             if (flags.autodig && !flags.nopick && uwep && is_pick(uwep)) {
                 return use_pick_axe2(uwep, 0, 0, 1);
             } else {
-                pline("You can't go down here.");
+                pline("C{N=%s,V{-,V{V{can},V{V{go down},D{here}}}}}.", you);
                 return 0;
             }
         }
     }
     if (u.ustuck) {
-        pline("You are %s, and cannot go down.",
-              !u.uswallow ? "being held" :
-              is_animal(u.ustuck->data) ? "swallowed" : "engulfed");
+        if (!u.uswallow)
+            pline("C{N=%s,V{V{-,V{V{can},V{go down}}},"
+                  "D{Q{because},C{c,s,V{V{hold},N=%s}}}}}.", you, you);
+        else
+            pline("C{N=%s,V{V{-,V{V{can},V{go down}}},"
+                  "D{Q{because},C{s,V{V=%s,N=%s}}}}}.", you,
+                  is_animal(u.ustuck->data) ? "V{swallow}" : "V{engulf}", you);
         return 1;
     }
     if (on_level(&valley_level, &u.uz) && !u.uevent.gehennom_entered) {
-        pline("You are standing at the gate to Gehennom.");
-        pline("Unspeakable cruelty and harm lurk down there.");
-        if (yn("Are you sure you want to enter?") != 'y')
+        char buf[BUFSZ];
+        pline("C{c,N=%s,V{V{stand},"
+              "D{l,N{N{gate},E{to^connection},P{Gehennom}}}}}.", you);
+        pline("C{N{+,N{N{o,cruelty},A{unspeakable}},N{o,harm}},"
+              "V{V{lurk},D{D{there},D{down}}}}.");
+        sprintf(buf, "C{q,C{N=%s,V{V{are},N{N{o,sure},A{Q{that},"
+                "C{N=%s,V{V{want},V{enter}}}}}}}}?", you, you);
+        if (yn(buf) != 'y')
             return 0;
         else
-            pline("So be it.");
+            pline("S{So be it.}");
         u.uevent.gehennom_entered = 1;  /* don't ask again */
     }
 
     if (!next_to_u()) {
-        pline("You are held back by your pet!");
+        pline("C{N{o,N{pet},N=%s},V{V{hold back},N=%s}}.", you, you);
         return 0;
     }
 
@@ -782,19 +824,21 @@ dodown(void)
                 if (flags.autodig && !flags.nopick && uwep && is_pick(uwep)) {
                     return use_pick_axe2(uwep, 0, 0, 1);
                 } else {
-                    pline("You are already in the pit.");       /* YAFM needed */
+                    /* YAFM needed */
+                    pline("C{N=%s,V{V{V{are},D{already}},D{a,N{pit}}}}.", you);
                 }
             } else {
                 u.utrap = 1;
                 u.utraptype = TT_PIT;
-                pline("You %s down into the pit.",
-                      locomotion(youmonst.data, "go"));
+                pline("C{N=%s,V{V=%s,D{D{e,E{into},N{pit}},D{down}}}}.",
+                      locomotion(youmonst.data, "V{go}"));
             }
             return 0;
         } else {
-            pline("You %s %s.", locomotion(youmonst.data, "jump"),
-                  trap->ttyp ==
-                  HOLE ? "down the hole" : "through the trap door");
+            pline("C{N=%s,V{V=%s,D=%s}}.", you, 
+                  locomotion(youmonst.data, "V{jump}"),
+                  trap->ttyp == HOLE ? "D{e,E{down},N{hole}}" :
+                  "D{e,E{through},N{trap door}}");
         }
     }
 
@@ -817,25 +861,31 @@ doup(void)
         && (!level->sstairs.sx || u.ux != level->sstairs.sx ||
             u.uy != level->sstairs.sy || !level->sstairs.up)
         ) {
-        pline("You can't go up here.");
+        pline("C{N=%s,V{-,V{V{can},V{V{go up},D{here}}}}}.", you);
         return 0;
     }
     if (u.usteed && !u.usteed->mcanmove) {
-        pline("%s won't move!", Monnam(u.usteed));
+        pline("C{N=%s,V{-,V{V{will},V{move}}}}!", mon_nam(u.usteed));
         return 0;
     } else if (u.usteed && u.usteed->meating) {
-        pline("%s is still eating.", Monnam(u.usteed));
+        pline("C{c,N=%s,V{V{eat},D{still}}}.", mon_nam(u.usteed));
         return 0;
     } else if (u.ustuck) {
-        pline("You are %s, and cannot go up.",
-              !u.uswallow ? "being held" :
-              is_animal(u.ustuck->data) ? "swallowed" : "engulfed");
+        if (!u.uswallow)
+            pline("C{N=%s,V{V{-,V{V{can},V{go up}}},"
+                  "D{Q{because},C{c,s,V{V{hold},N=%s}}}}}.", you, you);
+        else
+            pline("C{N=%s,V{V{-,V{V{can},V{go up}}},"
+                  "D{Q{because},C{s,V{V=%s,N=%s}}}}}.", you,
+                  is_animal(u.ustuck->data) ? "V{swallow}" : "V{engulf}", you);
         return 1;
     }
     if (near_capacity() > SLT_ENCUMBER) {
         /* No levitation check; inv_weight() already allows for it */
-        pline("Your load is too heavy to climb the %s.",
-              level->locations[u.ux][u.uy].typ == STAIRS ? "stairs" : "ladder");
+        pline("C{N=%s,V{V{-,V{V{can},V{V{climb},N=%s}}},D{Q{because},"
+              "C{N{o,N{load},N=%s},V{V{are},A{A{heavy},D{too}}}}}}}.", you,
+              level->locations[u.ux][u.uy].typ == STAIRS ?
+              "N{*,N{stair}}" : "N{ladder}", you);
         return 1;
     }
     if (ledger_no(&u.uz) == 1) {

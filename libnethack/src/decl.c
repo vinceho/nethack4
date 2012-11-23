@@ -18,7 +18,7 @@ int otg_temp;   /* used by object_to_glyph() [otg] */
 
 /*
  * The following structure will be initialized at startup time with
- * the level numbers of some "important" things in the game.
+ * the level numbers of some 'important' things in the game.
  */
 struct dgn_topology dungeon_topology;
 
@@ -45,14 +45,17 @@ struct fruit *ffruit;
 
 char tune[6];
 
+/* Actually, these /could/ reasonably be internationalized, but not
+   using grammartree. It's probably best to use English on the wire
+   for them, and let clients translate. */
 const char *occtxt;
-const char quitchars[] = " \r\n\033";
-const char vowels[] = "aeiouAEIOU";
-const char ynchars[] = "yn";
-const char ynqchars[] = "ynq";
-const char ynaqchars[] = "ynaq";
+const char quitchars[] = /*nointl*/" \r\n\033";
+const char vowels[] = /*nointl*/"aeiouAEIOU";
+const char ynchars[] = /*nointl*/"yn";
+const char ynqchars[] = /*nointl*/"ynq";
+const char ynaqchars[] = /*nointl*/"ynaq";
 
-const char disclosure_options[] = "iavgcs";
+const char disclosure_options[] = /*nointl*/"iavgcs";
 
 #if defined(WIN32)
 char hackdir[PATHLEN];  /* where rumors, help, record are */
@@ -160,13 +163,11 @@ const char *const c_obj_colors[] = {
     "A{white}",    /* CLR_WHITE */
 };
 
-const char *const the_your[] = { "the", "your" };
-
 /* NOTE: the order of these words exactly corresponds to the
    order of oc_material values #define'd in objclass.h. */
 const char *const materialnm[] = {
     "A{mysterious}", "A{liquid}", "A{N{o,wax}}", "A{organic}", "A{N{o,flesh}}",
-    "A{N{o,paper}}", "A{N{o,cloth}}", "A{N{o,leather}}", "A{N{o,wooden}",
+    "A{N{o,paper}}", "A{N{o,cloth}}", "A{N{o,leather}}", "A{N{o,wooden}}",
     "A{N{o,bone}}", "A{N{o,dragonhide}}", "A{N{o,iron}}", "A{N{o,metal}}",
     "A{N{o,copper}}", "A{N{o,silver}}", "A{N{o,gold}}", "A{N{o,platinum}}",
     "A{N{o,mithril}}", "A{N{o,plastic}}", "A{N{o,glass}}", "A{N{o,gemstone}}",

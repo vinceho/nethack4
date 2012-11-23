@@ -5,6 +5,12 @@
 #ifndef EXTERN_H
 # define EXTERN_H
 
+#ifdef __GNUC__
+#define DEPRECATED __attribute__((deprecated))
+#else
+#define DEPRECATED
+#endif
+
 # include "winprocs.h"
 
 /* ### allmain.c ### */
@@ -265,16 +271,17 @@ extern struct obj *oname(struct obj *, const char *);
 extern int do_naming(void);
 extern void docall(struct obj *);
 extern const char *rndghostname(void);
+extern const char *the_your(const char *, boolean);
 extern char *x_monnam(const struct monst *mon, int, const char *, int, boolean);
 extern char *l_monnam(const struct monst *);
 extern char *mon_nam(const struct monst *);
 extern char *noit_mon_nam(const struct monst *);
-extern char *Monnam(const struct monst *);
-extern char *noit_Monnam(const struct monst *);
+extern char *Monnam(const struct monst *) DEPRECATED;
+extern char *noit_Monnam(const struct monst *) DEPRECATED;
 extern char *m_monnam(const struct monst *);
 extern char *y_monnam(const struct monst *);
-extern char *Adjmonnam(const struct monst *, const char *);
-extern char *Amonnam(const struct monst *);
+extern char *Adjmonnam(const struct monst *, const char *) DEPRECATED;
+extern char *Amonnam(const struct monst *) DEPRECATED;
 extern char *a_monnam(const struct monst *);
 extern char *distant_monnam(const struct monst *, int, char *);
 extern int rndmonidx(void);
@@ -1174,7 +1181,7 @@ extern int rnd_class(int, int);
 extern const char *cloak_simple_name(const struct obj *cloak);
 extern const char *mimic_obj_name(const struct monst *mimic);
 
-extern char *makeplural(const char *s);
+extern char *makeplural(const char *s) DEPRECATED;
 
 /* ### options.c ### */
 

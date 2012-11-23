@@ -141,7 +141,7 @@ wallification(struct level *lev, int x1, int y1, int x2, int y2)
 
     /* sanity check on incoming variables */
     if (x1 < 0 || x2 >= COLNO || x1 > x2 || y1 < 0 || y2 >= ROWNO || y1 > y2)
-        panic("wallification: bad bounds (%d,%d) to (%d,%d)", x1, y1, x2, y2);
+        panic("S{wallification: bad bounds (%d,%d) to (%d,%d)}", x1, y1, x2, y2);
 
     /* Step 1: change walls surrounded by rock to rock. */
     for (x = x1; x <= x2; x++)
@@ -275,7 +275,7 @@ place_lregion(struct level *lev, xchar lx, xchar ly, xchar hx, xchar hy,
                 (lev, x, y, nlx, nly, nhx, nhy, rtype, oneshot, dest_lvl))
                 return;
 
-    impossible("Couldn't place lregion type %d!", rtype);
+    impossible("S{Couldn't place lregion type %d!}", rtype);
 }
 
 static boolean
@@ -302,7 +302,7 @@ put_lregion_here(struct level *lev, xchar x, xchar y, xchar nlx, xchar nly,
     case LR_TELE:
     case LR_UPTELE:
     case LR_DOWNTELE:
-        /* "something" means the player in this case */
+        /* 'something' means the player in this case */
         if (MON_AT(lev, x, y)) {
             /* move the monster if no choice, or just try again */
             if (oneshot)
@@ -357,7 +357,7 @@ fixup_special(struct level *lev)
 
         case LR_PORTAL:
             if (*r->rname.str >= '0' && *r->rname.str <= '9') {
-                /* "chutes and ladders" */
+                /* 'chutes and ladders' */
                 lvl = lev->z;
                 lvl.dlevel = atoi(r->rname.str);
             } else {
@@ -494,10 +494,10 @@ fixup_special(struct level *lev)
 
         for (str = lev_message; (nl = strchr(str, '\n')) != 0; str = nl + 1) {
             *nl = '\0';
-            pline("%s", str);
+            pline(/*nointl*/"%s", str);
         }
         if (*str)
-            pline("%s", str);
+            pline(/*nointl*/"%s", str);
         free(lev_message);
         lev_message = 0;
     }
@@ -517,29 +517,29 @@ makemaz(struct level *lev, const char *s)
 
     if (*s) {
         if (sp && sp->rndlevs)
-            sprintf(protofile, "%s-%d", s, rnd((int)sp->rndlevs));
+            sprintf(protofile, /*nointl*/"%s-%d", s, rnd((int)sp->rndlevs));
         else
             strcpy(protofile, s);
     } else if (*(dungeons[lev->z.dnum].proto)) {
         if (dunlevs_in_dungeon(&lev->z) > 1) {
             if (sp && sp->rndlevs)
-                sprintf(protofile, "%s%d-%d", dungeons[lev->z.dnum].proto,
+                sprintf(protofile, /*nointl*/"%s%d-%d", dungeons[lev->z.dnum].proto,
                         dunlev(&lev->z), rnd((int)sp->rndlevs));
             else
-                sprintf(protofile, "%s%d", dungeons[lev->z.dnum].proto,
+                sprintf(protofile, /*nointl*/"%s%d", dungeons[lev->z.dnum].proto,
                         dunlev(&lev->z));
         } else if (sp && sp->rndlevs) {
-            sprintf(protofile, "%s-%d", dungeons[lev->z.dnum].proto,
+            sprintf(protofile, /*nointl*/"%s-%d", dungeons[lev->z.dnum].proto,
                     rnd((int)sp->rndlevs));
         } else
             strcpy(protofile, dungeons[lev->z.dnum].proto);
 
     } else
-        strcpy(protofile, "");
+        strcpy(protofile, /*nointl*/"");
 
-    /* SPLEVTYPE format is "level-choice,level-choice"... */
+    /* SPLEVTYPE format is 'level-choice,level-choice'... */
     if (wizard && *protofile && sp && sp->rndlevs) {
-        char *ep = getenv("SPLEVTYPE"); /* not nh_getenv */
+        char *ep = getenv(/*nointl*/"SPLEVTYPE"); /* not nh_getenv */
 
         if (ep) {
             /* rindex always succeeds due to code in prior block */
@@ -551,7 +551,7 @@ makemaz(struct level *lev, const char *s)
 
                     /* use choice only if valid */
                     if (pick > 0 && pick <= (int)sp->rndlevs)
-                        sprintf(protofile + len, "%d", pick);
+                        sprintf(protofile + len, /*nointl*/"%d", pick);
                     break;
                 } else {
                     ep = strchr(ep, ',');
@@ -571,7 +571,7 @@ makemaz(struct level *lev, const char *s)
             dmonsfree(lev);
             return;     /* no mazification right now */
         }
-        impossible("Couldn't load \"%s\" - making a maze.", protofile);
+        impossible("S{Couldn't load '%s' - making a maze.}", protofile);
     }
 
     lev->flags.is_maze_lev = TRUE;
@@ -591,7 +591,7 @@ makemaz(struct level *lev, const char *s)
     if (!Invocation_lev(&lev->z)) {
         mazexy(lev, &mm);
         mkstairs(lev, mm.x, mm.y, 0, NULL);     /* down */
-    } else {    /* choose "vibrating square" location */
+    } else {    /* choose 'vibrating square' location */
 #define x_maze_min 2
 #define y_maze_min 2
         /* 
@@ -706,7 +706,7 @@ move(int *x, int *y, int dir)
         --(*x);
         break;
     default:
-        panic("move: bad direction");
+        panic("S{move: bad direction}");
     }
 }
 
@@ -734,7 +734,7 @@ mazexy(struct level *lev, coord * cc)
                 if (lev->locations[cc->x][cc->y].typ == ROOM)
                     return;
             }
-        panic("mazexy: can't find a place!");
+        panic("S{mazexy: can't find a place!}");
     }
     return;
 }
@@ -831,12 +831,12 @@ bound_digging(struct level *lev)
 void
 mkportal(struct level *lev, xchar x, xchar y, xchar todnum, xchar todlevel)
 {
-    /* a portal "trap" must be matched by a */
+    /* a portal 'trap' must be matched by a */
     /* portal in the destination dungeon/dlevel */
     struct trap *ttmp = maketrap(lev, x, y, MAGIC_PORTAL);
 
     if (!ttmp) {
-        impossible("portal on top of portal??");
+        impossible("S{portal on top of portal??}");
         return;
     }
     ttmp->dst.dnum = todnum;
@@ -917,12 +917,12 @@ movebubbles(void)
     for (b = bubble_up ? bbubbles : ebubbles; b;
          b = bubble_up ? b->next : b->prev) {
         if (b->cons)
-            panic("movebubbles: cons != null");
+            panic("S{movebubbles: cons != null}");
         for (i = 0, x = b->x; i < (int)b->bm[0]; i++, x++)
             for (j = 0, y = b->y; j < (int)b->bm[1]; j++, y++)
                 if (b->bm[j + 2] & (1 << i)) {
                     if (!isok(x, y)) {
-                        impossible("movebubbles: bad pos (%d,%d)", x, y);
+                        impossible("S{movebubbles: bad pos (%d,%d)}", x, y);
                         continue;
                     }
 
@@ -1050,7 +1050,8 @@ water_friction(schar * udx, schar * udy)
         eff = TRUE;
     }
     if (eff)
-        pline("Water turbulence affects your movements.");
+        pline("C{N{N{o,turbulence},A{N{water}}},"
+              "V{V{affect},N{o,N{*,N{movement}},N=%s}}}.", you);
 }
 
 
@@ -1130,42 +1131,50 @@ restore_waterlevel(struct memfile *mf, struct level *lev)
     was_waterlevel = TRUE;
 }
 
+static const char *
+waterbody_name_inner(xchar x, xchar y)
+{
+    struct rm *loc;
+    schar ltyp;
+
+    if (!isok(x, y))
+        return "N{drink}"; /* should never happen */
+    loc = &level->locations[x][y];
+    ltyp = loc->typ;
+
+    if (is_lava(level, x, y))
+        return "N{lava}";
+    else if (ltyp == ICE ||
+             (ltyp == DRAWBRIDGE_UP &&
+              (level->locations[x][y].drawbridgemask & DB_UNDER) == DB_ICE))
+        return "N{ice}";
+    else if (((ltyp != POOL) && (ltyp != WATER) && !Is_medusa_level(&u.uz) &&
+              !Is_waterlevel(&u.uz) && !Is_juiblex_level(&u.uz)) ||
+             (ltyp == DRAWBRIDGE_UP &&
+              (level->locations[x][y].drawbridgemask & DB_UNDER) == DB_MOAT))
+        return "N{moat}";
+    else if ((ltyp != POOL) && (ltyp != WATER) && Is_juiblex_level(&u.uz))
+        return "N{swamp}";
+    else if (ltyp == POOL)
+        return "N{pool}";
+    else
+        return "N{water}";
+}
+
 int
 waterbody_prefix(xchar x, xchar y)
 {
     return (Is_waterlevel(&u.uz) || is_lava(level, x, y) ||
-            !strcmp(waterbody_name(x, y), "water"))
+            !strcmp(waterbody_name(x, y), "N{water}"))
         ? KILLED_BY : KILLED_BY_AN;
 }
 
 const char *
 waterbody_name(xchar x, xchar y)
 {
-    struct rm *loc;
-    schar ltyp;
-
-    if (!isok(x, y))
-        return "drink"; /* should never happen */
-    loc = &level->locations[x][y];
-    ltyp = loc->typ;
-
-    if (is_lava(level, x, y))
-        return "lava";
-    else if (ltyp == ICE ||
-             (ltyp == DRAWBRIDGE_UP &&
-              (level->locations[x][y].drawbridgemask & DB_UNDER) == DB_ICE))
-        return "ice";
-    else if (((ltyp != POOL) && (ltyp != WATER) && !Is_medusa_level(&u.uz) &&
-              !Is_waterlevel(&u.uz) && !Is_juiblex_level(&u.uz)) ||
-             (ltyp == DRAWBRIDGE_UP &&
-              (level->locations[x][y].drawbridgemask & DB_UNDER) == DB_MOAT))
-        return "moat";
-    else if ((ltyp != POOL) && (ltyp != WATER) && Is_juiblex_level(&u.uz))
-        return "swamp";
-    else if (ltyp == POOL)
-        return "pool of water";
-    else
-        return "water";
+    char buf[BUFSZ];
+    sprintf(buf, /*nointl*/"x%dy%d", x, y);
+    return add_uniquifier(buf, waterbody_name_inner(x, y));
 }
 
 static void
@@ -1175,7 +1184,7 @@ set_wportal(struct level *lev)
     for (wportal = lev->lev_traps; wportal; wportal = wportal->ntrap)
         if (wportal->ttyp == MAGIC_PORTAL)
             return;
-    impossible("set_wportal(): no portal!");
+    impossible("S{set_wportal(): no portal!}");
 }
 
 static void
@@ -1229,7 +1238,7 @@ mk_bubble(struct level *lev, int x, int y, int n)
     if (x >= bxmax || y >= bymax)
         return;
     if (n >= SIZE(bmask)) {
-        impossible("n too large (mk_bubble)");
+        impossible("S{n too large (mk_bubble)}");
         n = SIZE(bmask) - 1;
     }
     b = malloc(sizeof (struct bubble));
@@ -1259,7 +1268,7 @@ mk_bubble(struct level *lev, int x, int y, int n)
  * The player, the portal and all other objects and monsters
  * float along with their associated bubbles.  Bubbles may overlap
  * freely, and the contents may get associated with other bubbles in
- * the process.  Bubbles are "sticky", meaning that if the player is
+ * the process.  Bubbles are 'sticky', meaning that if the player is
  * in the immediate neighborhood of one, he/she may get sucked inside.
  * This property also makes leaving a bubble slightly difficult.
  */
@@ -1271,7 +1280,7 @@ mv_bubble(struct level *lev, struct bubble *b, int dx, int dy, boolean ini)
 
     /* move bubble */
     if (dx < -1 || dx > 1 || dy < -1 || dy > 1) {
-        /* pline("mv_bubble: dx = %d, dy = %d", dx, dy); */
+        /* pline("S{mv_bubble: dx = %d, dy = %d}", dx, dy); */
         dx = sgn(dx);
         dy = sgn(dy);
     }
@@ -1290,19 +1299,19 @@ mv_bubble(struct level *lev, struct bubble *b, int dx, int dy, boolean ini)
         colli |= 1;
 
     if (b->x < bxmin) {
-        pline("bubble xmin: x = %d, xmin = %d", b->x, bxmin);
+        pline("S{bubble xmin: x = %d, xmin = %d}", b->x, bxmin);
         b->x = bxmin;
     }
     if (b->y < bymin) {
-        pline("bubble ymin: y = %d, ymin = %d", b->y, bymin);
+        pline("S{bubble ymin: y = %d, ymin = %d}", b->y, bymin);
         b->y = bymin;
     }
     if ((int)(b->x + b->bm[0] - 1) > bxmax) {
-        pline("bubble xmax: x = %d, xmax = %d", b->x + b->bm[0] - 1, bxmax);
+        pline("S{bubble xmax: x = %d, xmax = %d}", b->x + b->bm[0] - 1, bxmax);
         b->x = bxmax - b->bm[0] + 1;
     }
     if ((int)(b->y + b->bm[1] - 1) > bymax) {
-        pline("bubble ymax: y = %d, ymax = %d", b->y + b->bm[1] - 1, bymax);
+        pline("S{bubble ymax: y = %d, ymax = %d}", b->y + b->bm[1] - 1, bymax);
         b->y = bymax - b->bm[1] + 1;
     }
 
@@ -1376,7 +1385,7 @@ mv_bubble(struct level *lev, struct bubble *b, int dx, int dy, boolean ini)
             }
 
         default:
-            impossible("mv_bubble: unknown bubble contents");
+            impossible("S{mv_bubble: unknown bubble contents}");
             break;
         }
         free(cons);

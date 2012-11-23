@@ -134,8 +134,8 @@ append_s(294,11283
 special_case_verb(516,18136
 conjugate(608,21429
 force_unit(694,25233
-forcecontent_en(1789,79062
-forcecontent(1808,79831
+forcecontent_en(1840,81746
+forcecontent(1859,82515
 
 nethack_server/src/clientmain.c,446
 #define COMMBUF_SIZE 12,418
@@ -2431,23 +2431,23 @@ libnethack/src/pline.c,462
 static boolean no_repeat 10,372
 pline(23,629
 vpline(33,778
-suppress_more(66,1551
-Norep(73,1631
-static char *you_buf you_buf86,1873
-static int you_buf_siz 87,1899
-You_buf(90,1942
-free_youbuf(102,2153
-#define YouPrefix(110,2308
-#define YouMessage(113,2424
-You_hear(118,2544
-verbalize(136,2933
-raw_printf(155,3305
-vraw_printf(165,3464
-impossible(180,3698
-align_str(201,4179
-mstatusline(217,4458
-ustatusline(294,7125
-self_invis_message(368,9568
+suppress_more(64,1465
+Norep(71,1545
+static char *you_buf you_buf84,1787
+static int you_buf_siz 85,1813
+You_buf(88,1856
+free_youbuf(100,2067
+#define YouPrefix(108,2222
+#define YouMessage(111,2338
+You_hear(116,2458
+verbalize(134,2847
+raw_printf(153,3219
+vraw_printf(163,3378
+impossible(178,3612
+align_str(199,4093
+mstatusline(215,4372
+ustatusline(292,7039
+self_invis_message(366,9482
 
 libnethack/src/zap.c,2029
 #define MAGIC_COOKIE 12,594
@@ -3365,39 +3365,39 @@ dochat(825,27471
 libnethack/src/do_name.c,906
 christen_monst(10,370
 do_mname(41,1158
-do_oname(111,3400
-realloc_obj(151,4614
-oname(223,7031
-static const char callable[callable262,8260
-docall_inner(268,8435
-do_naming(302,9444
-docall(434,13888
-static const char *const ghostnames[ghostnames460,14700
-rndghostname(473,15365
-x_monnam(497,16468
-l_monnam(657,22226
-mon_nam(666,22393
-noit_mon_nam(678,22763
-Monnam(687,22972
-noit_Monnam(696,23085
-m_monnam(706,23233
-y_monnam(713,23380
-Adjmonnam(727,23738
-a_monnam(737,23959
-Amonnam(744,24115
-distant_monnam(755,24374
-    const char *name;name780,25502
-    const boolean pname;781,25524
-} bogusmons[bogusmons782,25549
-rndmonidx(915,29387
-monnam_for_index(928,29642
-monnam_is_pname(936,29787
-roguename(944,29947
-static const char *const hcolors[hcolors965,30639
-hcolor(978,31326
-rndcolor(986,31528
-static const char *const coynames[coynames996,31713
-coyotename(1012,32443
+do_oname(111,3426
+realloc_obj(151,4640
+oname(223,7057
+static const char callable[callable262,8286
+docall_inner(268,8461
+do_naming(301,9435
+docall(433,13879
+static const char *const ghostnames[ghostnames459,14697
+rndghostname(472,15362
+x_monnam(496,16465
+l_monnam(653,22156
+mon_nam(662,22323
+noit_mon_nam(674,22693
+Monnam(683,22902
+noit_Monnam(692,23015
+m_monnam(702,23163
+y_monnam(709,23310
+Adjmonnam(723,23668
+a_monnam(733,23889
+Amonnam(740,24045
+distant_monnam(751,24304
+    const char *name;name776,25445
+    const boolean pname;777,25467
+} bogusmons[bogusmons778,25492
+rndmonidx(911,29330
+monnam_for_index(924,29585
+monnam_is_pname(932,29730
+roguename(940,29890
+static const char *const hcolors[hcolors961,30582
+hcolor(974,31269
+rndcolor(982,31471
+static const char *const coynames[coynames992,31656
+coyotename(1008,32386
 
 libnethack/src/history.c,135
 dohistory(9,323

@@ -47,7 +47,7 @@ A{+,A{black},A{blue}}    "black and blue"
 And other combinations work like this:
 
 NV, PV                             Verb with subject
-C{V{die},P{12|Dudley}}
+C{P{12|Dudley},V{die}}
 "You die", "Dudley dies", depending on who the message is sent to
 
 s,V                                Verb used in the passive
@@ -81,10 +81,10 @@ Primary verbs whose secondary is chained directly in English:
 can, had better, should, may
 
 Primary verbs whose secondary is chained via an infinitive in English:
-are, begin, want, choose, strain, have, fail, wait for, try, pick, see
+are, begin, want, choose, strain, have, fail, wait for, try, pick, seem
 
 Primary verbs whose secondary is chained via a participle in English:
-stop, like
+stop, like, see
 (also many verbs in the previous list, but the infinitive tends to be more
 natural; "like" can just-about work with the infinitive, but the participle is
 more natural, especially in the passive)
@@ -207,9 +207,17 @@ e,N                                End state of an action
 D{e,N{i,despair}}
 "to despair"
 
+e,EN                               End location of an action
+D{e,E{onto},N{altar}}
+"onto the altar"
+
 i,N                                Indirect object
 D{i,N{*,N{god}}}
 "to the gods"
+
+o,N                                Accompanying sound/visual effect
+D{o,N{i,bang}}
+"with a bang"
 
 p,A                                Parenthesized adjective
 A{p,A{hot}}
@@ -222,6 +230,11 @@ A{A{hard},V{manage}}
 NV                                 Noun with verb
 N{N{will},V{live}}
 "will to live"
+
+p,V                                Purpose of an action
+V{V{stop},D{p,V{think}}}
+"stop to think"
+(V{V{stop},V{think}} would be "stop thinking")
 
 V                                  Generally affected by the verb in question
 A{V{curse}}     A{V{V{paint},N{red}}}
@@ -236,9 +249,9 @@ N{N{corpse},A{N{gnome}}}
 "gnome corpse"
 
 QC                                 A comparison clause
-D{Q{while},C{V{sleep},P{12|Dudley}}}
+D{Q{while},C{P{12|Dudley},V{sleep}}}
 "while you sleep", "while Dudley sleeps"
-A{Q{where},C{V{sleep},N{dragon}}}
+A{Q{where},C{N{dragon},V{sleep}}}
 "where the dragon sleeps"
 Comparison clauses can usually go either at the start of the sentence or the end
 in English. NetHack usually puts them at the start; it's more dramatic that
@@ -255,16 +268,12 @@ N{s,C{P{12|Dudley},V{V{hit},N{1|newt}}}}
 N{s,C{c,P{12|Dudley},V{V{hit},N{1|newt}}}}
 "The newt that you are hitting", "The newt that Dudley is hitting"
 
-NN                                 A noun limited by a noun
-N{N{corpse},N{gnome}}
-"gnome corpse"
-
 q,NN                               A magical item name (X of Y)
 N{N{*,N{boot}},N{speed}}
 "boots of speed"
 
 q,C                                Create a question rather than a sentence
-C{q,C{V{hit},N{1|newt},P{12|Dudley}}}
+C{q,C{N{1|newt},V{V{hit},P{12|Dudley}}}}
 "Does the newt hit you"
 This is done by either substituting in "do" as the verb and putting that first,
 or moving the verb first (unless there's a relative pronoun in the subject
@@ -285,11 +294,10 @@ i,V                                Create an imperative
 C{i,V{V{kill},N{1|newt}}}
 "Kill the newt"
 
-
 Forming a complete sentence is simply done by putting the punctuation
 after a clause, or by using a complete sentence:
 
-C{V{die},P{12|Dudley}}...               "You die..."
+C{P{12|Dudley},V{die}}...               "You die..."
 S{Ouch!}                                "Ouch!"
 
 Other parts of speech can be used too; this is mostly used for things like menu

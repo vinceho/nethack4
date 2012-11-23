@@ -95,7 +95,6 @@ do_mname(void)
 
     if (mtmp->data->geno & G_UNIQ) {
         distant_monnam(mtmp, ARTICLE_THE, buf);
-        *buf = highc(*buf);
         pline("C{-,C{N=%s,V{s,V{like},V{V{call},N{*,N{i,name}}}}}}!", buf);
     } else
         christen_monst(mtmp, buf);
@@ -137,7 +136,6 @@ do_oname(struct obj *obj)
         do
             c2 = 'a' + rn2('z' - 'a' + 1);
         while (c1 == c2);
-        buf[n] = (buf[n] == c1) ? c2 : highc(c2);       /* keep same case */
         pline("C{N{o,N=%s,N=%s},V{V{slip},D{Q{while},C{N=%s,V{engrave}}}}}.",
               body_part(HAND), you, you);
     }
@@ -361,7 +359,8 @@ do_naming(void)
             xname(obj);
 
             if (!obj->dknown) {
-                pline("C{-,C{N=%s,V{V{can},V{V{V{see},N=%s},V{compare}}}}}.",
+                pline("C{-,C{N=%s,V{V{can},V{V{V{see},N=%s},"
+                      "D{p,V{compare}}}}}}.",
                       you, xname(obj));
                 return 0;
             }
@@ -472,6 +471,15 @@ const char *
 rndghostname(void)
 {
     return rn2(7) ? ghostnames[rn2(SIZE(ghostnames))] : (const char *)plname;
+}
+
+const char *
+the_your(const char *x, boolean your)
+{
+    static char buf[BUFSZ];
+    if (!your) return x;
+    sprintf(buf, "N{o,N=%s,N=%s}", x, you);
+    return buf;
 }
 
 /* Monster naming functions:
@@ -679,21 +687,19 @@ noit_mon_nam(const struct monst *mtmp)
              FALSE));
 }
 
+/* TODO: Remove these once all uses are changed. */
 char *
 Monnam(const struct monst *mtmp)
 {
     char *bp = mon_nam(mtmp);
 
-    *bp = highc(*bp);
     return bp;
 }
-
 char *
 noit_Monnam(const struct monst *mtmp)
 {
     char *bp = noit_mon_nam(mtmp);
 
-    *bp = highc(*bp);
     return bp;
 }
 
@@ -741,7 +747,6 @@ Amonnam(const struct monst *mtmp)
 {
     char *bp = a_monnam(mtmp);
 
-    *bp = highc(*bp);
     return bp;
 }
 

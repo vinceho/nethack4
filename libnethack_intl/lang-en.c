@@ -45,6 +45,7 @@ static boolean
 verb_chains_directly(const char *s)
 {
     if (!strcmp(s, "can")) return TRUE;
+    if (!strcmp(s, "will")) return TRUE;
     if (!strcmp(s, "may")) return TRUE;
     if (!strcmp(s, "should")) return TRUE;
     if (!strcmp(s, "had better")) return TRUE;
@@ -57,6 +58,7 @@ verb_chains_via_participle(const char *s)
 {
     if (!strcmp(s, "stop")) return TRUE;
     if (!strcmp(s, "like")) return TRUE;
+    if (!strcmp(s, "see")) return TRUE;
     return FALSE;
 }
 
@@ -75,6 +77,7 @@ stem_doubles_consonant(const char* s)
     if (!strcmp(s, "flag")) return TRUE;
     if (!strcmp(s, "rot")) return TRUE;
     if (!strcmp(s, "equip")) return TRUE;
+    if (!strcmp(s, "hit")) return TRUE; /* "hitting" only */
     return FALSE;
 }
 
@@ -123,6 +126,8 @@ anumbername(int n, boolean ordinal)
         case 70: rv = astrcat("seventy", t ? t : "", t ? "-" : ""); break;
         case 80: rv = astrcat("eighty",  t ? t : "", t ? "-" : ""); break;
         case 90: rv = astrcat("ninety",  t ? t : "", t ? "-" : ""); break;
+        default: /* impossible */
+            rv = astrcat("(error)", t ? t : "", t ? "-" : ""); break;
         }
         free(t);
         if (ordinal && !(n % 10)) {
@@ -386,8 +391,11 @@ append_s(const char *oldstr)
         goto bottom;
     }
 
-    /* knife/knives, etc... */
-    if (!strcmp(spot - 1, "fe")) {
+    /* knife/knives, etc...
+       exception: we don't want "engulves" */
+    if (!strcmp(str, "engulf")) {
+        /* do nothing */
+    } else if (!strcmp(spot - 1, "fe")) {
         strcpy(spot - 1, "ves");
         goto bottom;
     } else if (*spot == 'f') {
@@ -532,10 +540,26 @@ special_case_verb(char *obuf, const char *v, enum tense t,
         }
         return FALSE; /* other cases are regular */
     }
+    if (!strcmp(v, "go")) {
+        if (t == present) {
+            if (!plural && (p == third)) strcpy(obuf, "goes");
+            else strcpy(obuf, "go");
+            return TRUE;
+        }
+        if (t == imperfect) {
+            strcpy(obuf, "went");
+            return TRUE;
+        }
+        if (t == passive_participle) {
+            strcpy(obuf, "gone");
+            return TRUE;
+        }
+        return FALSE; /* other cases are regular */
+    }
     if (verb_chains_directly(v)) {
         /* Directly-chaining verbs don't conjugate. Except for "do".
            They also don't work properly in tenses other than the present, in
-           which case we have to sawp in an entirely different verb (e.g.
+           which case we have to swap in an entirely different verb (e.g.
            "be able" rather than "can"), but that's just a TODO for now. */
         strcpy(obuf, v);
         return TRUE;
@@ -564,6 +588,11 @@ special_case_verb(char *obuf, const char *v, enum tense t,
         if (t == passive_participle) { strcpy(obuf, "known"); return TRUE; }
         return FALSE; /* other cases are regular */
     }
+    if (!strcmp(v, "hold")) {
+        if (t == imperfect) { strcpy(obuf, "held"); return TRUE; }
+        if (t == passive_participle) { strcpy(obuf, "held"); return TRUE; }
+        return FALSE; /* other cases are regular */
+    }
     if (!strcmp(v, "lay")) {
         if (t == imperfect || t == passive_participle) {
             strcpy(obuf, "laid");
@@ -575,6 +604,20 @@ special_case_verb(char *obuf, const char *v, enum tense t,
         if (t == passive_participle) { strcpy(obuf, "eaten"); return TRUE; }
         if (t == imperfect) { strcpy(obuf, "ate"); return TRUE; }
         return FALSE; /* other cases are regular */
+    }
+    if (!strcmp(v, "rot")) {
+        if (t == passive_participle) { strcpy(obuf, "rotten"); return TRUE; }
+        return FALSE; /* other cases are regular */
+    }
+    if (!strcmp(v, "hit")) {
+        if (t == passive_participle) { strcpy(obuf, "hit"); return TRUE; }
+        if (t == imperfect) { strcpy(obuf, "hit"); return TRUE; }
+        return FALSE; /* other cases are regular */
+    }
+    if (!strcmp(v, "sit")) {
+        if (t == passive_participle) { strcpy(obuf, "sat"); return TRUE; }
+        if (t == imperfect) { strcpy(obuf, "sat"); return TRUE; }
+        if (t == active_participle) { strcpy(obuf, "sitting"); return TRUE; }
     }
     if (!strcmp(v, "are")) {
         switch (t) {
@@ -971,8 +1014,12 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         u->content = astrcat("\"", "\"", u->children[0]->content);
         return third;
     case noun_aNV: /* "burning bush", "the newt hitting Dudley" */
-        /* We put the verb first if it's a literal, afterwards otherwise. */
-        if (u->children[1]->rule == gr_literal) {
+        /* We put the verb first if it's a literal or has exactly one literal
+           adverb, afterwards otherwise. */
+        if (u->children[1]->rule == gr_literal ||
+            (u->children[1]->rule == verb_VD &&
+             u->children[1]->children[0]->rule == gr_literal &&
+             u->children[1]->children[1]->rule == gr_literal)) {
             /* Move "the"/"a"/"an" before the adjective. */
             struct grammarunit *n;
             nounperson = force_unit(u->children[0], t,
@@ -1221,7 +1268,15 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         force_unit(u->children[1], t, quan, p);
         if (u->children[1]->rule != gr_literal ||
             strchr(u->children[1]->content, ' ') ||
-            !strcmp(u->children[1]->content, "anyway"))
+            !strcmp(u->children[1]->content, "already") ||
+            !strcmp(u->children[1]->content, "anyway") ||
+            !strcmp(u->children[1]->content, "again") ||
+            !strcmp(u->children[1]->content, "now") ||
+            !strcmp(u->children[1]->content, "here") ||
+            !strcmp(u->children[1]->content, "there") ||
+            !strcmp(u->children[1]->content, "brightly") ||
+            !strcmp(u->children[1]->content, "upward") ||
+            !strcmp(u->children[1]->content, "downwards"))
             u->content = astrcat(u->children[0]->content,
                                  u->children[1]->content, " ");
         else
@@ -1246,6 +1301,10 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         else
             u->content = astrcat("", u->children[0]->content, "with ");
         break;
+    case adverb_oN: /* "with a bright flash" */
+        force_unit(u->children[0], object, u->children[0]->quan, base);
+        u->content = astrcat("", u->children[0]->content, "with ");
+        break;
     case adverb_lN: /* "at the door" */
     case adjective_lN:
         force_unit(u->children[0], object, u->children[0]->quan, base);
@@ -1268,6 +1327,12 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
     case adverb_eN: /* "to dust" */
         force_unit(u->children[0], object, u->children[0]->quan, base);
         u->content = astrcat("", u->children[0]->content, "to ");
+        break;
+    case adverb_eEN: /* "into the box" */
+        force_unit(u->children[0], object, u->children[0]->quan, base);
+        force_unit(u->children[1], object, u->children[1]->quan, base);
+        u->content = astrcat(u->children[0]->content,
+                             u->children[1]->content, " ");
         break;
     case adverb_iN: /* "to his mother" */
         force_unit(u->children[0], object, u->children[0]->quan, base);
@@ -1308,6 +1373,10 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         force_unit(u->children[1], t, quan, p);
         u->content = astrcat(u->children[1]->content,
                              u->children[0]->content, " ");
+        break;
+    case adverb_pV: /* "stop to think" */
+        force_unit(u->children[0], secondary_infinitive, 1 , base);
+        u->content = astrcat("", u->children[0]->content, "");
         break;
     case adjective_AV: /* "hot to touch" */
     case noun_NV: /* "will to live" */
@@ -1500,10 +1569,13 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         v = u->children[0];
         if (v->rule == clause_NV  || v->rule == clause_iNV ||
             v->rule == clause_pNV || v->rule == clause_cNV)
-            v = v->children[1];
-        else v = v->children[0];
+            cnumber = 1;
+        else cnumber = 0;
         w = v;
         while (TRUE) {
+            if (v->children[cnumber]->rule == verb_VN) break;
+            v = v->children[cnumber];
+
             cnumber = (move_to_secondaries &&
                        (v->rule == verb_VV || v->rule == verb_sVV)) ? 1 : 0;
 
@@ -1515,12 +1587,11 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                 }
                 move_to_secondaries = TRUE;
                 v = w;
-                cnumber = (move_to_secondaries &&
-                           (v->rule == verb_VV || v->rule == verb_sVV)) ? 1 : 0;
+                if (v->rule == clause_NV  || v->rule == clause_iNV ||
+                    v->rule == clause_pNV || v->rule == clause_cNV)
+                    cnumber = 1;
+                else cnumber = 0;
             }
-
-            if (v->children[cnumber]->rule == verb_VN) break;
-            v = v->children[cnumber];
         }
         v->children[cnumber]->children[1]->tagged = TRUE; /* tag it */
         force_unit(u->children[0], present, 1, base);
@@ -1624,7 +1695,8 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         /* Find the base verb. */
         for (v = u->children[0]->children[cnumber];
              v->rule != gr_literal; v = v->children[0]) {}
-        if (!verb_chains_directly(v->content)) {
+        if (!verb_chains_directly(v->content) &&
+            strcmp(v->content,"are")) {
             /* Nest a secondary verb around u->children[cnumber]. */
             w = malloc(sizeof(struct grammarunit));
             w->role = gr_verb;

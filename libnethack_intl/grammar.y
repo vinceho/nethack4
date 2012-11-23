@@ -177,20 +177,23 @@ nounish:
 ;
 
 adverbish:
-  D literalinner                         { $$ = $2; $$->role = gr_adverb; }
-| DEQUALS adverbish                      { $$ = $2; }
-| D adverbish COMMA adverbish END        { $$=mu($2,$4,0,adverb,adverb_DD); }
-| D TCOMMA nounish END                   { $$=mu($3, 0,0,adverb,adverb_tN); }
-| D LCOMMA nounish END                   { $$=mu($3, 0,0,adverb,adverb_lN); }
-| D ACOMMA nounish END                   { $$=mu($3, 0,0,adverb,adverb_aN); }
-| D DCOMMA nounish END                   { $$=mu($3, 0,0,adverb,adverb_dN); }
-| D MCOMMA nounish END                   { $$=mu($3, 0,0,adverb,adverb_mN); }
-| D ECOMMA nounish END                   { $$=mu($3, 0,0,adverb,adverb_eN); }
-| D ICOMMA nounish END                   { $$=mu($3, 0,0,adverb,adverb_iN); }
-| D relativish COMMA clausish END        { $$=mu($2,$4,0,adverb,adverb_QC); }
-| D MINUSCOMMA adverbish END             { $$=mu($3, 0,0,adverb,minus_D); }
-| D PLUSCOMMA adverbish COMMA adverbish END { $$=mu($3,$5, 0,adverb,plus_DD); }
-| DEQUALS PERCENT_S                      {
+  D literalinner                            { $$ = $2; $$->role = gr_adverb; }
+| DEQUALS adverbish                         { $$ = $2; }
+| D adverbish COMMA adverbish END           { $$=mu($2,$4,0,adverb,adverb_DD); }
+| D TCOMMA nounish END                      { $$=mu($3, 0,0,adverb,adverb_tN); }
+| D LCOMMA nounish END                      { $$=mu($3, 0,0,adverb,adverb_lN); }
+| D ACOMMA nounish END                      { $$=mu($3, 0,0,adverb,adverb_aN); }
+| D OCOMMA nounish END                      { $$=mu($3, 0,0,adverb,adverb_oN); }
+| D DCOMMA nounish END                      { $$=mu($3, 0,0,adverb,adverb_dN); }
+| D MCOMMA nounish END                      { $$=mu($3, 0,0,adverb,adverb_mN); }
+| D ECOMMA nounish END                      { $$=mu($3, 0,0,adverb,adverb_eN); }
+| D ECOMMA prepositionish COMMA nounish END { $$=mu($3,$5,0,adverb,adverb_eEN);}
+| D ICOMMA nounish END                      { $$=mu($3, 0,0,adverb,adverb_iN); }
+| D PCOMMA verbish END                      { $$=mu($3, 0,0,adverb,adverb_pV); }
+| D relativish COMMA clausish END           { $$=mu($2,$4,0,adverb,adverb_QC); }
+| D MINUSCOMMA adverbish END                { $$=mu($3, 0,0,adverb,minus_D);   }
+| D PLUSCOMMA adverbish COMMA adverbish END { $$=mu($3,$5,0,adverb,plus_DD);   }
+| DEQUALS PERCENT_S                         {
       $$ = mu(0, 0, 0, adverb, gr_literal);
       $$->content = malloc(3);
       strcpy($$->content, "%s");
