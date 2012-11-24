@@ -141,7 +141,7 @@ o,A                                Ordinal of a number
 A{o,A{2}}
 "second"
 
-o,N,N, o,N,P                       Noun with owner
+o,N,N, o,N,P                       Noun with owner (possessive)
 N{o,N{dungeon},P{12|Dudley}}
 "Your dungeon", "Dudley's dungeon"
 
