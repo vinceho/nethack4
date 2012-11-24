@@ -148,13 +148,13 @@ makedog(void)
     if (!*petname && pettype == PM_LITTLE_DOG) {
         /* All of these names were for dogs. */
         if (Role_if(PM_CAVEMAN))
-            petname = "Slasher";        /* The Warrior */
+            petname = /*nointl*/"Slasher"; /* The Warrior */
         if (Role_if(PM_SAMURAI))
-            petname = "Hachi";  /* Shibuya Station */
+            petname = /*nointl*/"Hachi";   /* Shibuya Station */
         if (Role_if(PM_BARBARIAN))
-            petname = "Idefix"; /* Obelix */
+            petname = /*nointl*/"Idefix";  /* Obelix */
         if (Role_if(PM_RANGER))
-            petname = "Sirius"; /* Orion's dog */
+            petname = /*nointl*/"Sirius";  /* Orion's dog */
     }
 
     mtmp = makemon(&mons[pettype], level, u.ux, u.uy, MM_EDOG);
@@ -162,7 +162,7 @@ makedog(void)
     /* Horses already wear a saddle */
     if (pettype == PM_PONY && ! !(otmp = mksobj(level, SADDLE, TRUE, FALSE))) {
         if (mpickobj(mtmp, otmp))
-            panic("merged saddle?");
+            panic("S{merged saddle?}");
         mtmp->misc_worn_check |= W_SADDLE;
         otmp->dknown = otmp->bknown = otmp->rknown = 1;
         otmp->owornmask = W_SADDLE;
@@ -331,7 +331,7 @@ mon_arrive(struct monst *mtmp, boolean with_you)
             xlocale = t->tx, ylocale = t->ty;
             break;
         } else {
-            impossible("mon_arrive: no corresponding portal?");
+            impossible("S{mon_arrive: no corresponding portal?}");
         }
      /*FALLTHRU*/ default:
     case MIGR_RANDOM:
@@ -472,7 +472,7 @@ mon_catchup_elapsed_time(struct monst *mtmp, long nmv)
     if (!mtmp->mtame && mtmp->mleashed) {
         /* leashed monsters should always be with hero, consequently never
            losing any time to be accounted for later */
-        impossible("catching up for leashed monster?");
+        impossible("S{catching up for leashed monster?}");
         m_unleash(mtmp, FALSE);
     }
 
@@ -516,16 +516,19 @@ keepdogs(boolean pets_only)
             stay_behind = FALSE;
             if (!pets_only && mtmp->mtame && mtmp->meating) {
                 if (canseemon(mtmp))
-                    pline("%s is still eating.", Monnam(mtmp));
+                    pline("C{N=%s,V{V{are},A{A{eating},D{still}}}}.",
+                          mon_nam(mtmp));
                 stay_behind = TRUE;
             } else if (mon_has_amulet(mtmp)) {
                 if (canseemon(mtmp))
-                    pline("%s seems very disoriented for a moment.",
-                          Monnam(mtmp));
+                    pline("C{N=%s,V{V{V{seem},A{A{V{disorient}},D{very}}},"
+                          "D{d,N{i,moment}}}}.",
+                          mon_nam(mtmp));
                 stay_behind = TRUE;
             } else if (!pets_only && mtmp->mtame && mtmp->mtrapped) {
                 if (canseemon(mtmp))
-                    pline("%s is still trapped.", Monnam(mtmp));
+                    pline("C{N=%s,V{V{are},A{A{V{trap}},D{still}}}}.",
+                          mon_nam(mtmp));
                 stay_behind = TRUE;
             }
             if (mtmp == u.usteed)
@@ -533,9 +536,8 @@ keepdogs(boolean pets_only)
 
             if (stay_behind) {
                 if (mtmp->mleashed) {
-                    pline("%s leash suddenly comes loose.", humanoid(mtmp->data)
-                          ? (mtmp->female ? "Her" : "His")
-                          : "Its");
+                    pline("C{N{o,N{leash},N=%s},V{V{come loose},D{suddenly}}}.",
+                          mon_nam(mtmp));
                     m_unleash(mtmp, FALSE);
                 }
                 continue;
@@ -575,7 +577,8 @@ keepdogs(boolean pets_only)
         } else if (mtmp->mleashed) {
             /* this can happen if your quest leader ejects you from the "home"
                level while a leashed pet isn't next to you */
-            pline("%s leash goes slack.", s_suffix(Monnam(mtmp)));
+            pline("C{N{o,N{leash},N=%s},V{V{go^become},A{slack}}}."
+                  mon_nam(mtmp));
             m_unleash(mtmp, FALSE);
         }
     }
@@ -787,10 +790,11 @@ tamedog(struct monst *mtmp, struct obj *obj)
                                       obj->corpsenm >= LOW_PM &&
                                       mons[obj->corpsenm].msize >
                                       mtmp->data->msize);
-                pline("%s catches %s%s", Monnam(mtmp), (xname(obj)),
-                      !big_corpse ? "." : ", or vice versa!");
+                pline("C{N=%s,V{V=%s,N=%s}}.", mon_nam(mtmp),
+                      big_corpse ? "V{V{catch},D{somehow}}" : "V{catch}",
+                      xname(obj));
             } else if (cansee(mtmp->mx, mtmp->my))
-                pline("%s.", Tobjnam(obj, "stop"));
+                pline("C{N=%s,V{stop}}.", xname(obj));
             /* dog_eat expects a floor object */
             place_object(obj, level, mtmp->mx, mtmp->my);
             dog_eat(mtmp, obj, mtmp->mx, mtmp->my, FALSE);
@@ -874,11 +878,15 @@ wary_dog(struct monst *mtmp, boolean was_dead)
         if (!quietly && cansee(mtmp->mx, mtmp->my)) {
             if (haseyes(youmonst.data)) {
                 if (haseyes(mtmp->data))
-                    pline("%s %s to look you in the %s.", Monnam(mtmp),
-                          mtmp->mpeaceful ? "seems unable" : "refuses",
-                          body_part(EYE));
+                    pline("C{N=%s,V{V=%s,"
+                          "V{V{V{look},N=%s},D{e,E{in},N=%s}}}}",
+                          mon_nam(mtmp),
+                          mtmp->mpeaceful ? "V{V{seem},A{unable}}"
+                                          : "V{refuse}",
+                          you, body_part(EYE));
                 else
-                    pline("%s avoids your gaze.", Monnam(mtmp));
+                    pline("C{N=%s,V{V{avoid},N{o,N{gaze},N=%s}}}",
+                          mon_nam(mtmp), you);
             }
         }
     } else {
