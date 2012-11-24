@@ -78,6 +78,7 @@ stem_doubles_consonant(const char* s)
     if (!strcmp(s, "rot")) return TRUE;
     if (!strcmp(s, "equip")) return TRUE;
     if (!strcmp(s, "hit")) return TRUE; /* "hitting" only */
+    if (!strcmp(s, "trap")) return TRUE;
     return FALSE;
 }
 
