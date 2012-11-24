@@ -62,7 +62,8 @@ make_familiar(struct obj *otmp, xchar x, xchar y, boolean quietly)
                 if (!quietly)
                     /* have just been given "You <do something with> the
                        figurine and it transforms." message */
-                    pline("... into a pile of dust.");
+                    /* TODO: Clean up the N{i,pile} */
+                    pline("...D{e,E{into},N{l,N{i,pile},N{o,dust}}}.");
                 break;  /* mtmp is null */
             }
         } else if (!rn2(3)) {
@@ -71,8 +72,10 @@ make_familiar(struct obj *otmp, xchar x, xchar y, boolean quietly)
             pm = rndmonst(&u.uz);
             if (!pm) {
                 if (!quietly)
-                    pline
-                        ("There seems to be nothing available for a familiar.");
+                    /* TODO: This message should not be global. */
+                    pline("S{It seems that the monsters of the dungeon do not "
+                          "want to get any more familiar with you than they "
+                          "already have.}");
                 break;
             }
         }
@@ -80,7 +83,8 @@ make_familiar(struct obj *otmp, xchar x, xchar y, boolean quietly)
         mtmp = makemon(pm, level, x, y, MM_EDOG | MM_IGNOREWATER);
         if (otmp && !mtmp) {    /* monster was genocided or square occupied */
             if (!quietly)
-                pline("The figurine writhes and then shatters into pieces!");
+                pline("C{N{figurine},V{+,V{writhe},"
+                      "V{V{shatter},D{e,E{into},N{*,N{o,piece}}}}}}");
             break;
         }
     } while (!mtmp && --trycnt > 0);
@@ -102,7 +106,10 @@ make_familiar(struct obj *otmp, xchar x, xchar y, boolean quietly)
             mtmp->mtame = 0;    /* not tame after all */
             if (chance == 2) {  /* hostile (cursed figurine) */
                 if (!quietly)
-                    pline("You get a bad feeling about this.");
+                    /* TODO: Clean up the N{i,feeling} */
+                    /* TODO: Put 'about', not 'of' */
+                    pline("C{N=%s,V{V{get},"
+                          "N{l,N{N{i,feeling},A{bad}},N{o,this}}}}", you);
                 mtmp->mpeaceful = 0;
                 set_malign(mtmp);
             }
