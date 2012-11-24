@@ -47,6 +47,17 @@ main(int argc, char **argv) {
                 preprocline = FALSE;
                 linecount++;
             }
+            if (prev_slash && c == '*') {
+                while ((c = getc(f)) != EOF) {
+                    /* Re-use prev-slash as a misnomer */
+                    if (prev_slash && c == '/')
+                        break;
+                    prev_slash = (c == '*');
+                    if (c == '\n')
+                        linecount++;
+                }
+                continue;
+            }
             if (c == '"' && !preprocline && !firstline) {
                 /* Let's start parsing. */
                 int i = 0;
