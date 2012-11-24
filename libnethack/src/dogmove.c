@@ -313,11 +313,14 @@ dog_eat(struct monst *mtmp, struct obj *obj, int x, int y, boolean devour)
         /* hack: observe the action if either new or old location is in view */
         /* However, invisible monsters should still be "it" even though out of
            sight locations should not. */
-    if (cansee(x, y) || cansee(mtmp->mx, mtmp->my))
-        pline("%s %s %s.", mon_visible(mtmp) ? noit_Monnam(mtmp) : "It",
-              devour ? "devours" : "eats",
-              (obj->oclass == FOOD_CLASS) ?
-              singular(obj, doname) : doname(obj));
+    if (cansee(x, y) || cansee(mtmp->mx, mtmp->my)) {
+        if (mon_visible(mtmp) && tunnels(mon->data) && devour)
+            pline("C{N=%s,V{dig in^pun}}!", noit_monnam(mtmp));
+        else
+           pline("%s %s %s.", mon_visible(mtmp) ? noit_Monnam(mtmp) : "It",
+                  devour ? "devours" : "eats",
+                  (obj->oclass == FOOD_CLASS) ?
+                  singular(obj, doname) : doname(obj));
     /* It's a reward if it's DOGFOOD and the player dropped/threw it. */
     /* We know the player had it if invlet is set -dlc */
     if (dogfood(mtmp, obj) == DOGFOOD && obj->invlet)

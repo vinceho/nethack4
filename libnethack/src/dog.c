@@ -797,7 +797,7 @@ tamedog(struct monst *mtmp, struct obj *obj)
                 pline("C{N=%s,V{stop}}.", xname(obj));
             /* dog_eat expects a floor object */
             place_object(obj, level, mtmp->mx, mtmp->my);
-            dog_eat(mtmp, obj, mtmp->mx, mtmp->my, FALSE);
+            dog_eat(mtmp, obj, mtmp->mx, mtmp->my, TRUE);
             /* eating might have killed it, but that doesn't matter here; a
                non-null result suppresses "miss" message for thrown food and
                also implies that the object has been deleted */
