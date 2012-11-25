@@ -928,8 +928,9 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             a = u->children[1];
             while (a->rule == adjective_pA || a->rule == plus_AA)
                 a = a->children[0];
-            if (a->rule == adjective_QC || a->rule == adjective_mN ||
-                a->rule == adjective_lN || a->rule == adjective_aN ||
+            if (a->rule == adjective_QC || a->rule == adjective_QN ||
+                a->rule == adjective_mN || a->rule == adjective_lN ||
+                a->rule == adjective_aN ||
                 (a->rule == adjective_V &&
                  a->children[0]->rule != gr_literal) ||
                 a->rule == adjective_VN) {
@@ -1345,6 +1346,12 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         u->content = astrcat(u->children[0]->content,
                              u->children[1]->content, " ");
         break;
+    case adverb_QN: /* "than the dust" */
+        force_unit(u->children[0], t, quan, p);
+        force_unit(u->children[1], t, u->children[1]->quan, p);
+        u->content = astrcat(u->children[0]->content,
+                             u->children[1]->content, " ");
+        break;
     case adjective_cA: /* "hotter", "more expensive to buy" */
     case adjective_sA: /* "hottest", "most expensive to buy" */
         /* If we're applying this to a literal, we're following one of two
@@ -1412,6 +1419,12 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
            than before, "the cave where the dragon sleeps". The support for this
            is in the noun_NA case, so we only need bother with translating the
            adjective itself. */
+        force_unit(u->children[0], t, quan, p);
+        force_unit(u->children[1], present, u->children[1]->quan, base);
+        u->content = astrcat(u->children[0]->content,
+                             u->children[1]->content, " ");
+        break;
+    case adjective_QN: /* "in disgust" */
         force_unit(u->children[0], t, quan, p);
         force_unit(u->children[1], present, u->children[1]->quan, base);
         u->content = astrcat(u->children[0]->content,

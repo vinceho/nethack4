@@ -258,6 +258,13 @@ in English. NetHack usually puts them at the start; it's more dramatic that
 way. When being used as adjectives rather than adverbs, they go just after the
 noun they're modifying in English, rather than just before like most adjectives.
 
+QN                                 Qualifying with a noun
+D{Q{than},N{dust}}
+"than the dust"
+A{Q{in},N{o,disgust}}
+"in disgust"
+Noun qualifications are never moved to the front of a sentence.
+
 a,NV                               A noun that is verbing
 N{a,N{1|newt},V{V{hit},P{12|Dudley}}}
 "The newt hitting you", "The newt hitting Dudley"

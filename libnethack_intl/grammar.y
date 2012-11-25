@@ -191,6 +191,7 @@ adverbish:
 | D ICOMMA nounish END                      { $$=mu($3, 0,0,adverb,adverb_iN); }
 | D PCOMMA verbish END                      { $$=mu($3, 0,0,adverb,adverb_pV); }
 | D relativish COMMA clausish END           { $$=mu($2,$4,0,adverb,adverb_QC); }
+| D relativish COMMA nounish END            { $$=mu($2,$4,0,adverb,adverb_QN); }
 | D MINUSCOMMA adverbish END                { $$=mu($3, 0,0,adverb,minus_D);   }
 | D PLUSCOMMA adverbish COMMA adverbish END { $$=mu($3,$5,0,adverb,plus_DD);   }
 | DEQUALS PERCENT_S                         {
@@ -216,6 +217,7 @@ adjectivish:
 | A adjectivish COMMA adverbish END { $$=mu($2,$4,0,adjective,adjective_AD); }
 | A adjectivish COMMA verbish END   { $$=mu($2,$4,0,adjective,adjective_AV); }
 | A relativish COMMA clausish END   { $$=mu($2,$4,0,adjective,adjective_QC); }
+| A relativish COMMA nounish END    { $$=mu($2,$4,0,adjective,adjective_QN); }
 | A MINUSCOMMA adjectivish END      { $$=mu($3, 0,0,adjective,minus_A); }
 | A PLUSCOMMA adjectivish COMMA adjectivish END {
       $$ = mu($3, $5, 0, adjective, plus_AA);
