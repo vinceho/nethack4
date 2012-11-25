@@ -330,7 +330,7 @@ dog_eat(struct monst *mtmp, struct obj *obj, int x, int y, boolean devour)
         obj->oerodeproof = 0;
         mtmp->mstun = 1;
         if (canseemon(mtmp) && flags.verbose) {
-            pline("C{N=%s,V{V{V{spit out},N=%s},D{E{in},N{o,disgust}}}}!",
+            pline("C{N=%s,V{V{V{spit out},N=%s},D{E{in^state},N{o,disgust}}}}!",
                   mon_nam(mtmp), distant_nam(obj, doname));
         }
     } else if (obj == uball) {
@@ -403,7 +403,7 @@ dog_hunger(struct monst *mtmp, struct edog *edog)
                 goto dog_died;
             if (cansee(mtmp->mx, mtmp->my))
                 pline("C{N=%s,V{V{V{are},A{confused}},"
-                      "D{E{from},N{o,hunger}}}}.", mon_nam(mtmp));
+                      "D{E{from^due to},N{o,hunger}}}}.", mon_nam(mtmp));
             else if (couldsee(mtmp->mx, mtmp->my))
                 beg(mtmp);
             else
