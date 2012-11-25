@@ -330,7 +330,7 @@ dog_eat(struct monst *mtmp, struct obj *obj, int x, int y, boolean devour)
         obj->oerodeproof = 0;
         mtmp->mstun = 1;
         if (canseemon(mtmp) && flags.verbose) {
-            pline("C{N=%s,V{V{spit out},A{Q{in},N{o,disgust}}}}!",
+            pline("C{N=%s,V{V{V{spit out},N=%s},D{E{in},N{o,disgust}}}}!",
                   mon_nam(mtmp), distant_nam(obj, doname));
         }
     } else if (obj == uball) {
@@ -403,12 +403,12 @@ dog_hunger(struct monst *mtmp, struct edog *edog)
                 goto dog_died;
             if (cansee(mtmp->mx, mtmp->my))
                 pline("C{N=%s,V{V{V{are},A{confused}},"
-                      "D{Q{from},N{o,hunger}}}}.", mon_nam(mtmp));
+                      "D{E{from},N{o,hunger}}}}.", mon_nam(mtmp));
             else if (couldsee(mtmp->mx, mtmp->my))
                 beg(mtmp);
             else
-                pline("C{N=%s,V{V{V{feel},A{worried}},"
-                      "D{Q{about},N=%s}}}", you, y_monnam(mtmp));
+                pline("C{N=%s,V{V{feel},A{V{V{worry about},N=%s}}}}."
+                      you, y_monnam(mtmp));
             stop_occupation();
         } else if (moves > edog->hungrytime + 750 || mtmp->mhp < 1) {
         dog_died:
@@ -945,7 +945,7 @@ newdogpos:
 
         if (info[chi] & ALLOW_U) {
             if (mtmp->mleashed) {       /* play it safe */
-                pline("C{N=%s,V{V{break loose},D{Q{of},N{o,N{leash},N=%s}}}}!",
+                pline("C{N=%s,V{V{break loose of},N{o,N{leash},N=%s}}}!",
                       mon_nam(mtmp), mon_nam(mtmp));
                 m_unleash(mtmp, FALSE);
             }

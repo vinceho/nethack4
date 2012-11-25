@@ -258,12 +258,13 @@ in English. NetHack usually puts them at the start; it's more dramatic that
 way. When being used as adjectives rather than adverbs, they go just after the
 noun they're modifying in English, rather than just before like most adjectives.
 
-QN                                 Qualifying with a noun
-D{Q{than},N{dust}}
+EN                                 Qualifying with a noun
+D{E{from},N{hunger}}
 "than the dust"
-A{Q{in},N{o,disgust}}
+A{E{in},N{o,disgust}}
 "in disgust"
-Noun qualifications are never moved to the front of a sentence.
+Be careful to only use these when this is truly a modifier, rather than an
+adverb forming part of a verb.
 
 a,NV                               A noun that is verbing
 N{a,N{1|newt},V{V{hit},P{12|Dudley}}}

@@ -191,7 +191,7 @@ adverbish:
 | D ICOMMA nounish END                      { $$=mu($3, 0,0,adverb,adverb_iN); }
 | D PCOMMA verbish END                      { $$=mu($3, 0,0,adverb,adverb_pV); }
 | D relativish COMMA clausish END           { $$=mu($2,$4,0,adverb,adverb_QC); }
-| D relativish COMMA nounish END            { $$=mu($2,$4,0,adverb,adverb_QN); }
+| D prepositionish COMMA nounish END        { $$=mu($2,$4,0,adverb,adverb_EN); }
 | D MINUSCOMMA adverbish END                { $$=mu($3, 0,0,adverb,minus_D);   }
 | D PLUSCOMMA adverbish COMMA adverbish END { $$=mu($3,$5,0,adverb,plus_DD);   }
 | DEQUALS PERCENT_S                         {
@@ -202,23 +202,23 @@ adverbish:
 ;
 
 adjectivish:
-  A literalinner                    { $$ = $2; $$->role = gr_adjective; }
-| AEQUALS adjectivish               { $$ = $2; }
-| A CCOMMA adjectivish END          { $$=mu($3, 0,0,adjective,adjective_cA); }
-| A SCOMMA adjectivish END          { $$=mu($3, 0,0,adjective,adjective_sA); }
-| A PCOMMA adjectivish END          { $$=mu($3, 0,0,adjective,adjective_pA); }
-| A OCOMMA adjectivish END          { $$=mu($3, 0,0,adjective,adjective_oA); }
-| A ACOMMA nounish END              { $$=mu($3, 0,0,adjective,adjective_aN); }
-| A LCOMMA nounish END              { $$=mu($3, 0,0,adjective,adjective_lN); }
-| A MCOMMA nounish END              { $$=mu($3, 0,0,adjective,adjective_mN); }
-| A verbish END                     { $$=mu($2, 0,0,adjective,adjective_V ); }
-| A verbish COMMA nounish END       { $$=mu($2,$4,0,adjective,adjective_V ); }
-| A nounish END                     { $$=mu($2, 0,0,adjective,adjective_N ); }
-| A adjectivish COMMA adverbish END { $$=mu($2,$4,0,adjective,adjective_AD); }
-| A adjectivish COMMA verbish END   { $$=mu($2,$4,0,adjective,adjective_AV); }
-| A relativish COMMA clausish END   { $$=mu($2,$4,0,adjective,adjective_QC); }
-| A relativish COMMA nounish END    { $$=mu($2,$4,0,adjective,adjective_QN); }
-| A MINUSCOMMA adjectivish END      { $$=mu($3, 0,0,adjective,minus_A); }
+  A literalinner                     { $$ = $2; $$->role = gr_adjective; }
+| AEQUALS adjectivish                { $$ = $2; }
+| A CCOMMA adjectivish END           { $$=mu($3, 0,0,adjective,adjective_cA); }
+| A SCOMMA adjectivish END           { $$=mu($3, 0,0,adjective,adjective_sA); }
+| A PCOMMA adjectivish END           { $$=mu($3, 0,0,adjective,adjective_pA); }
+| A OCOMMA adjectivish END           { $$=mu($3, 0,0,adjective,adjective_oA); }
+| A ACOMMA nounish END               { $$=mu($3, 0,0,adjective,adjective_aN); }
+| A LCOMMA nounish END               { $$=mu($3, 0,0,adjective,adjective_lN); }
+| A MCOMMA nounish END               { $$=mu($3, 0,0,adjective,adjective_mN); }
+| A verbish END                      { $$=mu($2, 0,0,adjective,adjective_V ); }
+| A verbish COMMA nounish END        { $$=mu($2,$4,0,adjective,adjective_V ); }
+| A nounish END                      { $$=mu($2, 0,0,adjective,adjective_N ); }
+| A adjectivish COMMA adverbish END  { $$=mu($2,$4,0,adjective,adjective_AD); }
+| A adjectivish COMMA verbish END    { $$=mu($2,$4,0,adjective,adjective_AV); }
+| A relativish COMMA clausish END    { $$=mu($2,$4,0,adjective,adjective_QC); }
+| A prepositionish COMMA nounish END { $$=mu($2,$4,0,adjective,adjective_EN); }
+| A MINUSCOMMA adjectivish END       { $$=mu($3, 0,0,adjective,minus_A); }
 | A PLUSCOMMA adjectivish COMMA adjectivish END {
       $$ = mu($3, $5, 0, adjective, plus_AA);
   }
