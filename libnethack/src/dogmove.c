@@ -317,10 +317,8 @@ dog_eat(struct monst *mtmp, struct obj *obj, int x, int y, boolean devour)
         if (mon_visible(mtmp) && tunnels(mon->data) && devour)
             pline("C{N=%s,V{dig in^pun}}!", noit_monnam(mtmp));
         else
-           pline("%s %s %s.", mon_visible(mtmp) ? noit_Monnam(mtmp) : "It",
-                  devour ? "devours" : "eats",
-                  (obj->oclass == FOOD_CLASS) ?
-                  singular(obj, doname) : doname(obj));
+            pline("C{N=%s,V{V=%s,N=%s}}.", mon_nam(mtmp),
+                  devour ? "V{devour}" : "V{eat}", doname(obj));
     /* It's a reward if it's DOGFOOD and the player dropped/threw it. */
     /* We know the player had it if invlet is set -dlc */
     if (dogfood(mtmp, obj) == DOGFOOD && obj->invlet)
@@ -332,8 +330,8 @@ dog_eat(struct monst *mtmp, struct obj *obj, int x, int y, boolean devour)
         obj->oerodeproof = 0;
         mtmp->mstun = 1;
         if (canseemon(mtmp) && flags.verbose) {
-            pline("%s spits %s out in disgust!", Monnam(mtmp),
-                  distant_name(obj, doname));
+            pline("C{N=%s,V{V{spit out},A{Q{in},N{o,disgust}}}}!",
+                  mon_nam(mtmp), distant_nam(obj, doname));
         }
     } else if (obj == uball) {
         unpunish();
@@ -404,21 +402,24 @@ dog_hunger(struct monst *mtmp, struct edog *edog)
             if (mtmp->mhp < 1)
                 goto dog_died;
             if (cansee(mtmp->mx, mtmp->my))
-                pline("%s is confused from hunger.", Monnam(mtmp));
+                pline("C{N=%s,V{V{V{are},A{confused}},"
+                      "D{Q{from},N{o,hunger}}}}.", mon_nam(mtmp));
             else if (couldsee(mtmp->mx, mtmp->my))
                 beg(mtmp);
             else
-                pline("You feel worried about %s.", y_monnam(mtmp));
+                pline("C{N=%s,V{V{V{feel},A{worried}},"
+                      "D{Q{about},N=%s}}}", you, y_monnam(mtmp));
             stop_occupation();
         } else if (moves > edog->hungrytime + 750 || mtmp->mhp < 1) {
         dog_died:
             if (mtmp->mleashed && mtmp != u.usteed)
-                pline("Your leash goes slack.");
+                pline("C{N{o,N{leash},N=%s},V{V{go^become},A{slack}}}.",
+                      mon_nam(mtmp));
             else if (cansee(mtmp->mx, mtmp->my))
-                pline("%s starves.", Monnam(mtmp));
+                pline("C{N=%s,V{starve}}.", mon_nam(mtmp));
             else
-                pline("You feel %s for a moment.",
-                      Hallucination ? "bummed" : "sad");
+                pline("C{N=%s,V{V{V{feel},A=%s},D{d,N{moment}}}}.",
+                      Hallucination ? "A{bummed}" : "A{sad}");
             mondied(mtmp);
             return TRUE;
         }
@@ -474,7 +475,7 @@ dog_invent(struct monst *mtmp, struct edog *edog, int udist)
             if (can_use || (!droppables && rn2(20) < edog->apport + 3)) {
                 if (can_use || rn2(udist) || !rn2(edog->apport)) {
                     if (cansee(omx, omy) && flags.verbose)
-                        pline("%s picks up %s.", Monnam(mtmp),
+                        pline("C{N=%s,V{V{pick up},N=%s}}.", mon_nam(mtmp),
                               distant_name(obj, doname));
                     obj_extract_self(obj);
                     newsym(omx, omy);
@@ -727,8 +728,12 @@ dog_move(struct monst *mtmp, int after)
             /* Guardian angel refuses to be conflicted; rather, it disappears,
                angrily, and sends in some nasties */
             if (canspotmon(mtmp)) {
-                pline("%s rebukes you, saying:", Monnam(mtmp));
-                verbalize("Since you desire conflict, have some more!");
+                /* TODO: These should be better grammartree-ized.
+                 *       We need passives with no subject in the subordinate
+                 *       clause, since the subject exists by reference to the
+                 *       independent clause. */
+                pline("S{%s rebukes you, saying:}", mon_nam(mtmp));
+                verbalize("S{Since you desire conflict, have some more!}");
             }
             mongone(mtmp);
             i = rnd(4);
@@ -745,7 +750,7 @@ dog_move(struct monst *mtmp, int after)
     }
     if (!Conflict && !mtmp->mconf && mtmp == u.ustuck && !sticks(youmonst.data)) {
         unstuck(mtmp);  /* swallowed case handled above */
-        pline("You get released!");
+        pline("C{N=%s,V{V{get},A{V{release}}}}!", you);
     }
 
 /*
@@ -940,7 +945,8 @@ newdogpos:
 
         if (info[chi] & ALLOW_U) {
             if (mtmp->mleashed) {       /* play it safe */
-                pline("%s breaks loose of %s leash!", Monnam(mtmp), mhis(mtmp));
+                pline("C{N=%s,V{V{break loose},D{Q{of},N{o,N{leash},N=%s}}}}!",
+                      mon_nam(mtmp), mon_nam(mtmp));
                 m_unleash(mtmp, FALSE);
             }
             mattacku(mtmp);
@@ -969,7 +975,8 @@ newdogpos:
         remove_monster(level, omx, omy);
         place_monster(mtmp, nix, niy);
         if (cursemsg[chi] && (cansee(omx, omy) || cansee(nix, niy)))
-            pline("%s moves only reluctantly.", Monnam(mtmp));
+            pline("C{N=%s,V{V{move},D{D{reluctantly},D{only}}}}.",
+                  mon_nam(mtmp));
         for (j = MTSZ - 1; j > 0; j--)
             mtmp->mtrack[j] = mtmp->mtrack[j - 1];
         mtmp->mtrack[0].x = omx;
