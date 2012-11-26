@@ -11,10 +11,11 @@
 /* part of the output on gain or loss of attribute */
 static
 const char *const plusattr[] = {
-    "strong", "smart", "wise", "agile", "tough", "charismatic"
+    "A{strong}", "A{smart}", "A{wise}", "A{agile}", "A{tough}",
+     "A{charismatic}"
 }, *const minusattr[] = {
-
-    "weak", "stupid", "foolish", "clumsy", "fragile", "repulsive"
+    "A{weak}", "A{stupid}", "A{foolish}", "A{clumsy}", "A{fragile}",
+    "A{repulsive}"
 };
 
 
@@ -26,59 +27,59 @@ static
 } arc_abil[] = { {
 1, &(HStealth), "", ""}, {
 1, &(HFast), "", ""}, {
-10, &(HSearching), "perceptive", ""}, {
+10, &(HSearching), "A{perceptive}", ""}, {
 0, 0, 0, 0}}, bar_abil[] = { {
 1, &(HPoison_resistance), "", ""}, {
-7, &(HFast), "quick", "slow"}, {
-15, &(HStealth), "stealthy", ""}, {
+7, &(HFast), "A{quick}", "A{slow}"}, {
+15, &(HStealth), "A{stealthy}", ""}, {
 0, 0, 0, 0}}, cav_abil[] = { {
-7, &(HFast), "quick", "slow"}, {
-15, &(HWarning), "sensitive", ""}, {
+7, &(HFast), "A{quick}", "A{slow}"}, {
+15, &(HWarning), "A{sensitive}", ""}, {
 0, 0, 0, 0}}, hea_abil[] = { {
 1, &(HPoison_resistance), "", ""}, {
-15, &(HWarning), "sensitive", ""}, {
+15, &(HWarning), "A{sensitive}", ""}, {
 0, 0, 0, 0}}, kni_abil[] = { {
-7, &(HFast), "quick", "slow"}, {
+7, &(HFast), "A{quick}", "A{slow}"}, {
 0, 0, 0, 0}}, mon_abil[] = { {
 1, &(HFast), "", ""}, {
 1, &(HSleep_resistance), "", ""}, {
 1, &(HSee_invisible), "", ""}, {
-3, &(HPoison_resistance), "healthy", ""}, {
-5, &(HStealth), "stealthy", ""}, {
-7, &(HWarning), "sensitive", ""}, {
-9, &(HSearching), "perceptive", "unaware"}, {
-11, &(HFire_resistance), "cool", "warmer"}, {
-13, &(HCold_resistance), "warm", "cooler"}, {
-15, &(HShock_resistance), "insulated", "conductive"}, {
-17, &(HTeleport_control), "controlled", "uncontrolled"}, {
+3, &(HPoison_resistance), "A{healthy}", ""}, {
+5, &(HStealth), "A{stealthy}", ""}, {
+7, &(HWarning), "A{sensitive}", ""}, {
+9, &(HSearching), "A{perceptive}", "A{unaware}"}, {
+11, &(HFire_resistance), "A{cool}", "A{warmer}"}, {
+13, &(HCold_resistance), "A{warm}", "A{cooler}"}, {
+15, &(HShock_resistance), "A{insulated}", "A{conductive}"}, {
+17, &(HTeleport_control), "A{controlled}", "A{uncontrolled}"}, {
 0, 0, 0, 0}}, pri_abil[] = { {
-15, &(HWarning), "sensitive", ""}, {
-20, &(HFire_resistance), "cool", "warmer"}, {
+15, &(HWarning), "A{sensitive}", ""}, {
+20, &(HFire_resistance), "A{cool}", "A{warmer}"}, {
 0, 0, 0, 0}}, ran_abil[] = { {
 1, &(HSearching), "", ""}, {
-7, &(HStealth), "stealthy", ""}, {
+7, &(HStealth), "A{stealthy}", ""}, {
 15, &(HSee_invisible), "", ""}, {
 0, 0, 0, 0}}, rog_abil[] = { {
 1, &(HStealth), "", ""}, {
-10, &(HSearching), "perceptive", ""}, {
+10, &(HSearching), "A{perceptive}", ""}, {
 0, 0, 0, 0}}, sam_abil[] = { {
 1, &(HFast), "", ""}, {
-15, &(HStealth), "stealthy", ""}, {
+15, &(HStealth), "A{stealthy}", ""}, {
 0, 0, 0, 0}}, tou_abil[] = { {
-10, &(HSearching), "perceptive", ""}, {
-20, &(HPoison_resistance), "hardy", ""}, {
+10, &(HSearching), "A{perceptive}", ""}, {
+20, &(HPoison_resistance), "A{hardy}", ""}, {
 0, 0, 0, 0}}, val_abil[] = { {
 1, &(HCold_resistance), "", ""}, {
 1, &(HStealth), "", ""}, {
-7, &(HFast), "quick", "slow"}, {
+7, &(HFast), "A{quick}", "A{slow}"}, {
 0, 0, 0, 0}}, wiz_abil[] = { {
-15, &(HWarning), "sensitive", ""}, {
-17, &(HTeleport_control), "controlled", "uncontrolled"}, {
+15, &(HWarning), "A{sensitive}", ""}, {
+17, &(HTeleport_control), "A{controlled}", "A{uncontrolled}"}, {
 0, 0, 0, 0}},
 
     /* Intrinsics conferred by race */
     elf_abil[] = { {
-4, &(HSleep_resistance), "awake", "tired"}, {
+4, &(HSleep_resistance), "A{awake}", "A{tired}"}, {
 0, 0, 0, 0}}, orc_abil[] = { {
 1, &(HPoison_resistance), "", ""}, {
 0, 0, 0, 0}};
