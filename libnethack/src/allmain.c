@@ -29,7 +29,9 @@ static void
 wd_message(void)
 {
     if (discover)
-        pline("You are in non-scoring discovery mode.");
+        /* TODO: Add tenses to adjective_V */
+        pline("C{N=%s,V{V{are},A{a,N{N{o,discovery mode},"
+              "A{-,A{V{score}}}}}}}.", you);
 }
 
 
@@ -122,7 +124,7 @@ nh_exit_game(int exit_type)
             /* freeing things should be safe */
             freedynamicdata();
             dlb_cleanup();
-            panic("UI problem.");
+            panic("S{UI problem.}");
             break;
         }
 
@@ -190,9 +192,9 @@ startup_common(const char *name, int playmode)
     }
 
     if (wizard)
-        strcpy(plname, "wizard");
+        strcpy(plname, /*nointl*/"wizard");
 
-    sprintf(you, "P{1|%s}", plname);
+    sprintf(you, /*nointl*/"P{1|%s}", plname);
 
     cls();
 
@@ -208,17 +210,19 @@ realtime_tasks(void)
 
     flags.moonphase = phase_of_the_moon();
     if (flags.moonphase == FULL_MOON && prev_moonphase != FULL_MOON) {
-        pline("You are lucky!  Full moon tonight.");
+        pline("C{N=%s,V{V{are},A{lucky}}}! S{Full moon tonight.}");
         change_luck(1);
     } else if (flags.moonphase != FULL_MOON && prev_moonphase == FULL_MOON) {
         change_luck(-1);
     } else if (flags.moonphase == NEW_MOON && prev_moonphase != NEW_MOON) {
-        pline("Be careful!  New moon tonight.");
+        pline("C{i,V{V{are},A{careful}}}! S{New moon tonight.}");
     }
 
     flags.friday13 = friday_13th();
     if (flags.friday13 && !prev_friday13) {
-        pline("Watch out!  Bad things can happen on Friday the 13th.");
+        /* TODO: Make this have "on Friday the 13th". */
+        pline("C{i,V{watch out}}! C{N{N{*,N{o,thing}},A{bad}},"
+              "V{V{V{can},V{happen}},D{m,P{Friday the 13th}}}}.");
         change_luck(-1);
     } else if (!flags.friday13 && prev_friday13) {
         change_luck(1);
@@ -395,7 +399,7 @@ error_out:
     unlock_fd(fd);
 
     if (error == ERR_RESTORE_FAILED) {
-        raw_printf("Restore failed. Attempting to replay instead.\n");
+        raw_printf("S{Restore failed.} S{Attempting to replay instead.}\n");
         error = nh_restore_game(fd, rwinprocs, TRUE);
     }
 
@@ -558,7 +562,8 @@ you_moved(void)
                     } else if (!Upolyd && u.uhp > 1) {
                         u.uhp--;
                     } else {
-                        pline("You pass out from exertion!");
+                        pline("C{N=%s,V{V{pass out},"
+                              "D{E{from^due to},N{o,exertion}}}}!", you);
                         exercise(A_CON, FALSE);
                         fall_asleep(-10, FALSE);
                     }
@@ -692,11 +697,12 @@ handle_lava_trap(boolean didmove)
         u.utrap -= 1 << 8;
         if (u.utrap < 1 << 8) {
             killer_format = KILLED_BY;
-            killer = "molten lava";
-            pline("You sink below the surface and die.");
+            killer = "N{N{o,lava},A{molten}}";
+            pline("C{+,C{N=%s,V{V{sink below},N{surface}}},C{N=%s,V{die}}}.",
+                  you, you);
             done(DISSOLVED);
         } else if (didmove && !u.umoved) {
-            Norep("You sink deeper into the lava.");
+            pline("C{N=%s,V{V{sink deeper into},N{lava}}}", you);
             u.utrap += rnd(4);
         }
     }
@@ -905,7 +911,7 @@ stop_occupation(void)
 {
     if (occupation) {
         if (!maybe_finished_meal(TRUE))
-            pline("You stop %s.", occtxt);
+            pline("C{N=%s,V{V{stop},V=%s}}.", occtxt);
         occupation = 0;
         iflags.botl = 1;        /* in case u.uhs changed */
         nomul(0, NULL);
@@ -966,8 +972,8 @@ newgame(void)
 
     program_state.something_worth_saving++;     /* useful data now exists */
 
-    historic_event(FALSE,
-                   "entered the Dungeons of Doom to retrieve the Amulet of Yendor!");
+    historic_event(FALSE, "V{V{V{enter},N{Dungeons of Doom}},"
+                   "D{p,V{V{retrieve},N{Amulet of Yendor}}}}!");
 
     /* Success! */
     welcome(TRUE);
