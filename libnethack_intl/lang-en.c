@@ -1372,11 +1372,24 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         u->content = astrcat("(", ")", u->children[0]->content);
         break;
     case adjective_AD: /* "very hot" */
-        force_unit(u->children[0], t, quan, p);
-        force_unit(u->children[1], t, quan, p);
-        u->content = astrcat(u->children[1]->content,
-                             u->children[0]->content, " ");
-        break;
+        {
+            struct grammarunit *a;
+
+            force_unit(u->children[0], t, quan, p);
+            force_unit(u->children[1], t, quan, p);
+
+            a = u->children[1];
+            while (a->rule == plus_DD)
+                a = a->children[0];
+
+            if (a->rule == adverb_EN)
+                u->content = astrcat(u->children[0]->content,
+                                     u->children[1]->content, " ");
+            else
+                u->content = astrcat(u->children[1]->content,
+                                     u->children[0]->content, " ");
+            break;
+        }
     case adverb_pV: /* "stop to think" */
         force_unit(u->children[0], secondary_infinitive, 1 , base);
         u->content = astrcat("", u->children[0]->content, "");
