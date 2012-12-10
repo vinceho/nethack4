@@ -2242,32 +2242,50 @@ minstapetrify(struct monst *mon, boolean byplayer)
         monstone(mon);
 }
 
+/* The arguments have changed from 3.4.3, now.
+   The first argument used to be of the form "You" or "Falling, you".
+   Now it's NULL or a D{} respectively, e.g. "D{Q{as},C{[you],V{fall}}}".
+   NULL will give no extra adverb. The second argument is a printf
+   template, that takes the item name as an argument, and returns a verb. */
 void
 selftouch(const char *arg, const char *deathtype)
 {
     char kbuf[BUFSZ];
 
-    if (uwep && uwep->otyp == CORPSE && touch_petrifies(&mons[uwep->corpsenm])
-        && !Stone_resistance) {
-        pline("%s touch the %s corpse.", arg, mons[uwep->corpsenm].mname);
-        sprintf(kbuf, "%s %s corpse", deathtype,
-                an(mons[uwep->corpsenm].mname));
-        instapetrify(kbuf);
-        if (!Stone_resistance)
-            uwepgone();
+    int touchtype = 0; /* 1 = uwep, 2 = uswapwep */
+    struct obj *otmp;
+
+    if (uwep && uwep->otyp == CORPSE && touch_petrifies(&mons[uwep->corpsenm])) {
+        touchtype = 1;
+        otmp = uwep;
     }
-    /* Or your secondary weapon, if wielded */
     if (u.twoweap && uswapwep && uswapwep->otyp == CORPSE &&
-        touch_petrifies(&mons[uswapwep->corpsenm]) && !Stone_resistance) {
-        pline("%s touch the %s corpse.", arg, mons[uswapwep->corpsenm].mname);
-        sprintf(kbuf, "%s %s corpse", deathtype,
-                an(mons[uswapwep->corpsenm].mname));
-        instapetrify(kbuf);
-        if (!Stone_resistance)
+        touch_petrifies(&mons[uswapwep->corpsenm])) {
+        touchtype = 2;
+        otmp = uswapwep;
+    }
+
+    if (Stone_resistance || !touchtype) return;
+
+    if (arg)
+        pline("C{N=%s,V{V{V{touch},N=%s},D=%s}}.", you, arg,
+              cxname(otmp));
+    else
+        pline("C{N=%s,V{V{touch},N=%s}}.", you, cxname(otmp));
+    sprintf(kbuf, deathtype, an(cxname(otmp)));
+    instapetrify(kbuf);
+
+    /* The player might gain stone resistance due to, e.g., turning
+       into a stone golem; in such case a wield succeeds */
+    if (!Stone_resistance) {
+        if (touchtype == 1)
+            uwepgone();
+        else
             uswapwepgone();
     }
 }
 
+/* Second argument has the same meaning as the first arg of selftouch() */
 void
 mselftouch(struct monst *mon, const char *arg, boolean byplayer)
 {
@@ -2275,8 +2293,12 @@ mselftouch(struct monst *mon, const char *arg, boolean byplayer)
 
     if (mwep && mwep->otyp == CORPSE && touch_petrifies(&mons[mwep->corpsenm])) {
         if (cansee(mon->mx, mon->my)) {
-            pline("%s%s touches the %s corpse.", arg ? arg : "",
-                  arg ? mon_nam(mon) : Monnam(mon), mons[mwep->corpsenm].mname);
+            if (arg)
+                pline("C{N=%s,V{V{V{touch},N=%s},D=%s}}.",
+                      mon_nam(mon), arg, cxname(mwep));
+            else
+                pline("C{N=%s,V{V{touch},N=%s}}.",
+                      mon_nam(mon), cxname(mwep));
         }
         minstapetrify(mon, byplayer);
     }

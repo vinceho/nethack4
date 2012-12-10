@@ -584,7 +584,7 @@ keepdogs(boolean pets_only)
         } else if (mtmp->mleashed) {
             /* this can happen if your quest leader ejects you from the "home"
                level while a leashed pet isn't next to you */
-            pline("C{N{o,N{leash},N=%s},V{V{go^become},A{slack}}}."
+            pline("C{N{o,N{leash},N=%s},V{V{go^become},A{slack}}}.",
                   mon_nam(mtmp));
             m_unleash(mtmp, FALSE);
         }

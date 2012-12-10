@@ -314,11 +314,12 @@ dog_eat(struct monst *mtmp, struct obj *obj, int x, int y, boolean devour)
         /* However, invisible monsters should still be "it" even though out of
            sight locations should not. */
     if (cansee(x, y) || cansee(mtmp->mx, mtmp->my)) {
-        if (mon_visible(mtmp) && tunnels(mon->data) && devour)
-            pline("C{N=%s,V{dig in^pun}}!", noit_monnam(mtmp));
+        if (mon_visible(mtmp) && tunnels(mtmp->data) && devour)
+            pline("C{N=%s,V{dig in^pun}}!", noit_mon_nam(mtmp));
         else
             pline("C{N=%s,V{V=%s,N=%s}}.", mon_nam(mtmp),
                   devour ? "V{devour}" : "V{eat}", doname(obj));
+    }
     /* It's a reward if it's DOGFOOD and the player dropped/threw it. */
     /* We know the player had it if invlet is set -dlc */
     if (dogfood(mtmp, obj) == DOGFOOD && obj->invlet)
@@ -331,7 +332,7 @@ dog_eat(struct monst *mtmp, struct obj *obj, int x, int y, boolean devour)
         mtmp->mstun = 1;
         if (canseemon(mtmp) && flags.verbose) {
             pline("C{N=%s,V{V{V{spit out},N=%s},D{E{in^state},N{o,disgust}}}}!",
-                  mon_nam(mtmp), distant_nam(obj, doname));
+                  mon_nam(mtmp), distant_name(obj, doname));
         }
     } else if (obj == uball) {
         unpunish();
@@ -407,7 +408,7 @@ dog_hunger(struct monst *mtmp, struct edog *edog)
             else if (couldsee(mtmp->mx, mtmp->my))
                 beg(mtmp);
             else
-                pline("C{N=%s,V{V{feel},A{V{V{worry about},N=%s}}}}."
+                pline("C{N=%s,V{V{feel},A{V{V{worry about},N=%s}}}}.",
                       you, y_monnam(mtmp));
             stop_occupation();
         } else if (moves > edog->hungrytime + 750 || mtmp->mhp < 1) {
@@ -418,7 +419,7 @@ dog_hunger(struct monst *mtmp, struct edog *edog)
             else if (cansee(mtmp->mx, mtmp->my))
                 pline("C{N=%s,V{starve}}.", mon_nam(mtmp));
             else
-                pline("C{N=%s,V{V{V{feel},A=%s},D{d,N{moment}}}}.",
+                pline("C{N=%s,V{V{V{feel},A=%s},D{d,N{moment}}}}.", you,
                       Hallucination ? "A{bummed}" : "A{sad}");
             mondied(mtmp);
             return TRUE;
@@ -1076,8 +1077,8 @@ can_reach_location(struct monst *mon, xchar mx, xchar my, xchar fx, xchar fy)
 }
 
 
- /*ARGSUSED*/   /* do_clear_area client */
-    static void
+/*ARGSUSED*/   /* do_clear_area client */
+static void
 wantdoor(int x, int y, void *distance)
 {
     int ndist;

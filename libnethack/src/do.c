@@ -830,7 +830,7 @@ dodown(void)
             } else {
                 u.utrap = 1;
                 u.utraptype = TT_PIT;
-                pline("C{N=%s,V{V=%s,D{D{e,E{into},N{pit}},D{down}}}}.",
+                pline("C{N=%s,V{V=%s,D{D{e,E{into},N{pit}},D{down}}}}.", you,
                       locomotion(youmonst.data, "V{go}"));
             }
             return 0;
@@ -889,11 +889,15 @@ doup(void)
         return 1;
     }
     if (ledger_no(&u.uz) == 1) {
-        if (yn("Beware, there will be no return! Still climb?") != 'y')
+        char buf[BUFSZ];
+        sprintf(buf, "C{N=%s,V{-,V{V{can},V{V{return from},"
+                "D{E{beyond},N{o,here}}}}}}!  "
+                "C{q,C{i,V{V{climb},D{anyway}}}}?", you);
+        if (yn(buf) != 'y')
             return 0;
     }
     if (!next_to_u()) {
-        pline("You are held back by your pet!");
+        pline("C{N{o,N{pet},N=%s},V{V{hold back},N=%s}}!", you, you);
         return 0;
     }
     at_ladder = (boolean) (level->locations[u.ux][u.uy].typ == LADDER);
@@ -952,44 +956,15 @@ goto_level(d_level * newlevel, boolean at_stairs, boolean falling,
     if (new_ledger <= 0)
         done(ESCAPED);  /* in fact < 0 is impossible */
 
-    /* If you have the amulet and are trying to get out of Gehennom, going up a 
-       set of stairs sometimes does some very strange things! Biased against
-       law and towards chaos, but not nearly as strongly as it used to be
-       (prior to 3.2.0). Odds: old new "up" L N C "up" L N C +1 75.0 75.0 75.0
-       +1 75.0 75.0 75.0 0 0.0 12.5 25.0 0 6.25 8.33 12.5 -1 8.33 4.17 0.0 -1
-       6.25 8.33 12.5 -2 8.33 4.17 0.0 -2 6.25 8.33 0.0 -3 8.33 4.17 0.0 -3
-       6.25 0.0 0.0 */
-    if (Inhell && up && u.uhave.amulet && !newdungeon && !portal &&
-        (dunlev(&u.uz) < dunlevs_in_dungeon(&u.uz) - 3)) {
-        if (!rn2(4)) {
-            int odds = 3 + (int)u.ualign.type,  /* 2..4 */
-                diff = odds <= 1 ? 0 : rn2(odds);       /* paranoia */
-
-            if (diff != 0) {
-                assign_rnd_level(newlevel, &u.uz, diff);
-                /* if inside the tower, stay inside */
-                if (was_in_W_tower && !On_W_tower_level(newlevel))
-                    diff = 0;
-            }
-            if (diff == 0)
-                assign_level(newlevel, &u.uz);
-
-            new_ledger = ledger_no(newlevel);
-
-            pline("A mysterious force momentarily surrounds you...");
-            if (on_level(newlevel, &u.uz)) {
-                safe_teleds(FALSE);
-                next_to_u();
-                return;
-            } else
-                at_stairs = at_ladder = FALSE;
-        }
-    }
+    /* Mysterious force removed because I couldn't be bothered to
+       grammartreeise it and I'm planning to replace it anyway.
+       How's that for a reason to remove it, bhaak? -- AIS */
 
     /* Prevent the player from going past the first quest level unless (s)he
        has been given the go-ahead by the leader. */
     if (on_level(&u.uz, &qstart_level) && !newdungeon && !ok_to_quest()) {
-        pline("A mysterious force prevents you from descending.");
+        pline("C{N=%s,V{-,V{V{can},"
+              "V{V{V{start},N{o,N{quest},N=%s}},D{yet}}}}}.", you, you);
         return;
     }
 
@@ -1046,7 +1021,8 @@ goto_level(d_level * newlevel, boolean at_stairs, boolean falling,
 
     if (!levels[new_ledger]) {
         /* entering this level for first time; make it now */
-        historic_event(FALSE, "reached %s.", hist_lev_name(&u.uz, FALSE));
+        historic_event(FALSE, "V{V{reach},N=%s}.",
+                       hist_lev_name(&u.uz, FALSE));
         level = mklev(&u.uz);
         new = TRUE;     /* made the level */
     } else {
@@ -1084,7 +1060,7 @@ goto_level(d_level * newlevel, boolean at_stairs, boolean falling,
                 break;
 
         if (!ttrap)
-            panic("goto_level: no corresponding portal!");
+            panic("S{goto_level: no corresponding portal!}");
         seetrap(ttrap);
         u_on_newpos(ttrap->tx, ttrap->ty);
     } else if (at_stairs && !In_endgame(&u.uz)) {
@@ -1107,11 +1083,6 @@ goto_level(d_level * newlevel, boolean at_stairs, boolean falling,
                 } else
                     u_on_dnstairs();
             }
-            /* Remove bug which crashes with levitation/punishment KAA */
-            if (Punished && !Levitation) {
-                pline("With great effort you climb the %s.",
-                      at_ladder ? "ladder" : "stairs");
-            }
         } else {        /* down */
             if (at_ladder) {
                 u_on_newpos(level->upladder.sx, level->upladder.sy);
@@ -1121,12 +1092,12 @@ goto_level(d_level * newlevel, boolean at_stairs, boolean falling,
                 else
                     u_on_upstairs();
             }
-            if (at_stairs && Flying)
-                pline("You fly down along the %s.",
-                      at_ladder ? "ladder" : "stairs");
+            if (at_stairs && Flying) {} /* no message any more, it's spammy */
             else if (at_stairs &&
                      (near_capacity() > UNENCUMBERED || Punished || Fumbling)) {
-                pline("You fall down the %s.", at_ladder ? "ladder" : "stairs");
+                char buf[BUFSZ];
+                pline("C{N=%s,V{V{fall down},N=%s}}.", you,
+                      at_ladder ? "N{ladder}" : "N{*,N{stair}}");
                 if (Punished) {
                     drag_down();
                     if (carried(uball)) {
@@ -1143,8 +1114,10 @@ goto_level(d_level * newlevel, boolean at_stairs, boolean falling,
                 if (u.usteed)
                     dismount_steed(DISMOUNT_FELL);
                 else
-                    losehp(rnd(3), "falling downstairs", KILLED_BY);
-                selftouch("Falling, you", "falling downstairs while wielding");
+                    losehp(rnd(3), "V{V{fall down},N{*,N{stair}}}", KILLED_BY);
+                sprintf(buf, "D{Q{as},C{N=%s,V{fall}}}", you);
+                selftouch(buf, "V{+,V{V{fall down},N{*,N{stair}}},"
+                          "V{V{touch},N=%s}}");
             }
         }
     } else {    /* trap door or level_tele or In_endgame */
@@ -1165,13 +1138,16 @@ goto_level(d_level * newlevel, boolean at_stairs, boolean falling,
                           level->dndest.nly, level->dndest.nhx,
                           level->dndest.nhy, LR_DOWNTELE, NULL);
         if (falling) {
+            char buf[BUFSZ];
             char kbuf[BUFSZ];
 
-            sprintf(kbuf, "falling through a %s while wielding",
-                    at_trapdoor ? "trap door" : "hole");
+            sprintf(buf, "D{Q{as},C{N=%s,V{fall}}}", you);
+            sprintf(kbuf, "V{+,V{V{fall through},N=%s},"
+                          "V{V{touch},N=%%s}}",
+                    at_trapdoor ? "N{i,trap door}" : "N{i,hole}");
             if (Punished)
                 ballfall();
-            selftouch("Falling, you", kbuf);
+            selftouch(buf, kbuf);
         }
     }
 
@@ -1211,7 +1187,7 @@ goto_level(d_level * newlevel, boolean at_stairs, boolean falling,
             mnexto(mtmp);
 
         if ((mtmp = m_at(level, u.ux, u.uy)) != 0) {
-            impossible("mnexto failed (do.c)?");
+            impossible("S{mnexto failed (do.c)?}");
             rloc(mtmp, FALSE);
         }
     }
@@ -1249,35 +1225,6 @@ goto_level(d_level * newlevel, boolean at_stairs, boolean falling,
             You_hear("groans and moans everywhere.");
         } else
             pline("It is hot here.  You smell smoke...");
-    }
-
-    if (familiar) {
-        static const char *const fam_msgs[4] = {
-            "You have a sense of deja vu.",
-            "You feel like you've been here before.",
-            "This place %s familiar...",
-            0   /* no message */
-        };
-        static const char *const halu_fam_msgs[4] = {
-            "Whoa!  Everything %s different.",
-            "You are surrounded by twisty little passages, all alike.",
-            "Gee, this %s like uncle Conan's place...",
-            0   /* no message */
-        };
-        const char *mesg;
-        char buf[BUFSZ];
-        int which = rn2(4);
-
-        if (Hallucination)
-            mesg = halu_fam_msgs[which];
-        else
-            mesg = fam_msgs[which];
-        if (mesg && strchr(mesg, '%')) {
-            sprintf(buf, mesg, !Blind ? "looks" : "seems");
-            mesg = buf;
-        }
-        if (mesg)
-            pline(mesg);
     }
 
     if (new && Is_rogue_level(&u.uz))

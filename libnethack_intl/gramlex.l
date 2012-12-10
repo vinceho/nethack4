@@ -39,7 +39,7 @@ LIT [^{},|=%*+\x1c]
 "V="          return VEQUALS;
 "S="          return SEQUALS;
 "D="          return DEQUALS;
-"%s"          return PERCENT_S;
+"%"+"s"       return PERCENT_S;
 "%c,"         return PC_COMMA;
 "S{"[^}]*"}"  { yylval->s = malloc(yyleng-2); yytext[yyleng-1] = 0;
                 strcpy(yylval->s, yytext+2); return S; }
