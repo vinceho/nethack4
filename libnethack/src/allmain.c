@@ -698,11 +698,10 @@ handle_lava_trap(boolean didmove)
         if (u.utrap < 1 << 8) {
             killer_format = KILLED_BY;
             killer = "N{N{o,lava},A{molten}}";
-            pline("C{+,C{N=%s,V{V{sink below},N{surface}}},C{N=%s,V{die}}}.",
-                  you, you);
+            pline("C{N=%s,V{+,V{V{sink below},N{surface}},V{die}}}.", you);
             done(DISSOLVED);
         } else if (didmove && !u.umoved) {
-            pline("C{N=%s,V{V{sink deeper into},N{lava}}}", you);
+            pline("C{N=%s,V{V{sink deeper into},N{lava}}}.", you);
             u.utrap += rnd(4);
         }
     }
@@ -992,7 +991,7 @@ newgame(void)
     return;
 }
 
-
+/*TODO: This is not grammartree'd yet. */
 /* show "welcome [back] to NetHack" message at program startup */
 static void
 welcome(boolean new_game)
