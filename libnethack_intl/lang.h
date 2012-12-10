@@ -39,7 +39,7 @@ enum grammarrole { gr_noun, gr_propernoun, gr_verb, gr_adjective, gr_adverb,
 enum grammarrule {
     minus_N, minus_V, minus_A, minus_D, minus_Q, minus_E, minus_C,
     plus_NN, plus_VV, plus_AA, plus_DD, plus_QQ, plus_EE, plus_CC,
-    verb_VN, verb_VA, verb_VD, verb_VV, verb_sVV,
+    verb_VN, verb_VA, verb_VD, verb_VV, verb_sVV, verb_mVX,
     noun_NA, noun_NEN, noun_fNA, noun_oNN, noun_lNN, noun_mX, noun_NV,
     noun_aNV, noun_qNN, noun_fNN, noun_sC,
     adverb_DD, adverb_tN, adverb_lN, adverb_aN, adverb_dN, adverb_mN,
@@ -48,8 +48,8 @@ enum grammarrule {
     adjective_cA, adjective_sA, adjective_AD, adjective_AV, adjective_QC,
     adjective_EN, adjective_lN, adjective_aN, adjective_V, adjective_VN,
     adjective_N, adjective_pA, adjective_mN, adjective_oA,
-    clause_NV, clause_iNV, clause_pNV, clause_cNV, clause_qC, clause_iV,
-    clause_sV, clause_isV, clause_psV, clause_csV,
+    clause_NV, clause_iNV, clause_pNV, clause_cNV, clause_fNV, clause_qC,
+    clause_sV, clause_isV, clause_psV, clause_csV, clause_fsV, clause_iV,
     gr_literal, gr_unknown,
 };
 enum grammargender { gg_male, gg_female, gg_neuter, gg_unknown };
@@ -57,6 +57,8 @@ enum grammargender { gg_male, gg_female, gg_neuter, gg_unknown };
 struct grammarunit {
     char *uniquifier; /* often but not always null or a number */
     char *content;
+    char *punctuation; /* must be present on a clause used as an anything,
+                          irrelevant elsewhere */
     struct grammarunit *children[3];
     enum grammarrole role;
     enum grammarrule rule;

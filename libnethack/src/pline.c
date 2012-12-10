@@ -110,9 +110,8 @@ free_youbuf(void)
 #define YouMessage(pointer,prefix,text) \
  strcat((YouPrefix(pointer, prefix, text), pointer), text)
 
-/*VARARGS1*/
 void
-You_hear(const char *line, ...)
+You_hear(const char *punct, const char *noun, ...)
 {
     va_list the_args;
     char *tmp;

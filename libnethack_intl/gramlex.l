@@ -21,7 +21,8 @@
 %option prefix="gyy"
 
 UI [a-zA-Z0-9_%]+
-LIT [^{},|=%*+\x1c]
+LIT [^{},|=%*+\x1c?!.@]
+L2  [^{},=\x1c]
 
 %%
 
@@ -67,9 +68,15 @@ LIT [^{},|=%*+\x1c]
 "%ld,"        yylval->i = (1 << 28); return COUNTCOMMA;
 {UI}"|"       { yylval->s = malloc(yyleng); yytext[yyleng-1] = 0;
                 strcpy(yylval->s, yytext); return UNIQUIFIER; }
-{LIT}+/[^{=]  { yylval->s = malloc(yyleng+1); strcpy(yylval->s, yytext);
-                return LITERAL; }
+"?" |
+"!" |
+"." |
 "%c" |
+"..."         { yylval->s = malloc(yyleng+1); strcpy(yylval->s, yytext);
+                return PUNCTUATION; }
+"@"           { yylval->s = malloc(1); *(yylval->s) = 0; return PUNCTUATION; }
+{LIT}{L2}*/[^{=]  { yylval->s = malloc(yyleng+1); strcpy(yylval->s, yytext);
+                      return LITERAL; }
 "%d" |
 \x1c[^\x1c]+\x1c  { yylval->s = malloc(yyleng+1); strcpy(yylval->s, yytext);
                 return LITERAL; }

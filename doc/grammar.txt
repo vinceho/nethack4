@@ -59,7 +59,7 @@ V{V{hit},P{12|Dudley}}
 "hits you", "hits Dudley"
 
 VA                                 Verb with complement
-V{V{are},A{cursed}}
+V{V{are},A{V{curse}}}
 "is cursed"
 
 VD                                 Verb with adverb
@@ -102,6 +102,7 @@ C{P{12|Dudley},V{wake up}}         "You wake up", "Dudley wakes up"
 C{i,P{12|Dudley},V{wake up}}       "You woke up", "Dudley woke up"
 C{p,P{12|Dudley},V{wake up}}       "You have woken up", "Dudley has woken up"
 C{c,P{12|Dudley},V{wake up}}       "You are waking up", "Dudley is waking up"
+C{f,P{12|Dudley},V{wake up}}       "You will wake up", "Dudley will waking up"
 Because of the number of irregular verbs in English, all verbs which are used
 with this that don't form their imperfect with -d (ending in -e) or -ed
 (otherwise), their continuous with "is -ing", and their perfect with "have "
@@ -109,11 +110,11 @@ before their imperfect, are listed here:
 are, have, read
 
 sVV                                Verb with passive secondary verb
-V{V{can},V{open}}
+V{s,V{can},V{open}}
 "can be opened"
-V{V{begin},V{open}}
+V{s,V{begin},V{open}}
 "begins to be opened"
-V{V{stop},V{open}}
+V{s,V{stop},V{open}}
 "stops being opened"
 
 NA, PA                             Noun with adjective
@@ -155,6 +156,10 @@ about:
 m,anything                         Mention a sentence fragment
 N{m,N{lightning}} or A{m,N{lightning}}
 ""lightning""
+
+m,V,anything                       Mention a segment fragment as a complement
+V{m,V{say},S{hello}}
+"says: "hello""
 
 c,A                                Comparative of adjective
 A{c,A{hot}}
@@ -260,7 +265,7 @@ noun they're modifying in English, rather than just before like most adjectives.
 
 EN                                 Qualifying with a noun
 D{E{from},N{hunger}}
-"than the dust"
+"from hunger"
 A{E{in},N{o,disgust}}
 "in disgust"
 Be careful to only use these when this is truly a modifier, rather than an

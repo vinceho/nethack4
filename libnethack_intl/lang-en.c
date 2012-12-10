@@ -15,14 +15,15 @@ static boolean global_simple, global_caps;
 enum tense {
     /* "You die", "You have died", "You died", "You are dying", "dying",
        "died", "die", "to die" */
-    present, perfect, imperfect, continuous, active_participle,
+    present, perfect, imperfect, continuous, future, active_participle,
     passive_participle, secondary_direct, secondary_infinitive,
     /* OK, so nouns don't have tenses, but we use the same method:
        "I", "me", "my" */
     subject, object, possessive,
 };
 
-enum person {first, second, third, base};
+/* I, you, it, thy, no subject */
+enum person {first, second, third, archaic, base};
 
 static char*
 astrcat(const char *s, const char *t, const char *between)
@@ -38,6 +39,7 @@ static boolean
 is_simple_adjective(const char *s)
 {
     if (!strcmp(s, "keen")) return TRUE;
+    if (!strcmp(s, "old")) return TRUE;
     return FALSE;
 }
 
@@ -79,6 +81,7 @@ stem_doubles_consonant(const char* s)
     if (!strcmp(s, "equip")) return TRUE;
     if (!strcmp(s, "hit")) return TRUE; /* "hitting" only */
     if (!strcmp(s, "trap")) return TRUE;
+    if (!strcmp(s, "fulfil")) return TRUE;    
     return FALSE;
 }
 
@@ -528,6 +531,7 @@ special_case_verb(char *obuf, const char *v, enum tense t,
     if (!strcmp(v, "do")) {
         if (t == present) {
             if (!plural && (p == third)) strcpy(obuf, "does");
+            else if (p == archaic) strcpy(obuf, "dost");
             else strcpy(obuf, "do");
             return TRUE;
         }
@@ -557,6 +561,14 @@ special_case_verb(char *obuf, const char *v, enum tense t,
         }
         return FALSE; /* other cases are regular */
     }
+    if (!strcmp(v, "dare")) {
+        if (t == present && p == archaic) {
+            /* 3.4.3 inconsistently uses "darest" and "durst" here */
+            strcpy(obuf, "durst");
+            return TRUE;
+        }
+        return FALSE; /* usually regular */
+    }
     if (verb_chains_directly(v)) {
         /* Directly-chaining verbs don't conjugate. Except for "do".
            They also don't work properly in tenses other than the present, in
@@ -568,6 +580,7 @@ special_case_verb(char *obuf, const char *v, enum tense t,
     if (!strcmp(v, "have")) {
         if (t == present) {
             if (!plural && (p == third)) strcpy(obuf, "has");
+            else if (p == archaic) strcpy(obuf, "hast");
             else strcpy(obuf, "have");
             return TRUE;
         }
@@ -620,6 +633,20 @@ special_case_verb(char *obuf, const char *v, enum tense t,
         if (t == imperfect) { strcpy(obuf, "sat"); return TRUE; }
         if (t == active_participle) { strcpy(obuf, "sitting"); return TRUE; }
     }
+    if (!strcmp(v, "will")) {
+        if (p == archaic) {
+            /* TODO: usually "shalt", actually, because if you're being
+               pretentious you may as well go all the way; but it doesn't
+               work in some contexts */
+            if (t == present) { strcpy(obuf, "wilt"); return TRUE; }
+            if (t == imperfect) { strcpy(obuf, "wouldst"); return TRUE; }
+        }
+        if (t == present) { strcpy(obuf, "will"); return TRUE; }
+        if (t == imperfect) { strcpy(obuf, "would"); return TRUE; }
+        /* the other cases don't exist... */
+        strcpy(obuf, "(ERROR: bad 'will' tense)");
+        return TRUE;
+    }
     if (!strcmp(v, "are")) {
         switch (t) {
         case present:
@@ -627,6 +654,7 @@ special_case_verb(char *obuf, const char *v, enum tense t,
             case first: strcpy(obuf, "am"); break;
             case second: strcpy(obuf, "are"); break;
             case third: strcpy(obuf, "is"); break;
+            case archaic: strcpy(obuf, "art"); break;
             case base: strcpy(obuf, "be"); break;
             }
             if (plural) strcpy(obuf, "are");
@@ -635,6 +663,10 @@ special_case_verb(char *obuf, const char *v, enum tense t,
             strcpy(obuf, "were");
             if ((p == first || p == third) && !plural)
                 strcpy(obuf, "was");
+            /* NetHack doesn't use this case and it's probably grammatically
+               wrong, but for consistency with other angel speech... */
+            if (p == archaic)
+                strcpy(obuf, "wert");
             break;
         case passive_participle: strcpy(obuf, "been"); break;
         case active_participle: strcpy(obuf, "being"); break;
@@ -683,6 +715,19 @@ conjugate(const char *v, enum tense t, int quan, enum person p)
         y = conjugate(w, t, quan, p);
         *x = ' ';
         strcat(y, x); /* we know our own output is writable and extendable */
+        /* some contractions */
+        if (!strcmp(y, "are not")) sprintf(y, "aren't");
+        if (!strcmp(y, "is not")) sprintf(y, "isn't");
+        if (!strcmp(y, "was not")) sprintf(y, "wasn't");
+        if (!strcmp(y, "were not")) sprintf(y, "weren't");
+        if (!strcmp(y, "do not")) sprintf(y, "don't");
+        if (!strcmp(y, "does not")) sprintf(y, "doesn't");
+        if (!strcmp(y, "did not")) sprintf(y, "didn't");
+        if (!strcmp(y, "has not")) sprintf(y, "hasn't");
+        if (!strcmp(y, "have not")) sprintf(y, "haven't");
+        if (!strcmp(y, "had not")) sprintf(y, "hadn't");
+        if (!strcmp(y, "will not")) sprintf(y, "won't");
+        if (!strcmp(y, "would not")) sprintf(y, "wouldn't");
         return y;
     }
 
@@ -697,6 +742,11 @@ conjugate(const char *v, enum tense t, int quan, enum person p)
         strcat(x, " ");
         strcat(x, conjugate(v, active_participle, 1, base));
         return x;
+    case future: /* conjugate "will" + present */
+        x = conjugate("will", present, quan, p);
+        strcat(x, " ");
+        strcat(x, conjugate(v, present, 1, base));
+        return x;
     case secondary_infinitive: /* "to" + stem */
         strcpy(w, "to ");
         strcat(w, conjugate(v, secondary_direct, quan, p));
@@ -705,6 +755,9 @@ conjugate(const char *v, enum tense t, int quan, enum person p)
         if (special_case_verb(w, v, t, plural, p)) return w;
         if (p == third && !plural) {
             strcpy(w, append_s(v));
+        } else if (p == archaic) {
+            strcpy(w, append_s(v));
+            strcat(w, "t");
         } else strcpy(w, v);
         break;
     case imperfect: /* resuffix -ed, for regular verbs */
@@ -761,13 +814,16 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             u->children[1]->rule == minus_Q ||
             u->children[1]->rule == minus_E ||
             u->children[1]->rule == minus_C) negated = TRUE;
-        force_unit(u->children[0], t, quan, p);
-        force_unit(u->children[1], t, quan, p);
+        force_unit(u->children[0], t, u->children[0]->quan, p);
+        force_unit(u->children[1], t, u->children[0]->quan, p);
         u->content = astrcat(u->children[0]->content,
                              u->children[1]->content,
                              u->rule == plus_CC ?
                              (negated ? ", but " : ", and ") :
                              (negated ?  " but " :  " and "));
+        /* nounperson doesn't matter because this is necessarily pluralised,
+           but it needs to not be base */
+        if (u->rule == plus_NN) return third;
         break;
     case minus_N: /* "nonweapon", "not a weapon", "not the weapon" */
         force_unit(u->children[0], t, quan, p);
@@ -823,6 +879,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         case clause_NV:
         case clause_iNV:
         case clause_pNV:
+        case clause_fNV:
         case clause_cNV:
             /* verb is the second child of our first child */
             u->children[1] = u->children[0];
@@ -838,6 +895,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         case clause_sV:
         case clause_isV:
         case clause_psV:
+        case clause_fsV:
         case clause_csV:
             /* verb is the first child of our first child */
         case clause_qC: /* clause is the first child of our first child */
@@ -895,6 +953,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                             b->role = gr_noun;
                             b->content = 0;
                             b->uniquifier = 0;
+                            b->punctuation = 0;
                             b->gender = b->children[0]->gender;
                             b->quan = b->children[0]->quan;
                             b->tagged = FALSE;
@@ -1013,8 +1072,33 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         force_unit(u->children[0],
                    u->children[0]->role == gr_noun ? object : present,
                    u->children[0]->quan | (1 << 30) | (1 << 27), base);
-        u->content = astrcat("\"", "\"", u->children[0]->content);
+        if (u->children[0]->role == gr_clause &&
+            u->children[0]->punctuation) {
+            char buf[10];
+            sprintf(buf, "%.5s\"", u->children[0]->punctuation);
+            u->content = astrcat("\"", buf, u->children[0]->content);
+        } else
+            u->content = astrcat("\"", "\"", u->children[0]->content);
         return third;
+    case verb_mVX: /* verb with a colon and anything in quotes */
+        force_unit(u->children[0], t, quan, p);
+        force_unit(u->children[1],
+                   u->children[1]->role == gr_noun ? object : present,
+                   u->children[0]->quan | (1 << 30) | (1 << 27), base);
+        /* Uppercase the first letter of u->children[1] unless it's
+           arbitrary freeform text */
+        if (u->children[1]->role != gr_sentence)
+            *(u->children[1]->content) =
+                toupper(*(u->children[1]->content));
+        u->content = astrcat(u->children[0]->content,
+                             u->children[1]->content,
+                             ": \"!!!!!!"); /* the ! are for padding */
+        sprintf(u->content + strlen(u->children[0]->content) + 3,
+                "%s%.5s\"", u->children[1]->content,
+                u->children[1]->role == gr_clause &&
+                u->children[1]->punctuation ?
+                u->children[1]->punctuation : "");
+        break;
     case noun_aNV: /* "burning bush", "the newt hitting Dudley" */
         /* We put the verb first if it's a literal or has exactly one literal
            adverb, afterwards otherwise. */
@@ -1045,9 +1129,9 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
            behind "do not". If it's a secondary, we're just prefixing "not".
            For instance, "You do not die", "You begin to not die", "You can not
            die". (Two of those cases can be meaningfully post-processed into
-           "don't" and "cannot" or "can't", but that level of special casing
-           isn't done here.) The exception is that chain-directly verbs (and
-           "are" for some reason) are negated by /suffixing/ not.
+           "don't" and "cannot" or "can't"; "cannot" is done here, "don't" in
+           conjugate().) The exception is that chain-directly verbs (and "are"
+           for some reason) are negated by /suffixing/ not.
 
            There's also the issue of if this is a compound verb. In general,
            there are no strong rules ("kill a newt" best goes to "fail to kill a
@@ -1088,6 +1172,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             if (r) {c = *r; *r = 0;}
             u->content = astrcat(conjugate(u->children[0]->content, t, quan, p),
                                  "not", " ");
+            if (!strcmp(u->content, "can not")) sprintf(u->content, "cannot");
             if (r) *r = c;
             return base;
         }
@@ -1109,14 +1194,20 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                been", not "have not were" (it's non-obvious because most verbs
                have those equal in English) */
             u->content = astrcat(
-                conjugate("have not", t, quan, p),
+                conjugate("have not", present, quan, p),
                 conjugate(u->children[0]->content, passive_participle, 1, base),
                 " ");
             break;
         case continuous:
             u->content = astrcat(
-                conjugate("are not", t, quan, p),
+                conjugate("are not", present, quan, p),
                 conjugate(u->children[0]->content, active_participle, 1, base),
+                " ");
+            break;
+        case future:
+            u->content = astrcat(
+                conjugate("will not", present, quan, p),
+                conjugate(u->children[0]->content, present, 1, base),
                 " ");
             break;
         case active_participle:
@@ -1199,6 +1290,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         u->children[1] = w;
         w->children[2] = 0;
         w->uniquifier = w->children[0]->uniquifier = 0;
+        w->punctuation = w->children[0]->punctuation = 0;
         w->quan = w->children[0]->quan = 1;
         w->gender = w->children[0]->gender = gg_unknown;
         w->tagged = w->children[0]->tagged = FALSE;
@@ -1276,6 +1368,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             !strcmp(u->children[1]->content, "now") ||
             !strcmp(u->children[1]->content, "here") ||
             !strcmp(u->children[1]->content, "there") ||
+            !strcmp(u->children[1]->content, "everywhere") ||
             !strcmp(u->children[1]->content, "brightly") ||
             !strcmp(u->children[1]->content, "upward") ||
             !strcmp(u->children[1]->content, "downwards"))
@@ -1450,6 +1543,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
     case clause_iNV: /* "the goblin killed you" */
     case clause_pNV: /* "the goblin has killed you" */
     case clause_cNV: /* "the goblin is killing you" */
+    case clause_fNV: /* "the goblin will kill you" */
     {
         /* The verb gets its person and quan information from the noun, and its
            tense from the surroundings. English doesn't have gendered verbs
@@ -1470,8 +1564,9 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         force_unit(v,
                    u->rule == clause_NV  ? present :
                    u->rule == clause_iNV ? imperfect :
-                   u->rule == clause_pNV ? perfect : continuous,
-                   quan, nounperson);
+                   u->rule == clause_pNV ? perfect :
+                   u->rule == clause_fNV ? future : continuous,
+                   u->children[0]->quan, nounperson);
         u->content = astrcat(u->children[0]->content,
                              v->content, " ");
         if (u->children[1]->rule == verb_VD &&
@@ -1488,6 +1583,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
     case clause_isV: /* "you were killed" */
     case clause_psV: /* "you have been killed" */
     case clause_csV: /* "you are being killed" */
+    case clause_fsV: /* "you will be killed" */
         /* In English, we form the passive using the passive participle and a
            conjugation of "are". To accomplish this, we have to grab the object
            out of the verb. (We can't form the passive of a verb with no object,
@@ -1544,6 +1640,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         v->children[cnumber] = w;
         w->children[2] = 0;
         w->uniquifier = w->children[0]->uniquifier = 0;
+        w->punctuation = w->children[0]->punctuation = 0;
         w->quan = w->children[0]->quan = 1;
         w->gender = w->children[0]->gender = gg_unknown;
         w->tagged = w->children[0]->tagged = FALSE;
@@ -1561,7 +1658,8 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         force_unit(u->children[0],
                    u->rule == clause_sV ? present :
                    u->rule == clause_isV ? imperfect :
-                   u->rule == clause_psV ? perfect : continuous,
+                   u->rule == clause_psV ? perfect :
+                   u->rule == clause_fsV ? future : continuous,
                    v->quan, nounperson);
         if (v->tagged) {
             char *tx = astrcat("\x1e", "\x1e", v->content);
@@ -1585,7 +1683,8 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         int cnumber = 0;
         v = u->children[0];
         if (v->rule == clause_NV  || v->rule == clause_iNV ||
-            v->rule == clause_pNV || v->rule == clause_cNV)
+            v->rule == clause_pNV || v->rule == clause_cNV ||
+            v->rule == clause_fNV)
             cnumber = 1;
         else cnumber = 0;
         w = v;
@@ -1605,7 +1704,8 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                 move_to_secondaries = TRUE;
                 v = w;
                 if (v->rule == clause_NV  || v->rule == clause_iNV ||
-                    v->rule == clause_pNV || v->rule == clause_cNV)
+                    v->rule == clause_pNV || v->rule == clause_cNV ||
+                    v->rule == clause_fNV)
                     cnumber = 1;
                 else cnumber = 0;
             }
@@ -1700,9 +1800,11 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             u->content = astrcat("", u->children[0]->content, "");
             return base;
         case clause_NV: case clause_iNV: case clause_pNV: case clause_cNV:
+        case clause_fNV:
             cnumber = 1;
             break;
         case clause_sV: case clause_isV: case clause_psV: case clause_csV:
+        case clause_fsV:
             cnumber = 0;
             break;
         default: /* clause_qC, literal, etc. */
@@ -1728,6 +1830,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             u->children[0]->children[cnumber] = w;
             w->children[2] = 0;
             w->uniquifier = w->children[0]->uniquifier = 0;
+            w->punctuation = w->children[0]->punctuation = 0;
             w->quan = w->children[0]->quan = 1;
             w->gender = w->children[0]->gender = gg_unknown;
             w->tagged = w->children[0]->tagged = FALSE;
@@ -1842,6 +1945,13 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                 else u->content = astrcat("", "your", "");
                 return second;
             }
+            if (!strcmp(u->content, "thou")) {
+                free(u->content);
+                if (t == subject) u->content = astrcat("", "thou", "");
+                else if (t == object) u->content = astrcat("", "thee", "");
+                else u->content = astrcat("", "thy", "");
+                return archaic;
+            }
             if (!strcmp(u->content, "I")) {
                 free(u->content);
                 if (quan & (1 << 29)) {
@@ -1940,10 +2050,10 @@ forcecontent_en(struct grammarunit *u, boolean simple, boolean caps)
 
 /* For now, just a wrapper around the function for English.
    Eventually, this will probably move elsewhere and allow user-selectable
-   languages. (Likely implementation: the server does the translation.)
+   languages. (Likely implementation: the client does the translation.)
 
    Its purpose is to force u->content to become a sentence that's the
-   translation of the gramar structure u. */
+   translation of the grammar structure u. */
 void
 forcecontent(struct grammarunit *u, boolean simple, boolean caps)
 {

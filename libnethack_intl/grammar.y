@@ -36,7 +36,7 @@
 %token ACOMMA DCOMMA ECOMMA QCOMMA MINUSCOMMA PLUSCOMMA STARCOMMA
 %token PERCENT_S PC_COMMA
 %token NEQUALS AEQUALS VEQUALS SEQUALS DEQUALS
-%token <s> LITERAL UNIQUIFIER S
+%token <s> LITERAL PUNCTUATION UNIQUIFIER S
 %token <i> COUNTCOMMA
 
 %destructor { free($$); } <s>
@@ -80,10 +80,16 @@ substel:
       free_grammarunit($1->children[0]);
       free_grammarunit($1->children[1]);
       free_grammarunit($1->children[2]);
+      if ($1->punctuation) {
+          $$ = realloc($$, strlen($$)+strlen($1->punctuation)+1);
+          strcat($$, $1->punctuation);
+          free($1->punctuation);
+      }
       free($1->uniquifier);
       free($1);      
   }
 | LITERAL                                { $$ = $1; }
+| PUNCTUATION                            { $$ = $1; }
 ;
 
 anything:
@@ -93,8 +99,8 @@ anything:
 | adverbish                              { $$ = $1; }
 | relativish                             { $$ = $1; }
 | prepositionish                         { $$ = $1; }
-| clausish                               { $$ = $1; }
 | sentenceish                            { $$ = $1; }
+| clausish PUNCTUATION                   { $$ = $1; $$->punctuation = $2; }
 ;
 
 literalinner2:
@@ -103,6 +109,7 @@ literalinner2:
       $$->rule = gr_literal;
       $$->quan = 1;
       $$->uniquifier = 0;
+      $$->punctuation = 0;
       $$->gender = gg_unknown;
       $$->content = $1;
       $$->tagged = FALSE;
@@ -130,6 +137,7 @@ verbish:
 | V verbish COMMA adjectivish END        { $$=mu($2,$4,0,verb,verb_VA); }
 | V verbish COMMA adverbish END          { $$=mu($2,$4,0,verb,verb_VD); }
 | V verbish COMMA verbish END            { $$=mu($2,$4,0,verb,verb_VV); }
+| V MCOMMA verbish COMMA anything END    { $$=mu($3,$5,0,verb,verb_mVX); }
 | V SCOMMA verbish COMMA verbish END     { $$=mu($3,$5,0,verb,verb_sVV); }
 | V MINUSCOMMA verbish END               { $$=mu($3, 0,0,verb,minus_V); }
 | V PLUSCOMMA verbish COMMA verbish END  { $$=mu($3,$5,0,verb,plus_VV); }
@@ -253,13 +261,16 @@ clausish:
 | C ICOMMA nounish COMMA verbish END      { $$=mu($3,$5,0,clause,clause_iNV); }
 | C PCOMMA nounish COMMA verbish END      { $$=mu($3,$5,0,clause,clause_pNV); }
 | C CCOMMA nounish COMMA verbish END      { $$=mu($3,$5,0,clause,clause_cNV); }
+| C FCOMMA nounish COMMA verbish END      { $$=mu($3,$5,0,clause,clause_fNV); }
 | C SCOMMA verbish END                    { $$=mu($3, 0,0,clause,clause_sV ); }
 | C ICOMMA SCOMMA verbish END             { $$=mu($4, 0,0,clause,clause_isV); }
 | C PCOMMA SCOMMA verbish END             { $$=mu($4, 0,0,clause,clause_psV); }
 | C CCOMMA SCOMMA verbish END             { $$=mu($4, 0,0,clause,clause_csV); }
+| C FCOMMA SCOMMA verbish END             { $$=mu($4, 0,0,clause,clause_fsV); }
 | C SCOMMA ICOMMA verbish END             { $$=mu($4, 0,0,clause,clause_isV); }
 | C SCOMMA PCOMMA verbish END             { $$=mu($4, 0,0,clause,clause_psV); }
 | C SCOMMA CCOMMA verbish END             { $$=mu($4, 0,0,clause,clause_csV); }
+| C SCOMMA FCOMMA verbish END             { $$=mu($4, 0,0,clause,clause_fsV); }
 | C QCOMMA clausish END                   { $$=mu($3, 0,0,clause,clause_qC ); }
 | C ICOMMA verbish END                    { $$=mu($3, 0,0,clause,clause_iV ); }
 | C MINUSCOMMA clausish END               { $$=mu($3, 0,0,clause,minus_C); }
@@ -275,6 +286,7 @@ sentenceish:
       $$->rule = gr_literal;
       $$->quan = 1;
       $$->uniquifier = 0;
+      $$->punctuation = 0;
       $$->gender = gg_unknown;
       $$->tagged = FALSE;
       $$->content = $1;
@@ -299,6 +311,7 @@ free_grammarunit(struct grammarunit *u)
     free_grammarunit(u->children[0]);
     free_grammarunit(u->children[1]);
     free_grammarunit(u->children[2]);
+    free(u->punctuation);
     free(u->uniquifier);
     free(u->content);
     free(u);
@@ -321,10 +334,13 @@ makeunit(struct grammarunit *c1, struct grammarunit *c2,
        sentence. (Conceptually, we'd create a new uniquifier from the
        uniquifiers of the children, but that's overkill.) */
     u->uniquifier = 0;
+    u->punctuation = 0;
     u->content = 0;
     u->quan = c1 ? c1->quan : 1;
     u->gender = c1 ? c1->gender : gg_unknown;
     u->tagged = FALSE;
+    /* "the singular object and the other singular object" is plural */
+    if (u->rule == plus_NN) u->quan = 1<<29;
     return u;
 }
 

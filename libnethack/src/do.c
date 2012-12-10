@@ -99,7 +99,8 @@ boulder_hits_pool(struct obj * otmp, int rx, int ry, boolean pushing)
                           xname(otmp), fills_up ? "V{fill}" : "V{fall into}",
                           what);
                 } else if (flags.soundok)
-                    You_hear(lava ? "N{N{i,splash},A{sizzling}}" : "N{i,splash}");
+                    You_hear(".", lava ?
+                             "N{N{i,splash},A{sizzling}}" : "N{i,splash}");
                 wake_nearto(rx, ry, 40);
             }
 
@@ -175,9 +176,9 @@ flooreffects(struct obj * obj, int x, int y, const char *verb)
             if (Blind && couldsee(x, y)) {
                 if (flags.soundok) {
                     if ((x == u.ux) && (y == u.uy))
-                        You_hear("N{N{i,CRASH},E{beneath},N=%s}.", you);
+                        You_hear(".", "N{N{i,CRASH},E{beneath},N=%s}", you);
                     else
-                        You_hear("N{N{i,CRASH},A{nearby}}!");
+                        You_hear("!", "N{N{i,CRASH},A{nearby}}");
                 }
             } else if (cansee(x, y)) {
                 char *verb = t->ttyp == TRAPDOOR ? "V{V{plug},N{i,trap door}}"
@@ -188,9 +189,9 @@ flooreffects(struct obj * obj, int x, int y, const char *verb)
                 if (t->tseen)
                     pline("C{N{boulder},V{+,V{trigger},V=%s}}.", verb);
                 else
-                    pline("C{N{boulder},V=%s}", verb);
+                    pline("C{N{boulder},V=%s}.", verb);
             } else if (flags.soundok) {
-                You_hear("N{N{i,CRASH},A{distant}}!");
+                You_hear("!", "N{N{i,CRASH},A{distant}}");
             }
         }
         deltrap(lev, t);
@@ -222,7 +223,7 @@ flooreffects(struct obj * obj, int x, int y, const char *verb)
                (t->ttyp == PIT || t->ttyp == SPIKED_PIT)) {
         /* you escaped a pit and are standing on the precipice */
         if (Blind && flags.soundok)
-            You_hear("N{a,N=%s,V{V{tumble},D{downwards}}}.", xname(obj));
+            You_hear(".", "N{a,N=%s,V{V{tumble},D{downwards}}}", xname(obj));
         else
             pline("C{N=%s,V{V{tumble},D{e,E{into},N=%s}}}.", xname(obj),
                   the_your("N{pit}",t->madeby_u));
@@ -318,7 +319,8 @@ dosinkring(struct obj *obj)
         pline("C{N{o,static electricity},V{V{surround},N{sink}}}.");
         break;
     case RIN_CONFLICT:
-        You_hear("N{a,N{N{*,N{i,noise}},A{loud}},V{V{come from},N{drain}}}.");
+        You_hear(".",
+                 "N{a,N{N{*,N{i,noise}},A{loud}},V{V{come from},N{drain}}}");
         break;
     case RIN_SUSTAIN_ABILITY:  /* KMH */
         pline("C{N{water flow},V{V{seem},A{V{fix}}}}.");
@@ -406,7 +408,7 @@ dosinkring(struct obj *obj)
                   hcolor("A{white}"));
             break;
         case RIN_TELEPORTATION:
-            pline("C{N{sink},V{V{vanish},D{momentarily}}}");
+            pline("C{N{sink},V{V{vanish},D{momentarily}}}.");
             break;
         case RIN_TELEPORT_CONTROL:
             verbalize("S{Beam the sink up, Scotty!}");
@@ -424,9 +426,9 @@ dosinkring(struct obj *obj)
     if (ideed)
         trycall(obj);
     else
-        You_hear("N{a,N{ring},V{V{bounce down},N{drainpipe}}}.");
+        You_hear(".", "N{a,N{ring},V{V{bounce down},N{drainpipe}}}");
     if (!rn2(20)) {
-        pline("N{N{sink},V{+,V{back up},V{V{leave},N=%s}}}.", doname(obj));
+        pline("C{N{sink},V{+,V{back up},V{V{leave},N=%s}}}.", doname(obj));
         obj->in_use = FALSE;
         dropx(obj);
     } else
@@ -890,7 +892,7 @@ doup(void)
     }
     if (ledger_no(&u.uz) == 1) {
         char buf[BUFSZ];
-        sprintf(buf, "C{N=%s,V{-,V{V{can},V{V{return from},"
+        sprintf(buf, "C{f,N=%s,V{-,V{V{be able},V{V{return from},"
                 "D{E{beyond},N{o,here}}}}}}!  "
                 "C{q,C{i,V{V{climb},D{anyway}}}}?", you);
         if (yn(buf) != 'y')
@@ -934,9 +936,9 @@ goto_level(d_level * newlevel, boolean at_stairs, boolean falling,
            boolean portal)
 {
     xchar new_ledger;
-    boolean up = (depth(newlevel) < depth(&u.uz)), newdungeon =
-        (u.uz.dnum != newlevel->dnum), was_in_W_tower =
-        In_W_tower(u.ux, u.uy, &u.uz), familiar = FALSE;
+    boolean up = (depth(newlevel) < depth(&u.uz));
+    boolean newdungeon = (u.uz.dnum != newlevel->dnum);
+    boolean was_in_W_tower = In_W_tower(u.ux, u.uy, &u.uz);
     boolean new = FALSE;        /* made a new level? */
     struct monst *mtmp, *mtmp2;
     struct obj *otmp;
@@ -1197,7 +1199,6 @@ goto_level(d_level * newlevel, boolean at_stairs, boolean falling,
         movebubbles();
 
     if (level->flags.forgotten) {
-        familiar = TRUE;
         level->flags.forgotten = FALSE;
     }
 
@@ -1220,23 +1221,29 @@ goto_level(d_level * newlevel, boolean at_stairs, boolean falling,
     /* Check whether we just entered Gehennom. */
     if (!In_hell(&u.uz0) && Inhell) {
         if (Is_valley(&u.uz)) {
-            pline("You arrive at the Valley of the Dead...");
-            pline("The odor of burnt flesh and decay pervades the air.");
-            You_hear("groans and moans everywhere.");
-        } else
-            pline("It is hot here.  You smell smoke...");
+            pline("C{N=%s,V{V{arrive},D{l,N{Valley of the Dead}}}}...", you);
+            pline("C{N{odor of burnt flesh and decay},V{V{pervade},N{air}}}.");
+            /* cannot be underwater or asleep, so You_hear is unnecessary, and
+               can't be used for this anyway */
+            pline("C{N=%s,V{V{V{hear},"
+                  "N{+,N{*,N{i,groan}},N{*,N{i,moan}}}},D{everywhere}}}.", you);
+        } else {
+            pline("C{N{o,it^environment},V{V{V{are},A{hot}},D{here}}}.");
+            pline("C{N=%s,V{V{smell},N{o,smoke}}}...", you);
+        }
     }
 
     if (new && Is_rogue_level(&u.uz))
-        pline("You enter what seems to be an older, more primitive world.");
+        pline("C{N=%s,V{V{enter},N{N{i,world},"
+              "A{+,A{c,A{old}},A{c,A{primitive}}}}}}.", you);
     /* Final confrontation */
     if (In_endgame(&u.uz) && newdungeon && u.uhave.amulet)
         resurrect();
     if (newdungeon && In_V_tower(&u.uz) && In_hell(&u.uz0))
-        pline("The heat and smoke are gone.");
+        pline("C{N{+,N{heat},N{smoke}},V{V{are},A{gone}}}.");
 
     /* the message from your quest leader */
-    if (!In_quest(&u.uz0) && at_dgn_entrance(&u.uz, "The Quest") &&
+    if (!In_quest(&u.uz0) && at_dgn_entrance(&u.uz, "N{Quest}") &&
         !(u.uevent.qexpelled || u.uevent.qcompleted ||
           quest_status.leader_is_dead)) {
 
@@ -1250,8 +1257,8 @@ goto_level(d_level * newlevel, boolean at_stairs, boolean falling,
 
     /* once Croesus is dead, his alarm doesn't work any more */
     if (Is_knox(&u.uz) && (new || !mvitals[PM_CROESUS].died)) {
-        pline("You penetrated a high security area!");
-        pline("An alarm sounds!");
+        pline("C{p,N=%s,V{V{penetrate},N{N{area},A{high security}}}}!", you);
+        pline("C{N{i,alarm},V{sound}}!");
         for (mtmp = level->monlist; mtmp; mtmp = mtmp->nmon)
             if (!DEADMONSTER(mtmp) && mtmp->msleeping)
                 mtmp->msleeping = 0;
@@ -1264,7 +1271,8 @@ goto_level(d_level * newlevel, boolean at_stairs, boolean falling,
     assign_level(&u.uz0, &u.uz);        /* reset u.uz0 */
 
     if (*level->levname)
-        pline("You named this level: %s.", level->levname);
+        pline("C{p,N=%s,V{m,V{V{name},N{level}},S{\x1c%s\x1c}}}.",
+              you, level->levname);
 
     /* assume this will always return TRUE when changing level */
     in_out_region(level, u.ux, u.uy);
@@ -1290,7 +1298,8 @@ final_level(void)
 
     /* create a guardian angel next to player, if worthy */
     if (Conflict) {
-        pline("A voice booms: \"Thy desire for conflict shall be fulfilled!\"");
+        pline("C{N{i,voice},V{m,V{boom},"
+              "C{s,f,V{V{fulfil},N{o,N{desire for conflict},N{thou}}}}!}}@");
         for (i = rnd(4); i > 0; --i) {
             mm.x = u.ux;
             mm.y = u.uy;

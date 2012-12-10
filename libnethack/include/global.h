@@ -99,8 +99,10 @@ typedef schar xchar;
 
 # ifdef __GNUC__
 #  define PRINTFLIKE __attribute__((format(printf, 1, 2)))
+#  define PRINTFLIKE2 __attribute__((format(printf, 2, 3)))
 # else
 #  define PRINTFLIKE
+#  define PRINTFLIKE2
 # endif
 
 /* Used for consistency checks of various data files; declare it here so
