@@ -1309,7 +1309,8 @@ final_level(void)
         }
 
     } else if (u.ualign.record > 8) {   /* fervent */
-        pline("A voice whispers: \"Thou hast been worthy of me!\"");
+        pline("C{N{i,voice},V{m,V{whisper},"
+              "C{p,N{thou},V{V{are worthy of},N{I}}}.}}@");
         mm.x = u.ux;
         mm.y = u.uy;
         if (enexto(&mm, level, mm.x, mm.y, &mons[PM_ANGEL])) {
@@ -1317,10 +1318,10 @@ final_level(void)
                  mk_roamer(&mons[PM_ANGEL], u.ualign.type, level, mm.x, mm.y,
                            TRUE)) != 0) {
                 if (!Blind)
-                    pline("An angel appears near you.");
+                    pline("C{N{i,angel},V{V{appear near},N=%s}}.", you);
                 else
-                    pline
-                        ("You feel the presence of a friendly angel near you.");
+                    pline("C{N=%s,V{V{V{feel the presence of},"
+                          "N{N{i,angel},A{friendly}}},D{nearby}}}.", you);
                 /* guardian angel -- the one case mtame doesn't imply an edog
                    structure, so we don't want to call tamedog(). */
                 mtmp->mtame = 10;
@@ -1331,7 +1332,7 @@ final_level(void)
                 if ((otmp = select_hwep(mtmp)) == 0) {
                     otmp = mksobj(level, SILVER_SABER, FALSE, FALSE);
                     if (mpickobj(mtmp, otmp))
-                        panic("merged weapon?");
+                        panic("S{merged weapon?}");
                 }
                 bless(otmp);
                 if (otmp->spe < 4)
@@ -1386,7 +1387,7 @@ deferred_goto(void)
 
         assign_level(&dest, &u.utolev);
         if (dfr_pre_msg)
-            pline(dfr_pre_msg);
+            pline("C=%s", dfr_pre_msg);
         goto_level(&dest, ! !(typmask & 1), ! !(typmask & 2), ! !(typmask & 4));
         if (typmask & 0200) {   /* remove portal */
             struct trap *t = t_at(level, u.ux, u.uy);
@@ -1397,7 +1398,7 @@ deferred_goto(void)
             }
         }
         if (dfr_post_msg)
-            pline(dfr_post_msg);
+            pline("C=%s", dfr_post_msg);
     }
     u.utotype = 0;      /* our caller keys off of this */
     if (dfr_pre_msg)
@@ -1427,8 +1428,8 @@ revive_corpse(struct obj *corpse)
 
     where = corpse->where;
     is_uwep = corpse == uwep;
-    cname = eos(strcpy(cname_buf, "bite-covered "));
-    strcpy(cname, corpse_xname(corpse, TRUE));
+    cname = corpse_xname(corpse, TRUE);
+    sprintf(cname_buf, "N{N=%s,A{bite-covered}}", cname);
     mcarry = (where == OBJ_MINVENT) ? corpse->ocarry : 0;
 
     if (where == OBJ_CONTAINED) {
@@ -1446,13 +1447,15 @@ revive_corpse(struct obj *corpse)
     if (mtmp) {
         chewed = (mtmp->mhp < mtmp->mhpmax);
         if (chewed)
-            cname = cname_buf;  /* include "bite-covered" prefix */
+            cname = cname_buf;  /* include 'bite-covered' prefix */
         switch (where) {
         case OBJ_INVENT:
             if (is_uwep)
-                pline("The %s writhes out of your grasp!", cname);
+                pline("C{N=%s,V{V{writhe out of},N{o,N{grasp},N=%s}}}!",
+                      cname, you);
             else
-                pline("You feel squirming in your backpack!");
+                pline("C{N=%s,V{V{V{feel},N{o,squirming}},"
+                      "D{a,N{o,N{backpack},N=%s}}}}!", you, you);
             break;
 
         case OBJ_FLOOR:
@@ -1461,19 +1464,25 @@ revive_corpse(struct obj *corpse)
                 && vis
 #endif
                 )
-                pline("%s rises from the dead!",
-                      chewed ? Adjmonnam(mtmp, "bite-covered") : Monnam(mtmp));
+                pline(chewed ? "C{N=%s,V{rise from the dead}}!" :
+                      "C{N{N=%s,A{bite-covered}},V{rise from the dead}}!",
+                      mon_nam(mtmp));
             break;
 
         case OBJ_MINVENT:      /* probably a nymph's */
             if (cansee(mtmp->mx, mtmp->my)) {
+                /* Don't use an() here, rather infer it from context,
+                   because the sentence might be reordered; if it's
+                   repeated rather than pronouned, we need 'the' for
+                   the second occurrence */
                 if (canseemon(mcarry))
-                    pline("Startled, %s drops %s as it revives!",
-                          mon_nam(mcarry), an(cname));
+                    pline("C{N{N=%s,A{V{startle}}},V{V{V{drop},N=%s},"
+                          "D{Q{as},C{N=%s,V{revive}}}}}!",
+                          mon_nam(mcarry), cname, cname);
                 else
-                    pline("%s suddenly appears!",
-                          chewed ? Adjmonnam(mtmp,
-                                             "bite-covered") : Monnam(mtmp));
+                    pline(chewed ? "C{N=%s,V{V{appear},D{suddenly}}}!" :
+                          "C{N{N=%s,A{bite-covered}},V{V{appear},D{suddenly}}}!",
+                          mon_nam(mtmp));
             }
             break;
         case OBJ_CONTAINED:
@@ -1481,27 +1490,33 @@ revive_corpse(struct obj *corpse)
                 mcarry && canseemon(mcarry) && container) {
                 char sackname[BUFSZ];
 
-                sprintf(sackname, "%s %s", s_suffix(mon_nam(mcarry)),
-                        xname(container));
-                pline("%s writhes out of %s!", Amonnam(mtmp), sackname);
+                sprintf(sackname, "N{o,N=%s,N=%s}",
+                        xname(container), mon_nam(mcarry));
+                pline("C{N=%s,V{V{writhe out of},N=%s}}!",
+                      a_monnam(mtmp), sackname);
+
             } else if (container_where == OBJ_INVENT && container) {
                 char sackname[BUFSZ];
 
                 strcpy(sackname, an(xname(container)));
-                pline("%s %s out of %s in your pack!",
-                      Blind ? "Something" : Amonnam(mtmp),
-                      locomotion(mtmp->data, "writhes"), sackname);
+                /* 3.4.3 is inconsistent on whether to use locomotion()
+                   here. It does make sense in most cases but levitate(),
+                   but it requires synthesizing compound verbs from parts,
+                   something grammartree doesn't yet try to attempt. */
+                pline("C{N=%s,V{V{writhe out of},"
+                      "N{s,C{c,N=%s,V{V{carry},N=%s}}}}}!",
+                      Blind ? "?{}" : a_monnam(mtmp), you, sackname);
             } else if (container_where == OBJ_FLOOR && container &&
                        cansee(mtmp->mx, mtmp->my)) {
                 char sackname[BUFSZ];
 
                 strcpy(sackname, an(xname(container)));
-                pline("%s escapes from %s!", Amonnam(mtmp), sackname);
+                pline("C{N=%s,V{V{escape from},N=%s}}!", a_monnam(mtmp), sackname);
             }
             break;
         default:
             /* we should be able to handle the other cases... */
-            impossible("revive_corpse: lost corpse @ %d", where);
+            impossible("S{revive_corpse: lost corpse @ %d}", where);
             break;
         }
         return TRUE;
@@ -1517,8 +1532,13 @@ revive_mon(void *arg, long timeout)
 
     /* if we succeed, the corpse is gone, otherwise, rot it away */
     if (!revive_corpse(body)) {
+        /* TODO: Do we really want to use you? Or a literal 'you'? Or
+           something else entirely? I guess if/when multiplayer is
+           implemeneted, we can find out then. For now, 'you' in case
+           someone feels like being referred to entirely in the third
+           person. (Or the first person.) */
         if (is_rider(&mons[body->corpsenm]))
-            pline("You feel less hassled.");
+            pline("C{N=%s,V{V{feel},A{A{V{hassle}},D{less}}}}.", you);
         start_timer(body->olev, 250L - (moves - body->age), TIMER_OBJECT,
                     ROT_CORPSE, arg);
     }
@@ -1543,13 +1563,13 @@ wipeoff(void)
     else
         Blinded -= 4;
     if (!Blinded) {
-        pline("You've got the glop off.");
+        pline("C{p,N=%s,V{V{remove},N{glop}}}.", you);
         u.ucreamed = 0;
         Blinded = 1;
         make_blinded(0L, TRUE);
         return 0;
     } else if (!u.ucreamed) {
-        pline("Your %s feels clean now.", body_part(FACE));
+        pline("C{N{o,N=%s,N=%s},V{V{feel},A{clean}}}.", body_part(FACE), you);
         return 0;
     }
     return 1;   /* still busy */
@@ -1561,14 +1581,17 @@ dowipe(void)
     if (u.ucreamed) {
         static char buf[39];
 
-        sprintf(buf, "wiping off your %s", body_part(FACE));
+        sprintf(buf, "V{V{wipe off},N{o,N=%s,N=%s}}", body_part(FACE), you);
         set_occupation(wipeoff, buf, 0);
         /* Not totally correct; what if they change back after now but before
-           they're finished wiping? */
+           they're finished wiping? Luckily, set_occupation isn't used for
+           death messages, or we'd need to distinguish between you and literal
+           'you'. */
         return 1;
     }
-    pline("Your %s is already clean.", body_part(FACE));
-    return 1;
+    pline("C{N{o,N=%s,N=%s},V{V{V{are},A{clean}},D{already}}}.",
+          body_part(FACE), you);
+    return 0;
 }
 
 void
@@ -1601,10 +1624,11 @@ heal_legs(void)
         if (!u.usteed) {
             /* KMH, intrinsics patch */
             if ((EWounded_legs & BOTH_SIDES) == BOTH_SIDES) {
-                pline("Your %s feel somewhat better.",
-                      makeplural(body_part(LEG)));
+                pline("C{N{o,N{*,N=%s},N=%s},V{V{feel},A{A{c,A{good}},D{somewhat}}}}.",
+                      body_part(LEG), you);
             } else {
-                pline("Your %s feels somewhat better.", body_part(LEG));
+                pline("C{N{o,N=%s,N=%s},V{V{feel},A{A{c,A{good}},D{somewhat}}}}.",
+                      body_part(LEG), you);
             }
         }
         HWounded_legs = EWounded_legs = 0;

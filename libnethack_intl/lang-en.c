@@ -1369,6 +1369,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             !strcmp(u->children[1]->content, "here") ||
             !strcmp(u->children[1]->content, "there") ||
             !strcmp(u->children[1]->content, "everywhere") ||
+            !strcmp(u->children[1]->content, "nearby") ||
             !strcmp(u->children[1]->content, "brightly") ||
             !strcmp(u->children[1]->content, "upward") ||
             !strcmp(u->children[1]->content, "downwards"))
@@ -1454,6 +1455,16 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             u->content = astrcat(
                 "", resuffix(u->children[0]->content,
                              u->rule == adjective_cA ? "er" : "est"), "");
+        } else if (u->children[0]->rule == gr_literal &&
+                   !strcmp(u->children[0]->content, "good")) {
+            /* not a regular adjective */
+            u->content = astrcat("", u->rule == adjective_cA ?
+                                 "better" : "best", "");
+        } else if (u->children[0]->rule == gr_literal &&
+                   !strcmp(u->children[0]->content, "bad")) {
+            /* also not a regular adjective */
+            u->content = astrcat("", u->rule == adjective_cA ?
+                                 "worse" : "worst", "");
         } else {
             force_unit(u->children[0], t, quan, p);
             u->content = astrcat(u->rule == adjective_cA ? "more" : "most",

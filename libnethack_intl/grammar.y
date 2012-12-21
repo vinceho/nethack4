@@ -35,7 +35,7 @@
 %token FCOMMA MCOMMA NCOMMA ICOMMA PCOMMA CCOMMA OCOMMA LCOMMA SCOMMA TCOMMA
 %token ACOMMA DCOMMA ECOMMA QCOMMA MINUSCOMMA PLUSCOMMA STARCOMMA
 %token PERCENT_S PC_COMMA
-%token NEQUALS AEQUALS VEQUALS SEQUALS DEQUALS
+%token NEQUALS AEQUALS VEQUALS SEQUALS DEQUALS CEQUALS
 %token <s> LITERAL PUNCTUATION UNIQUIFIER S
 %token <i> COUNTCOMMA
 
@@ -101,6 +101,16 @@ anything:
 | prepositionish                         { $$ = $1; }
 | sentenceish                            { $$ = $1; }
 | clausish PUNCTUATION                   { $$ = $1; $$->punctuation = $2; }
+| CEQUALS PERCENT_S                       {
+    /* C=%s becomes C=C{...}. or whatever, so it has a special case for
+       punctuation here (and isn't a clausish, for the same reason; you'd
+       end up double-punctuated after expansion if it were) */
+      $$ = mu(0, 0, 0, clause, gr_literal);
+      $$->content = malloc(3);
+      strcpy($$->content, "%s");
+      $$->punctuation = 0;
+  }
+
 ;
 
 literalinner2:
@@ -257,6 +267,7 @@ clausish:
 /* Literal clauses would seem inadvisable compared to literal sentences, but
    just in case we ever need one... */
   C literalinner                          { $$ = $2; $$->role = gr_clause; }
+| CEQUALS clausish                        { $$ = $2; }
 | C nounish COMMA verbish END             { $$=mu($2,$4,0,clause,clause_NV ); }
 | C ICOMMA nounish COMMA verbish END      { $$=mu($3,$5,0,clause,clause_iNV); }
 | C PCOMMA nounish COMMA verbish END      { $$=mu($3,$5,0,clause,clause_pNV); }
