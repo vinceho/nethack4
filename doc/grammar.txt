@@ -212,9 +212,11 @@ e,N                                End state of an action
 D{e,N{i,despair}}
 "to despair"
 
-e,EN                               End location of an action
+e,EN                               Location of an action
 D{e,E{onto},N{altar}}
 "onto the altar"
+This should only be used for actual locations; the EN form should be used for
+other prepositions.
 
 i,N                                Indirect object
 D{i,N{*,N{god}}}
