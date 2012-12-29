@@ -631,6 +631,17 @@ special_case_verb(char *obuf, const char *v, enum tense t,
         if (t == passive_participle) { strcpy(obuf, "sat"); return TRUE; }
         if (t == imperfect) { strcpy(obuf, "sat"); return TRUE; }
         if (t == active_participle) { strcpy(obuf, "sitting"); return TRUE; }
+        return FALSE; /* other cases are regular */
+    }
+    if (!strcmp(v, "fall")) {
+        if (t == passive_participle) { strcpy(obuf, "fallen"); return TRUE; }
+        if (t == imperfect) { strcpy(obuf, "fell"); return TRUE; }
+        return FALSE; /* other cases are regular */
+    }
+    if (!strcmp(v, "blow")) {
+        if (t == passive_participle) { strcpy(obuf, "blown"); return TRUE; }
+        if (t == imperfect) { strcpy(obuf, "blew"); return TRUE; }
+        return FALSE; /* other cases are regular */
     }
     if (!strcmp(v, "will")) {
         if (p == archaic) {
