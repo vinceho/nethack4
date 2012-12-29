@@ -18,7 +18,6 @@ static void m_to_e(struct monst *, int, int, struct entity *);
 static void u_to_e(struct entity *);
 static void set_entity(int, int, struct entity *);
 static const char *e_nam(struct entity *);
-static const char *E_phrase(struct entity *, const char *);
 static boolean e_survives_at(struct entity *, int, int);
 static void e_died(struct entity *, int, int);
 static boolean automiss(struct entity *);
@@ -183,8 +182,9 @@ create_drawbridge(struct level *lev, int x, int y, int dir, boolean flag)
 {
     int x2, y2;
     boolean horiz;
-    boolean lava = lev->locations[x][y].typ == LAVAPOOL; /* assume initialized
-                                                            map */
+    boolean lava = lev->locations[x][y].typ == LAVAPOOL;        /* assume
+                                                                   initialized
+                                                                   map */
 
     x2 = x;
     y2 = y;
@@ -202,7 +202,7 @@ create_drawbridge(struct level *lev, int x, int y, int dir, boolean flag)
         x2++;
         break;
     default:
-        impossible("bad direction in create_drawbridge");
+        impossible("S{bad direction in create_drawbridge}");
         /* fall through */
     case DB_WEST:
         horiz = FALSE;
@@ -300,27 +300,7 @@ set_entity(int x, int y, struct entity *etmp)
 static const char *
 e_nam(struct entity *etmp)
 {
-    return is_u(etmp) ? "you" : mon_nam(etmp->emon);
-}
-
-/*
- * Generates capitalized entity name, makes 2nd -> 3rd person conversion on
- * verb, where necessary.
- */
-static const char *
-E_phrase(struct entity *etmp, const char *verb)
-{
-    static char wholebuf[80];
-
-    strcpy(wholebuf, is_u(etmp) ? "You" : Monnam(etmp->emon));
-    if (!*verb)
-        return wholebuf;
-    strcat(wholebuf, " ");
-    if (is_u(etmp))
-        strcat(wholebuf, verb);
-    else
-        strcat(wholebuf, vtense(NULL, verb));
-    return wholebuf;
+    return is_u(etmp) ? you : mon_nam(etmp->emon);
 }
 
 /*
@@ -361,15 +341,15 @@ e_died(struct entity *etmp, int dest, int how)
 
             /* use more specific killer if specified */
             if (!killer) {
-                killer_format = KILLED_BY_AN;
-                killer = "falling drawbridge";
+                killer = "N{N{i,drawbridge},A{V{fall}}}";
             }
             done(how);
             /* So, you didn't die */
             if (!e_survives_at(etmp, etmp->ex, etmp->ey)) {
                 if (enexto(&xy, level, etmp->ex, etmp->ey, etmp->edata)) {
-                    pline("A %s force teleports you away...",
-                          Hallucination ? "normal" : "strange");
+                    pline("C{N{N{i,force},A=%s},"
+                          "V{V{V{teleport},N=%s},D{away}}}...",
+                          Hallucination ? "A{normal}" : "A{strange}", you);
                     teleds(xy.x, xy.y, FALSE);
                 }
                 /* otherwise on top of the drawbridge is the only viable spot
@@ -487,16 +467,17 @@ do_entity(struct entity *etmp)
     crm = &level->locations[oldx][oldy];
 
     if (automiss(etmp) && e_survives_at(etmp, oldx, oldy)) {
-        if (e_inview && (at_portcullis || IS_DRAWBRIDGE(crm->typ)))
-            pline("The %s passes through %s!",
-                  at_portcullis ? "portcullis" : "drawbridge", e_nam(etmp));
+        if (e_inview && (at_portculolis || IS_DRAWBRIDGE(crm->typ)))
+            pline("C{N=%s,V{V{pass through},N=%s}}!",
+                  at_portcullis ? "N{portcullis}" : "N{drawbridge}",
+                  e_nam(etmp));
         if (is_u(etmp))
             spoteffects(FALSE);
         return;
     }
     if (e_missed(etmp, FALSE)) {
         if (at_portcullis)
-            pline("The portcullis misses %s!", e_nam(etmp));
+            pline("C{N{portcullis},V{V{miss},N=%s}}!", e_nam(etmp));
         if (e_survives_at(etmp, oldx, oldy))
             return;
         else {
@@ -507,8 +488,8 @@ do_entity(struct entity *etmp)
         }
     } else {
         if (crm->typ == DRAWBRIDGE_DOWN) {
-            pline("%s crushed underneath the drawbridge.",
-                  E_phrase(etmp, "are")); /* no jump */
+            pline("C{N=%s,V{V{are},A{A{V{crush}},"
+                  "D{E{underneath},N{drawbridge}}}}}.", e_nam(etmp));
             e_died(etmp, e_inview ? 3 : 2, CRUSHING);   /* no corpse */
             return;     /* Note: Beyond this point, we know we're */
         }       /* not at an opened drawbridge, since all */
@@ -520,10 +501,10 @@ do_entity(struct entity *etmp)
                 relocates = TRUE;
             } else {
                 if (e_inview)
-                    pline("%s crushed by the falling portcullis!",
-                          E_phrase(etmp, "are"));
+                    pline("C{N{N{portcullis},A{V{fall}}},V{V{crush},N=%s}}!",
+                          e_nam(etmp));
                 else if (flags.soundok)
-                    You_hear("a crushing sound.");
+                    You_hear("N{N{i,sound},A{crushing^sound}}");
                 e_died(etmp, e_inview ? 3 : 2, CRUSHING);
                 /* no corpse */
                 return;
@@ -582,27 +563,30 @@ do_entity(struct entity *etmp)
     if (is_db_wall(etmp->ex, etmp->ey)) {
         if (e_inview) {
             if (is_u(etmp)) {
-                pline("You tumble towards the closed portcullis!");
+                /* TODO: Uniquify the portcullis to get "pass through it"? */
+                pline("C{N=%s,V{V{tuble},"
+                      "D{e,E{toward},N{N{portcullis},A{closed}}}}}!", you);
                 if (automiss(etmp))
-                    pline("You pass through it!");
+                    pline("C{N=%s,V{V{pass through},N{portcullis}}}!", you);
                 else
-                    pline("The drawbridge closes in...");
+                    pline("C{N{drawbridge},V{close in}}...");
             } else
-                pline("%s behind the drawbridge.", E_phrase(etmp, "disappear"));
+                pline("C{N=%s,V{V{disappear},D{e,E{behind},N{drawbridge}}}}.",
+                      e_nam(mtmp));
         }
         if (!e_survives_at(etmp, etmp->ex, etmp->ey)) {
-            killer_format = KILLED_BY_AN;
-            killer = "closing drawbridge";
+            killer = "N{a,N{i,drawbridge},V{close}}";
             e_died(etmp, 0, CRUSHING);  /* no message */
             return;
         }
     } else {
         if (is_pool(level, etmp->ex, etmp->ey) && !e_inview)
             if (flags.soundok)
-                You_hear("a splash.");
+                You_hear("N{i,splash}");
         if (e_survives_at(etmp, etmp->ex, etmp->ey)) {
             if (e_inview && !is_flyer(etmp->edata) && !is_floater(etmp->edata))
-                pline("%s from the bridge.", E_phrase(etmp, "fall"));
+                pline("C{N=%s,V{V{fall},D{e,E{from},N{bridge}}}}.",
+                      e_nam(etmp));
             return;
         }
         if (is_pool(level, etmp->ex, etmp->ey) ||
@@ -612,14 +596,17 @@ do_entity(struct entity *etmp)
                 boolean lava = is_lava(level, etmp->ex, etmp->ey);
 
                 if (Hallucination)
-                    pline("%s the %s and disappears.", E_phrase(etmp, "drink"),
-                          lava ? "lava" : waterbody_name(etmp->ex, etmp->ey));
+                    pline("C{N=%s,V{+,V{V{drink},N=%s},V{disappear}}}.",
+                          e_nam(etmp),
+                          lava ? "N{lava}" : waterbody_name(etmp->ex,
+                                                            etmp->ey));
                 else
-                    pline("%s into the %s.", E_phrase(etmp, "fall"),
-                          lava ? "lava" : waterbody_name(etmp->ex, etmp->ey));
+                    pline("C{N=%s,V{V{fall},D{e,E{into},N=%s}}}.",
+                          e_nam(etmp),
+                          lava ? "N{lava}" : waterbody_name(etmp->ex,
+                                                            etmp->ey));
             }
-        killer_format = NO_KILLER_PREFIX;
-        killer = "fell from a drawbridge";
+        killer = "V{V{fall},D{e,E{from},N{i,drawbridge}}}";
         e_died(etmp, e_inview ? 3 : 2,  /* CRUSHING is arbitrary */
                (is_pool(level, etmp->ex, etmp->ey)) ? DROWNING :
                (is_lava(level, etmp->ex, etmp->ey)) ? BURNING :
@@ -645,9 +632,9 @@ close_drawbridge(int x, int y)
     y2 = y;
     get_wall_for_db(&x2, &y2);
     if (cansee(x, y) || cansee(x2, y2))
-        pline("You see a drawbridge %s up!",
+        pline("C{N=%s,V{V{see},N{a,N{i,drawbridge},V=%s}}}!", you,
               (((u.ux == x || u.uy == y) && !Underwater) ||
-               distu(x2, y2) < distu(x, y)) ? "coming" : "going");
+               distu(x2, y2) < distu(x, y)) ? "V{come up}" : "V{go up}");
     loc1->typ = DRAWBRIDGE_UP;
     loc2 = &level->locations[x2][y2];
     loc2->typ = DBWALL;
@@ -668,7 +655,7 @@ close_drawbridge(int x, int y)
     set_entity(x2, y2, &(occupants[1]));        /* do_entity for worm tail */
     do_entity(&(occupants[1]));
     if (OBJ_AT(x, y) && flags.soundok)
-        You_hear("smashing and crushing.");
+        You_hear("N{+,N{V{smash}},N{V{crush}}}");
     revive_nasty(x, y, NULL);
     revive_nasty(x2, y2, NULL);
     delallobj(x, y);
@@ -699,8 +686,8 @@ open_drawbridge(int x, int y)
     y2 = y;
     get_wall_for_db(&x2, &y2);
     if (cansee(x, y) || cansee(x2, y2))
-        pline("You see a drawbridge %s down!",
-              (distu(x2, y2) < distu(x, y)) ? "going" : "coming");
+        pline("C{N=%s,V{V{see},N{a,N{i,drawbridge},V=%s}}}!", you
+              (distu(x2, y2) < distu(x, y)) ? "V{go up}" : "V{come up}");
     loc1->typ = DRAWBRIDGE_DOWN;
     loc2 = &level->locations[x2][y2];
     loc2->typ = DOOR;
@@ -749,28 +736,29 @@ destroy_drawbridge(int x, int y)
 
         if (loc1->typ == DRAWBRIDGE_UP) {
             if (cansee(x2, y2))
-                pline("The portcullis of the drawbridge falls into the %s!",
-                      lava ? "lava" : waterbody_name(x2, y2));
+                pline("C{N{o,N{portcullis},N{drawbridge}},"
+                      "V{V{fall},D{e,E{into},N=%s}}}!",
+                      lava ? "N{lava}" : waterbody_name(x2, y2));
             else if (flags.soundok)
-                You_hear("a loud *SPLASH*!");
+                You_hear("N{N{i,splash},A{loud}}");
         } else {
             if (cansee(x, y))
-                pline("The drawbridge collapses into the %s!",
-                      lava ? "lava" : waterbody_name(x, y));
+                pline("C{N{drawbridge},V{V{collapse},D{e,E{into},N=%s}}}!",
+                      lava ? "N{lava}" : waterbody_name(x, y));
             else if (flags.soundok)
-                You_hear("a loud *SPLASH*!");
+                You_hear("N{N{i,splash},A{loud}}");
         }
         loc1->typ = lava ? LAVAPOOL : MOAT;
         loc1->drawbridgemask = 0;
         if ((otmp = sobj_at(BOULDER, level, x, y)) != 0) {
             obj_extract_self(otmp);
-            flooreffects(otmp, x, y, "fall");
+            flooreffects(otmp, x, y, "V{fall}");
         }
     } else {
         if (cansee(x, y))
-            pline("The drawbridge disintegrates!");
+            pline("C{N{drawbridge},V{disintegrate}}!");
         else
-            You_hear("a loud *CRASH*!");
+            You_hear("N{N{i,crash},A{loud}}");
         loc1->typ = ((loc1->drawbridgemask & DB_ICE) ? ICE : ROOM);
         loc1->icedpool = ((loc1->drawbridgemask & DB_ICE) ? ICED_MOAT : 0);
     }
@@ -793,10 +781,10 @@ destroy_drawbridge(int x, int y)
         e_inview = e_canseemon(etmp2);
         if (!automiss(etmp2)) {
             if (e_inview)
-                pline("%s blown apart by flying debris.",
-                      E_phrase(etmp2, "are"));
-            killer_format = KILLED_BY_AN;
-            killer = "exploding drawbridge";
+                pline("C{s,V{V{V{blow apart},N=%s},"
+                      "D{t,N{N{o,debris},A{flying}}}}}.",
+                      you);
+            killer = "N{a,N{drawbridge},V{explode}}";
             e_died(etmp2, e_inview ? 3 : 2, CRUSHING);  /* no corpse */
         }       /* nothing which is vulnerable can survive this */
     }
@@ -806,16 +794,19 @@ destroy_drawbridge(int x, int y)
         if (!e_missed(etmp1, TRUE)) {
             if (e_inview) {
                 if (!is_u(etmp1) && Hallucination)
-                    pline("%s into some heavy metal!", E_phrase(etmp1, "get"));
+                    /* TODO: This has an extra "of" */
+                    pline("C{N=%s,V{V{get into},"
+                          "N{f,N{o,some},N{N{o,metal^music},A{heavy}}}}}!");
                 else
-                    pline("%s hit by a huge chunk of metal!",
-                          E_phrase(etmp1, "are"));
+                    /* TODO: This should be "by", not "with" */
+                    pline("C{s,V{V{V{hit},N=%s},"
+                          "D{t,N{N{l,N{i,chunk},N{metal}},A{huge}}}}}!",
+                          e_nam(etmp1));
             } else {
                 if (flags.soundok && !is_u(etmp1) && !is_pool(level, x, y))
-                    You_hear("a crushing sound.");
+                    You_hear("N{N{i,sound},A{crushing^sound}}");
             }
-            killer_format = KILLED_BY_AN;
-            killer = "collapsing drawbridge";
+            killer = "N{N{drawbridge},A{collapsing}}";
             e_died(etmp1, e_inview ? 3 : 2, CRUSHING);  /* no corpse */
             /* if (loc1->typ == MOAT) do_entity(etmp1); */
         }
