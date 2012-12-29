@@ -162,6 +162,7 @@ nounish:
 | N nounish COMMA adjectivish END        { $$=mu($2,$4, 0,noun,noun_NA); }
 | N nounish COMMA prepositionish COMMA
   nounish END                            { $$=mu($2,$4,$6,noun,noun_NEN); }
+| N verbish END                          { $$=mu($2, 0, 0,noun,noun_V); }
 | N FCOMMA nounish COMMA adjectivish END { $$=mu($3,$5, 0,noun,noun_fNA); }
 | N FCOMMA nounish COMMA nounish END     { $$=mu($3,$5, 0,noun,noun_fNN); }
 | N OCOMMA nounish COMMA nounish END     { $$=mu($3,$5, 0,noun,noun_oNN); }

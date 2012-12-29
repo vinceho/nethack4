@@ -121,6 +121,12 @@ NA, PA                             Noun with adjective
 N{N{potion},A{orange}}
 "orange potion"
 
+V
+N{V{smash}}                        Gerund
+"smashing"
+N{V{V{eat},N{food}}}
+"eating of food"
+
 NEN                                Noun relative to another noun
 N{N{body},E{on},N{altar}}
 "body on the altar"
@@ -147,7 +153,7 @@ N{o,N{dungeon},P{12|Dudley}}
 "Your dungeon", "Dudley's dungeon"
 
 l,N,N                              Noun with limitation
-N{l,N{information},N{dungeoneering}}
+N{l,N{information},N{V{dungeoneer}}}
 "information about dungeoneering"
 Choosing between "about" and "of" is problematic. So far, this is used with:
 of: knowledge, imitation, a given type
