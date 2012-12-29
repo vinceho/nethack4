@@ -290,7 +290,7 @@ N{s,C{c,P{12|Dudley},V{V{hit},N{1|newt}}}}
 "The newt that you are hitting", "The newt that Dudley is hitting"
 
 q,NN                               A magical item name (X of Y)
-N{N{*,N{boot}},N{speed}}
+N{q,N{*,N{boot}},N{speed}}
 "boots of speed"
 
 q,C                                Create a question rather than a sentence
