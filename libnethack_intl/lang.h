@@ -50,6 +50,7 @@ enum grammarrule {
     adjective_N, adjective_pA, adjective_mN, adjective_oA,
     clause_NV, clause_iNV, clause_pNV, clause_cNV, clause_fNV, clause_qC,
     clause_sV, clause_isV, clause_psV, clause_csV, clause_fsV, clause_iV,
+    clause_CD,
     gr_literal, gr_unknown,
 };
 enum grammargender { gg_male, gg_female, gg_neuter, gg_unknown };

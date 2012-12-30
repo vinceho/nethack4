@@ -315,6 +315,13 @@ i,V                                Create an imperative
 C{i,V{V{kill},N{1|newt}}}
 "Kill the newt"
 
+CD                                 Adverbed clause
+C{C{N{o,nothing},V{happen}},D{unfortunately}}
+"Unfortunately, nothing happens"
+The adverb is put before the clause, although in English it can usually safely
+go before or after. This hasn't really been thought through for conjunctive
+adverbs, and may need some revising.
+
 Forming a complete sentence is simply done by putting the punctuation
 after a clause, or by using a complete sentence:
 

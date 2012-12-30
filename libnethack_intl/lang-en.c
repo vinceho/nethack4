@@ -1698,6 +1698,12 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         free_grammarunit(v); /* now free v, x already freed, x->0 still on tree */
         break;
     }
+    case clause_CD: /* "Sadly, you die" */
+        force_unit(u->children[1], p, quan, t);
+        force_unit(u->children[0], p, quan, t);
+        u->content = astrcat(u->children[1]->content, u->children[0]->content,
+                             ", ");
+        break;
     case noun_sC: /* "the newt that you hit" */
     {
         /* This is basically a case of tagging the object, and moving it to

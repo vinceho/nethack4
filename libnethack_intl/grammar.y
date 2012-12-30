@@ -259,6 +259,7 @@ clausish:
    just in case we ever need one... */
   C literalinner                          { $$ = $2; $$->role = gr_clause; }
 | C nounish COMMA verbish END             { $$=mu($2,$4,0,clause,clause_NV ); }
+| C clausish COMMA adverbish END          { $$=mu($2,$4,0,clause,clause_CD ); }
 | C ICOMMA nounish COMMA verbish END      { $$=mu($3,$5,0,clause,clause_iNV); }
 | C PCOMMA nounish COMMA verbish END      { $$=mu($3,$5,0,clause,clause_pNV); }
 | C CCOMMA nounish COMMA verbish END      { $$=mu($3,$5,0,clause,clause_cNV); }
@@ -358,7 +359,10 @@ malloc_parsestring(const char *x, boolean simple, boolean caps)
         strcat(rv, ">>");
         strncat(rv, x + first_column - 1, last_column - first_column + 1);
         strcat(rv, "<<");
-        strcat(rv, x + last_column);
+        /* Only output the rest if it exists. */
+        if (*(x + last_column - 1) != '\0') {
+          strcat(rv, x + last_column);
+        } 
         strcat(rv, "': ");
         strcat(rv, errreason);
         strcat(rv, ")");
