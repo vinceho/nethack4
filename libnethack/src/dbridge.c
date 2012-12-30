@@ -341,6 +341,7 @@ e_died(struct entity *etmp, int dest, int how)
 
             /* use more specific killer if specified */
             if (!killer) {
+                killer_format = KILLED_BY_AN;
                 killer = "N{N{i,drawbridge},A{V{fall}}}";
             }
             done(how);
@@ -606,6 +607,7 @@ do_entity(struct entity *etmp)
                           lava ? "N{lava}" : waterbody_name(etmp->ex,
                                                             etmp->ey));
             }
+        killer_format = KILLER_NO_PREFIX;
         killer = "V{V{fall},D{e,E{from},N{i,drawbridge}}}";
         e_died(etmp, e_inview ? 3 : 2,  /* CRUSHING is arbitrary */
                (is_pool(level, etmp->ex, etmp->ey)) ? DROWNING :
@@ -784,6 +786,7 @@ destroy_drawbridge(int x, int y)
                 pline("C{s,V{V{V{blow apart},N=%s},"
                       "D{t,N{N{o,debris},A{flying}}}}}.",
                       you);
+            killer_format = KILLED_BY_AN;
             killer = "N{a,N{drawbridge},V{explode}}";
             e_died(etmp2, e_inview ? 3 : 2, CRUSHING);  /* no corpse */
         }       /* nothing which is vulnerable can survive this */
@@ -806,6 +809,7 @@ destroy_drawbridge(int x, int y)
                 if (flags.soundok && !is_u(etmp1) && !is_pool(level, x, y))
                     You_hear("N{N{i,sound},A{crushing^sound}}");
             }
+            killer_format = KILLED_BY_AN;
             killer = "N{N{drawbridge},A{collapsing}}";
             e_died(etmp1, e_inview ? 3 : 2, CRUSHING);  /* no corpse */
             /* if (loc1->typ == MOAT) do_entity(etmp1); */
