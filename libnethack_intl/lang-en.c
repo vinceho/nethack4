@@ -40,6 +40,7 @@ is_simple_adjective(const char *s)
 {
     if (!strcmp(s, "keen")) return TRUE;
     if (!strcmp(s, "old")) return TRUE;
+    if (!strcmp(s, "weak")) return TRUE;
     return FALSE;
 }
 
@@ -641,6 +642,11 @@ special_case_verb(char *obuf, const char *v, enum tense t,
     if (!strcmp(v, "blow")) {
         if (t == passive_participle) { strcpy(obuf, "blown"); return TRUE; }
         if (t == imperfect) { strcpy(obuf, "blew"); return TRUE; }
+        return FALSE; /* other cases are regular */
+    }
+    if (!strcmp(v, "draw")) {
+        if (t == passive_participle) { strcpy(obuf, "drawn"); return TRUE; }
+        if (t == imperfect) { strcpy(obuf, "drew"); return TRUE; }
         return FALSE; /* other cases are regular */
     }
     if (!strcmp(v, "will")) {
