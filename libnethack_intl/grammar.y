@@ -172,6 +172,7 @@ nounish:
 | N nounish COMMA adjectivish END        { $$=mu($2,$4, 0,noun,noun_NA); }
 | N nounish COMMA prepositionish COMMA
   nounish END                            { $$=mu($2,$4,$6,noun,noun_NEN); }
+| N verbish END                          { $$=mu($2, 0, 0,noun,noun_V); }
 | N FCOMMA nounish COMMA adjectivish END { $$=mu($3,$5, 0,noun,noun_fNA); }
 | N FCOMMA nounish COMMA nounish END     { $$=mu($3,$5, 0,noun,noun_fNN); }
 | N OCOMMA nounish COMMA nounish END     { $$=mu($3,$5, 0,noun,noun_oNN); }
@@ -269,6 +270,7 @@ clausish:
   C literalinner                          { $$ = $2; $$->role = gr_clause; }
 | CEQUALS clausish                        { $$ = $2; }
 | C nounish COMMA verbish END             { $$=mu($2,$4,0,clause,clause_NV ); }
+| C clausish COMMA adverbish END          { $$=mu($2,$4,0,clause,clause_CD ); }
 | C ICOMMA nounish COMMA verbish END      { $$=mu($3,$5,0,clause,clause_iNV); }
 | C PCOMMA nounish COMMA verbish END      { $$=mu($3,$5,0,clause,clause_pNV); }
 | C CCOMMA nounish COMMA verbish END      { $$=mu($3,$5,0,clause,clause_cNV); }
@@ -368,7 +370,10 @@ malloc_parsestring(const char *x, boolean simple, boolean caps)
         strcat(rv, ">>");
         strncat(rv, x + first_column - 1, last_column - first_column + 1);
         strcat(rv, "<<");
-        strcat(rv, x + last_column);
+        /* Only output the rest if it exists. */
+        if (*(x + last_column - 1) != '\0') {
+          strcat(rv, x + last_column);
+        } 
         strcat(rv, "': ");
         strcat(rv, errreason);
         strcat(rv, ")");

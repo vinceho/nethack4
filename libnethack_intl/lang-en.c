@@ -14,9 +14,9 @@ static boolean global_simple, global_caps;
 
 enum tense {
     /* "You die", "You have died", "You died", "You are dying", "dying",
-       "died", "die", "to die" */
+       "died", "die", "to die", "dying" */
     present, perfect, imperfect, continuous, future, active_participle,
-    passive_participle, secondary_direct, secondary_infinitive,
+    passive_participle, secondary_direct, secondary_infinitive, gerund,
     /* OK, so nouns don't have tenses, but we use the same method:
        "I", "me", "my" */
     subject, object, possessive,
@@ -40,6 +40,7 @@ is_simple_adjective(const char *s)
 {
     if (!strcmp(s, "keen")) return TRUE;
     if (!strcmp(s, "old")) return TRUE;
+    if (!strcmp(s, "weak")) return TRUE;
     return FALSE;
 }
 
@@ -160,8 +161,7 @@ anumbername(int n, boolean ordinal)
     } else if (n < 1000000000) {
         if (n % 1000000) t = anumbername(n % 1000000, ordinal); else t = 0;
         t2 = anumbername(n / 1000000, ordinal);
-        rv = astrcat(t2, t ? t : "",
-                     t ? (n % 1000000 >= 1000 ? " million, " :
+        rv = astrcat(t2, t ? t : "", t ? (n % 1000000 >= 1000 ? " million, " :
                           " million and ") :
                      ordinal ? " millionth" : " million");
         free(t);
@@ -632,6 +632,22 @@ special_case_verb(char *obuf, const char *v, enum tense t,
         if (t == passive_participle) { strcpy(obuf, "sat"); return TRUE; }
         if (t == imperfect) { strcpy(obuf, "sat"); return TRUE; }
         if (t == active_participle) { strcpy(obuf, "sitting"); return TRUE; }
+        return FALSE; /* other cases are regular */
+    }
+    if (!strcmp(v, "fall")) {
+        if (t == passive_participle) { strcpy(obuf, "fallen"); return TRUE; }
+        if (t == imperfect) { strcpy(obuf, "fell"); return TRUE; }
+        return FALSE; /* other cases are regular */
+    }
+    if (!strcmp(v, "blow")) {
+        if (t == passive_participle) { strcpy(obuf, "blown"); return TRUE; }
+        if (t == imperfect) { strcpy(obuf, "blew"); return TRUE; }
+        return FALSE; /* other cases are regular */
+    }
+    if (!strcmp(v, "draw")) {
+        if (t == passive_participle) { strcpy(obuf, "drawn"); return TRUE; }
+        if (t == imperfect) { strcpy(obuf, "drew"); return TRUE; }
+        return FALSE; /* other cases are regular */
     }
     if (!strcmp(v, "will")) {
         if (p == archaic) {
@@ -765,6 +781,7 @@ conjugate(const char *v, enum tense t, int quan, enum person p)
         if (special_case_verb(w, v, t, plural, p)) return w;
         strcpy(w, resuffix(v, "ed"));
         break;
+    case gerund: /* for regular verbs, the gerund is the active participle */
     case active_participle: /* resuffix -ing, for regular verbs */
         if (special_case_verb(w, v, t, plural, p)) return w;
         strcpy(w, resuffix(v, "ing"));
@@ -775,7 +792,8 @@ conjugate(const char *v, enum tense t, int quan, enum person p)
         break;
     default:
         if (special_case_verb(w, v, t, plural, p)) return w;
-        strcpy(w, "(ERROR: noun type found where verb tense expected)");
+        strcpy(w,
+               "(ERROR: noun type found where verb tense expected)");
         break;
     }
 
@@ -1031,6 +1049,10 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             free(t);
         }
         return nounperson;
+    case noun_V: /* "smashing" */
+        nounperson = force_unit(u->children[0], gerund, 1, base);
+        u->content = astrcat("",u->children[0]->content,"");
+        return nounperson;
     case noun_fNA: /* "two of the daggers" */
         /* Take the noun's quantity from the noun itself; "one of the daggers"
            is singular but should still pluralise "daggers" */
@@ -1090,9 +1112,10 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         if (u->children[1]->role != gr_sentence)
             *(u->children[1]->content) =
                 toupper(*(u->children[1]->content));
+        /* the ! are for padding */
         u->content = astrcat(u->children[0]->content,
                              u->children[1]->content,
-                             ": \"!!!!!!"); /* the ! are for padding */
+                             t == gerund ? " of \"!!!!!!" : ": \"!!!!!!");
         sprintf(u->content + strlen(u->children[0]->content) + 3,
                 "%s%.5s\"", u->children[1]->content,
                 u->children[1]->role == gr_clause &&
@@ -1226,6 +1249,9 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                 conjugate(u->children[0]->content, t, quan, p) + 3,
                 " ");
             break;
+        case gerund:
+            u->content = astrcat("", "(ERROR: Gerund negated)", "");
+            break;
         case subject:
         case object:
         case possessive:
@@ -1265,12 +1291,14 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         if (u->children[1]->tagged) {
             char *tx;
             tx = astrcat(u->children[0]->content,
-                         u->children[1]->content, " \x1e");
+                         u->children[1]->content,
+                         t == gerund ? " of \x1e" : " \x1e");
             u->content = astrcat(tx, "\x1e", "");
             free(tx);
         } else
             u->content = astrcat(u->children[0]->content,
-                                 u->children[1]->content, " ");
+                                 u->children[1]->content,
+                                 t == gerund ? " of " : " ");
         break;
     case verb_sVV:
         /* We change this to a verb_VV with the secondary verb behind
@@ -1681,6 +1709,12 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         free_grammarunit(v); /* now free v, x already freed, x->0 still on tree */
         break;
     }
+    case clause_CD: /* "Sadly, you die" */
+        force_unit(u->children[1], p, quan, t);
+        force_unit(u->children[0], p, quan, t);
+        u->content = astrcat(u->children[1]->content, u->children[0]->content,
+                             ", ");
+        break;
     case noun_sC: /* "the newt that you hit" */
     {
         /* This is basically a case of tagging the object, and moving it to
