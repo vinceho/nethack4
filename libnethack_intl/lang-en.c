@@ -543,9 +543,8 @@ special_case_verb(char *obuf, const char *v, enum tense t,
             strcpy(obuf, "done");
             return TRUE;
         }
-        return FALSE; /* other cases are regular */
-    }
-    if (!strcmp(v, "go")) {
+        /* other cases are regular */
+    } else if (!strcmp(v, "go")) {
         if (t == present) {
             if (!plural && (p == third)) strcpy(obuf, "goes");
             else strcpy(obuf, "go");
@@ -559,25 +558,22 @@ special_case_verb(char *obuf, const char *v, enum tense t,
             strcpy(obuf, "gone");
             return TRUE;
         }
-        return FALSE; /* other cases are regular */
-    }
-    if (!strcmp(v, "dare")) {
+        /* other cases are regular */
+    } else if (!strcmp(v, "dare")) {
         if (t == present && p == archaic) {
             /* 3.4.3 inconsistently uses "darest" and "durst" here */
             strcpy(obuf, "durst");
             return TRUE;
         }
-        return FALSE; /* usually regular */
-    }
-    if (verb_chains_directly(v)) {
+        /* usually regular */
+    } else if (verb_chains_directly(v)) {
         /* Directly-chaining verbs don't conjugate. Except for "do".
            They also don't work properly in tenses other than the present, in
            which case we have to swap in an entirely different verb (e.g.
            "be able" rather than "can"), but that's just a TODO for now. */
         strcpy(obuf, v);
         return TRUE;
-    }
-    if (!strcmp(v, "have")) {
+    } else if (!strcmp(v, "have")) {
         if (t == present) {
             if (!plural && (p == third)) strcpy(obuf, "has");
             else if (p == archaic) strcpy(obuf, "hast");
@@ -588,75 +584,62 @@ special_case_verb(char *obuf, const char *v, enum tense t,
             strcpy(obuf, "had");
             return TRUE;
         }
-        return FALSE; /* other cases are regular */
-    }
-    if (!strcmp(v, "burn")) {
+        /* other cases are regular */
+    } else if (!strcmp(v, "burn")) {
         /* "I burned", "I have burned", but "I am burnt"; we don't currently
            cover the second case because it isn't used and we don't have
            enough information to distinguish it from the third */
         if (t == passive_participle) { strcpy(obuf, "burnt"); return TRUE; }
-        return FALSE; /* other cases are regular */
-    }
-    if (!strcmp(v, "know")) {
+        /* other cases are regular */
+    } else if (!strcmp(v, "know")) {
         if (t == imperfect) { strcpy(obuf, "knew"); return TRUE; }
         if (t == passive_participle) { strcpy(obuf, "known"); return TRUE; }
-        return FALSE; /* other cases are regular */
-    }
-    if (!strcmp(v, "hold")) {
+        /* other cases are regular */
+    } else if (!strcmp(v, "hold")) {
         if (t == imperfect) { strcpy(obuf, "held"); return TRUE; }
         if (t == passive_participle) { strcpy(obuf, "held"); return TRUE; }
-        return FALSE; /* other cases are regular */
-    }
-    if (!strcmp(v, "lay")) {
+        /* other cases are regular */
+    } else if (!strcmp(v, "lay")) {
         if (t == imperfect || t == passive_participle) {
             strcpy(obuf, "laid");
             return TRUE;
         }
-        return FALSE; /* other cases are regular */
-    }
-    if (!strcmp(v, "eat")) {
+        /* other cases are regular */
+    } else if (!strcmp(v, "eat")) {
         if (t == passive_participle) { strcpy(obuf, "eaten"); return TRUE; }
         if (t == imperfect) { strcpy(obuf, "ate"); return TRUE; }
-        return FALSE; /* other cases are regular */
-    }
-    if (!strcmp(v, "rot")) {
+        /* other cases are regular */
+    } else if (!strcmp(v, "rot")) {
         if (t == passive_participle) { strcpy(obuf, "rotten"); return TRUE; }
-        return FALSE; /* other cases are regular */
-    }
-    if (!strcmp(v, "hit")) {
+        /* other cases are regular */
+    } else if (!strcmp(v, "hit")) {
         if (t == passive_participle) { strcpy(obuf, "hit"); return TRUE; }
         if (t == imperfect) { strcpy(obuf, "hit"); return TRUE; }
-        return FALSE; /* other cases are regular */
-    }
-    if (!strcmp(v, "sit")) {
+        /* other cases are regular */
+    } else if (!strcmp(v, "sit")) {
         if (t == passive_participle) { strcpy(obuf, "sat"); return TRUE; }
         if (t == imperfect) { strcpy(obuf, "sat"); return TRUE; }
         if (t == active_participle) { strcpy(obuf, "sitting"); return TRUE; }
-        return FALSE; /* other cases are regular */
-    }
-    if (!strcmp(v, "fall")) {
+        /* other cases are regular */
+    } else if (!strcmp(v, "fall")) {
         if (t == passive_participle) { strcpy(obuf, "fallen"); return TRUE; }
         if (t == imperfect) { strcpy(obuf, "fell"); return TRUE; }
-        return FALSE; /* other cases are regular */
-    }
-    if (!strcmp(v, "blow")) {
+        /* other cases are regular */
+    } else if (!strcmp(v, "blow")) {
         if (t == passive_participle) { strcpy(obuf, "blown"); return TRUE; }
         if (t == imperfect) { strcpy(obuf, "blew"); return TRUE; }
-        return FALSE; /* other cases are regular */
-    }
-    if (!strcmp(v, "draw")) {
+        /* other cases are regular */
+    } else if (!strcmp(v, "draw")) {
         if (t == passive_participle) { strcpy(obuf, "drawn"); return TRUE; }
         if (t == imperfect) { strcpy(obuf, "drew"); return TRUE; }
-        return FALSE; /* other cases are regular */
-    }
-    if (!strcmp(v, "shoot")) {
+        /* other cases are regular */
+    } else if (!strcmp(v, "shoot")) {
         if (t == passive_participle || t == imperfect) {
             strcpy(obuf, "shot");
             return TRUE;
         }
-        return FALSE; /* other cases are regular */
-    }
-    if (!strcmp(v, "will")) {
+        /* other cases are regular */
+    } else if (!strcmp(v, "will")) {
         if (p == archaic) {
             /* TODO: usually "shalt", actually, because if you're being
                pretentious you may as well go all the way; but it doesn't
@@ -669,8 +652,7 @@ special_case_verb(char *obuf, const char *v, enum tense t,
         /* the other cases don't exist... */
         strcpy(obuf, "(ERROR: bad 'will' tense)");
         return TRUE;
-    }
-    if (!strcmp(v, "are")) {
+    } else if (!strcmp(v, "are")) {
         switch (t) {
         case present:
             switch(p) {
