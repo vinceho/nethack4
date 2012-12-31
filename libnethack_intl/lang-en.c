@@ -649,6 +649,13 @@ special_case_verb(char *obuf, const char *v, enum tense t,
         if (t == imperfect) { strcpy(obuf, "drew"); return TRUE; }
         return FALSE; /* other cases are regular */
     }
+    if (!strcmp(v, "shoot")) {
+        if (t == passive_participle || t == imperfect) {
+            strcpy(obuf, "shot");
+            return TRUE;
+        }
+        return FALSE; /* other cases are regular */
+    }
     if (!strcmp(v, "will")) {
         if (p == archaic) {
             /* TODO: usually "shalt", actually, because if you're being
