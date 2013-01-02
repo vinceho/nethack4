@@ -40,6 +40,7 @@ L2  [^{},=\x1c]
 "V="          return VEQUALS;
 "S="          return SEQUALS;
 "D="          return DEQUALS;
+"E="          return EEQUALS;
 "C="          return CEQUALS;
 "%"+"s"       return PERCENT_S;
 "%c,"         return PC_COMMA;

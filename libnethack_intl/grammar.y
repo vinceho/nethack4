@@ -35,7 +35,7 @@
 %token FCOMMA MCOMMA NCOMMA ICOMMA PCOMMA CCOMMA OCOMMA LCOMMA SCOMMA TCOMMA
 %token ACOMMA DCOMMA ECOMMA QCOMMA MINUSCOMMA PLUSCOMMA STARCOMMA
 %token PERCENT_S PC_COMMA
-%token NEQUALS AEQUALS VEQUALS SEQUALS DEQUALS CEQUALS
+%token NEQUALS AEQUALS VEQUALS SEQUALS DEQUALS EEQUALS CEQUALS
 %token <s> LITERAL PUNCTUATION UNIQUIFIER S
 %token <i> COUNTCOMMA
 
@@ -253,6 +253,11 @@ prepositionish:
 | E MINUSCOMMA prepositionish END       { $$=mu($3,0,0,preposition,minus_E); }
 | E PLUSCOMMA prepositionish COMMA prepositionish END  {
       $$=mu($3,$5,0,preposition,plus_EE);
+  }
+| EEQUALS PERCENT_S                 {
+      $$ = mu(0, 0, 0, preposition, gr_literal);
+      $$->content = malloc(3);
+      strcpy($$->content, "%s");
   }
 
 ;
