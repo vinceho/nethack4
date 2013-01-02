@@ -1699,8 +1699,8 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         break;
     }
     case clause_CD: /* "Sadly, you die" */
-        force_unit(u->children[1], p, quan, t);
-        force_unit(u->children[0], p, quan, t);
+        force_unit(u->children[1], t, quan, p);
+        force_unit(u->children[0], t, quan, p);
         u->content = astrcat(u->children[1]->content, u->children[0]->content,
                              ", ");
         break;
