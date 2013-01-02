@@ -3694,21 +3694,21 @@ zap_over_floor(xchar x, xchar y, int type, boolean * shopdamage)
                 if (ttmp)
                     ttmp->tseen = 1;
                 if (cansee(x, y))
-                    msgtxt = "The water evaporates.";
+                    sprintf(buf,"C{N{water},V{evaporate}}.");
             }
-            Norep(msgtxt);
+            Norep(buf);
             if (loc->typ == ROOM)
                 newsym(x, y);
         } else if (IS_FOUNTAIN(loc->typ)) {
             if (cansee(x, y))
-                pline("Steam billows from the fountain.");
+                pline("C{N{o,steam},V{V{billow},D{e,E{from},N{fountain}}}}");
             rangemod -= 1;
             dryup(x, y, type > 0);
         }
     } else if (abstype == ZT_COLD &&
                (is_pool(level, x, y) || is_lava(level, x, y))) {
         boolean lava = is_lava(level, x, y);
-        boolean moat = !strcmp(waterbody_name(x, y), "moat");
+        boolean moat = is_moat(leve, x, y);
 
         if (loc->typ == WATER) {
             /* For now, don't let WATER freeze. */
