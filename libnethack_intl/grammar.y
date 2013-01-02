@@ -140,6 +140,7 @@ literalinner:
 | OCOMMA literalinner         { $$ = $2; $$->quan |= (1 << 30) | (1 << 27); }
 ;
 
+/* TODO: Allow empty children. */
 verbish:
   V literalinner                         { $$ = $2; $$->role = gr_verb; }
 | VEQUALS verbish                        { $$ = $2; }
@@ -350,7 +351,8 @@ makeunit(struct grammarunit *c1, struct grammarunit *c2,
        not be NULL). We don't copy the uniquifier; that would lead to
        bizarre results where pronouns replaced the wrong part of a
        sentence. (Conceptually, we'd create a new uniquifier from the
-       uniquifiers of the children, but that's overkill.) */
+       uniquifiers of the children, but that's overkill.)
+       TODO: Make this less magical. */
     u->uniquifier = 0;
     u->punctuation = 0;
     u->content = 0;
