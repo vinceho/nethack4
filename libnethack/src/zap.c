@@ -3366,6 +3366,7 @@ buzz(int type, int nd, xchar sx, xchar sy, int dx, int dy)
     /* if its a Hero Spell then get its SPE_TYPE */
     spell_type = is_hero_spell(type) ? SPE_MAGIC_MISSILE + abstype : 0;
 
+    /* TODO: Uniquify the bolt */
     fltxt = flash_types[(type <= -30) ? abstype : abs(type)];
     if (u.uswallow) {
         int tmp;
@@ -3672,7 +3673,7 @@ zap_over_floor(xchar x, xchar y, int type, boolean * shopdamage)
         if (t && t->ttyp == WEB) {
             /* a burning web is too flimsy to notice if you can't see it */
             if (cansee(x, y))
-                Norep("A web bursts into flames!");
+                Norep("C{N{i,web},V{V{burst into},N{*,N{o,flame}}}}!");
             delfloortrap(level, t);
             if (cansee(x, y))
                 newsym(x, y);
@@ -3680,11 +3681,12 @@ zap_over_floor(xchar x, xchar y, int type, boolean * shopdamage)
         if (is_ice(level, x, y)) {
             melt_ice(level, x, y);
         } else if (is_pool(level, x, y)) {
-            const char *msgtxt = "You hear hissing gas.";
+            const char buf[BUFSZ];
+            sprintf(buf, "C{N=%s,V{V{hear},N{N{o,gas},A{hissing}}}}.");
 
             if (loc->typ != POOL) {     /* MOAT or DRAWBRIDGE_UP */
                 if (cansee(x, y))
-                    msgtxt = "Some water evaporates.";
+                    sprintf(buf, "C{N{f,N{o,some},N{water}},V{evaporate}}.");
             } else {
                 struct trap *ttmp;
 
@@ -3701,7 +3703,7 @@ zap_over_floor(xchar x, xchar y, int type, boolean * shopdamage)
                 newsym(x, y);
         } else if (IS_FOUNTAIN(loc->typ)) {
             if (cansee(x, y))
-                pline("C{N{o,steam},V{V{billow},D{e,E{from},N{fountain}}}}");
+                pline("C{N{o,steam},V{V{billow},D{e,E{from},N{fountain}}}}.");
             rangemod -= 1;
             dryup(x, y, type > 0);
         }
@@ -3713,9 +3715,9 @@ zap_over_floor(xchar x, xchar y, int type, boolean * shopdamage)
         if (loc->typ == WATER) {
             /* For now, don't let WATER freeze. */
             if (cansee(x, y))
-                pline("The water freezes for a moment.");
+                pline("C{N{water},V{V{freeze},D{d,N{i,moment}}}}.");
             else
-                You_hear("a soft crackling.");
+                You_hear("N{N{i,crackling},A{soft^quiet}}");
             rangemod -= 1000;   /* stop */
         } else {
             rangemod -= 3;
@@ -3730,14 +3732,15 @@ zap_over_floor(xchar x, xchar y, int type, boolean * shopdamage)
             bury_objs(level, x, y);
             if (cansee(x, y)) {
                 if (moat)
-                    Norep("The moat is bridged with ice!");
+                    Norep("C{N{moat},V{V{are},A{A{bridged},"
+                          "D{E{with},N{o,ice}}}}}!");
                 else if (lava)
-                    Norep("The lava cools and solidifies.");
+                    Norep("C{N{lava},V{+,V{cool},V{solidify}}}.");
                 else
-                    Norep("The water freezes.");
+                    Norep("C{N{water},V{freeze}}.");
                 newsym(x, y);
             } else if (flags.soundok && !lava)
-                You_hear("a crackling sound.");
+                You_hear("N{N{i,sound},A{crackling}}").
 
             if (x == u.ux && y == u.uy) {
                 if (u.uinwater) {       /* not just `if (Underwater)' */
@@ -3748,11 +3751,13 @@ zap_over_floor(xchar x, xchar y, int type, boolean * shopdamage)
                     vision_full_recalc = 1;
                 } else if (u.utrap && u.utraptype == TT_LAVA) {
                     if (Passes_walls) {
-                        pline("You pass through the now-solid rock.");
+                        pline("C{N=%s,V{V{pass through},"
+                              "N{N{rock},A{now-solid}}}}.");
                     } else {
                         u.utrap = rn1(50, 20);
                         u.utraptype = TT_INFLOOR;
-                        pline("You are firmly stuck in the cooling rock.");
+                        pline("C{N=%s,V{V{are},A{A{A{stuck},D{firmly}},"
+                              "D{e,E{in},N{N{rock},A{cooling}}}}}}.");
                     }
                 }
             } else if ((mon = m_at(level, x, y)) != 0) {
@@ -3769,41 +3774,43 @@ zap_over_floor(xchar x, xchar y, int type, boolean * shopdamage)
     }
     if (closed_door(level, x, y)) {
         int new_doormask = -1;
-        const char *see_txt = NULL, *sense_txt = NULL, *hear_txt = NULL;
+        const char see_buf[BUFSZ] = {0}, sense_buf[BUFSZ] = {0},
+              hear_buf[BUFSZ] = {0};
 
         rangemod = -1000;
         switch (abstype) {
         case ZT_FIRE:
             new_doormask = D_NODOOR;
-            see_txt = "The door is consumed in flames!";
-            sense_txt = "You smell smoke.";
+            strcpy(see_buf, "C{N{door},V{V{are},A{A{consumed},"
+                            "D{E{in},N{*,N{o,flame}}}}}}!");
+            sprintf(sense_buf, "C{N=%s,V{V{smell},N{o,smoke}}}.");
             break;
         case ZT_COLD:
             new_doormask = D_NODOOR;
-            see_txt = "The door freezes and shatters!";
-            sense_txt = "You feel cold.";
+            strcpy(see_buf, "C{N{door},V{+,V{freeze},V{shatter}}}!");
+            strcpy(sense_buf, "C{N=%s,V{V{feel},A{cold}}}.");
             break;
         case ZT_DEATH:
             /* death spells/wands don't disintegrate */
             if (abs(type) != ZT_BREATH(ZT_DEATH))
                 goto def_case;
             new_doormask = D_NODOOR;
-            see_txt = "The door disintegrates!";
-            hear_txt = "crashing wood.";
+            strcpy(see_buf, "C{N{door},V{disintegrate}}!");
+            strcpy(hear_buf, "N{N{wood},A{crashing}}");
             break;
         case ZT_LIGHTNING:
             new_doormask = D_BROKEN;
-            see_txt = "The door splinters!";
-            hear_txt = "crackling.";
+            strcpy(see_buf, "C{N{door},V{splinter}}!");
+            strcpy(hear_buf, "N{V{crackle}}");
             break;
         default:
         def_case:
             if (cansee(x, y)) {
-                pline("The door absorbs %s %s!", (type < 0) ? "the" : "your",
-                      abs(type) < ZT_SPELL(0) ? "bolt" : abs(type) <
-                      ZT_BREATH(0) ? "spell" : "blast");
+                pline("C{N{door},V{V{absorb},N{o,N=%s,N=%s}}}!",
+                      abs(type) < ZT_SPELL(0) ? "N{bolt}" : abs(type) <
+                      ZT_BREATH(0) ? "N{spell}" : "N{blast}", you);
             } else
-                pline("You feel vibrations.");
+                pline("C{N=%s,V{V{feel},N{*,N{o,vibrations}}}}");
             break;
         }
         if (new_doormask >= 0) {        /* door gets broken */
@@ -3835,7 +3842,9 @@ zap_over_floor(xchar x, xchar y, int type, boolean * shopdamage)
     if (OBJ_AT(x, y) && abstype == ZT_FIRE)
         if (burn_floor_paper(level, x, y, FALSE, type > 0) && couldsee(x, y)) {
             newsym(x, y);
-            pline("You %s of smoke.", !Blind ? "see a puff" : "smell a whiff");
+            pline("C{N=%s,V{V=%s,N{l,N=%s,N{o,smoke}}}}.", you,
+                  Blind ? "V{smell}" : "V{see}",
+                  Blind ? "N{i,whiff}" : "N{i,puff}");
         }
     if ((mon = m_at(level, x, y)) != 0) {
         /* Cannot use wakeup() which also angers the monster */
@@ -3898,6 +3907,7 @@ break_statue(struct obj *obj)
     if (Role_if(PM_ARCHEOLOGIST) && !flags.mon_moving &&
         (obj->spe & STATUE_HISTORIC)) {
         if (cansee(obj->ox, obj->oy))
+            /* TODO: what the */
             pline("You feel guilty about damaging such a historic statue.");
         adjalign(-1);
     }
@@ -4036,7 +4046,7 @@ destroy_item(int osym, int dmgtyp)
                 useup(obj);
             if (dmg) {
                 if (xresist)
-                    pline("You aren't hurt!");
+                    pline("C{N=%s,V{-,V{V{are},A{hurt}}}}!");
                 else {
                     const char *how = destroy_strings[dindx * 3 + 2];
                     boolean one = (cnt == 1L);
@@ -4198,7 +4208,7 @@ resist(struct monst *mtmp, char oclass, int damage, int domsg)
     if (resisted) {
         if (domsg) {
             shieldeff(mtmp->mx, mtmp->my);
-            pline("%s resists!", Monnam(mtmp));
+            pline("C{N=%s,V{resist}}!", mon_nam(mtmp));
         }
         damage = (damage + 1) / 2;
     }
@@ -4224,8 +4234,9 @@ makewish(void)
 
     nothing = zeroobj;  /* lint suppression; only its address matters */
     if (flags.verbose)
-        pline("You may wish for an object.");
+        pline("C{N=%s,V{V{wish for},N{i,object}}}.");
 retry:
+    /* TODO: This question */
     getlin("For what do you wish?", buf);
     if (buf[0] == '\033')
         buf[0] = 0;

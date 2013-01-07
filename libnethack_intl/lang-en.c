@@ -45,6 +45,13 @@ is_simple_adjective(const char *s)
 }
 
 static boolean
+adjective_before_article(const char *s)
+{
+    if (!strcmp(s, "such")) return TRUE;
+    return FALSE;
+}
+
+static boolean
 verb_chains_directly(const char *s)
 {
     if (!strcmp(s, "can")) return TRUE;
@@ -1003,6 +1010,11 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                 nounperson = force_unit(u->children[0], t, quan, p);
                 u->content = astrcat(u->children[0]->content,
                                      u->children[1]->content, " ");
+            } else if (a->rule == gr_literal &&
+                       adjective_before_article(a->content)) {
+                nounperson = force_unit(u->children[0], t, quan, p);
+                u->content = astrcat(u->children[1]->content,
+                                     u->children[0]->content, " ");
             } else {
                 /* We need to move any "the" or "a"/"an" to before the
                    /adjective/. We do this by suppressing the article on the
@@ -1503,7 +1515,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             while (a->rule == plus_DD)
                 a = a->children[0];
 
-            if (a->rule == adverb_EN)
+            if (a->rule == adverb_EN || a->rule == adverb_eEN)
                 u->content = astrcat(u->children[0]->content,
                                      u->children[1]->content, " ");
             else
