@@ -4,8 +4,6 @@
 
 #include "hack.h"
 
-static void do_oname(struct obj *);
-
 struct monst *
 christen_monst(struct monst *mtmp, const char *name)
 {
@@ -101,20 +99,33 @@ do_mname(void)
     return 0;
 }
 
+/* all but coins */
+static const char nameable[] = {
+    SCROLL_CLASS, POTION_CLASS, WAND_CLASS, RING_CLASS, AMULET_CLASS,
+    GEM_CLASS, SPBOOK_CLASS, ARMOR_CLASS, TOOL_CLASS, WEAPON_CLASS,
+    ROCK_CLASS, CHAIN_CLASS, BALL_CLASS, 0
+};
+
 /*
  * This routine changes the address of obj. Be careful not to call it
  * when there might be pointers around in unknown places. For now: only
  * when obj is in the inventory.
  */
-static void
+int
 do_oname(struct obj *obj)
 {
     char buf[BUFSZ], qbuf[QBUFSZ];
     const char *aname;
     short objtyp;
 
+    if (!obj)
+        obj = getobj(nameable, "V{name}");
+    if (!obj)
+        return 0;
+
     sprintf(qbuf, "C{q,C{N=%s,V{V{want},V{V{V{name},N=%s},N{what}}}}}?",
             you, xname(obj));
+
     getlin(qbuf, buf);
     if (!*buf || *buf == '\033')
         return;
@@ -140,6 +151,7 @@ do_oname(struct obj *obj)
               body_part(HAND), you, you);
     }
     oname(obj, buf);
+    return 0;
 }
 
 /*
@@ -257,11 +269,6 @@ oname(struct obj *obj, const char *name)
     return obj;
 }
 
-static const char callable[] = {
-    SCROLL_CLASS, POTION_CLASS, WAND_CLASS, RING_CLASS, AMULET_CLASS,
-    GEM_CLASS, SPBOOK_CLASS, ARMOR_CLASS, TOOL_CLASS, 0
-};
-
 static void
 docall_inner(int otyp)
 {
@@ -295,12 +302,37 @@ docall_inner(int otyp)
     }
 }
 
+static const char callable[] = {
+    SCROLL_CLASS, POTION_CLASS, WAND_CLASS, RING_CLASS, AMULET_CLASS,
+    GEM_CLASS, SPBOOK_CLASS, ARMOR_CLASS, TOOL_CLASS, 0
+};
+
+int
+do_tname(struct obj *obj)
+{
+    if (!obj)
+        obj = getobj(callable, "V{call}");
+    if (obj) {
+        /* behave as if examining it in inventory; this might set dknown if 
+           it was picked up while blind and the hero can now see */
+        xname(obj);
+        
+        if (!obj->dknown) {
+            pline("C{-,C{N=%s,V{V{can},V{V{V{see},N=%s},"
+                  "D{p,V{compare}}}}}}.",
+                  you, xname(obj));
+            return 0;
+        }
+        docall_inner(obj->otyp);
+    }
+    return 0;
+}
+
 int
 do_naming(void)
 {
     int n, selected[1];
     struct obj *obj;
-    static const char allowall[] = { ALL_CLASSES, 0 };
     char classes[20], *s;
     struct menulist menu;
 
@@ -345,27 +377,12 @@ do_naming(void)
         donamelevel();
         break;
 
-        /* cases 2 & 3 duplicated from ddocall() */
     case 2:
-        obj = getobj(allowall, "V{name}");
-        if (obj)
-            do_oname(obj);
+        do_oname(NULL);
         break;
-    case 3:
-        obj = getobj(callable, "V{call}");
-        if (obj) {
-            /* behave as if examining it in inventory; this might set dknown if 
-               it was picked up while blind and the hero can now see */
-            xname(obj);
 
-            if (!obj->dknown) {
-                pline("C{-,C{N=%s,V{V{can},V{V{V{see},N=%s},"
-                      "D{p,V{compare}}}}}}.",
-                      you, xname(obj));
-                return 0;
-            }
-            docall_inner(obj->otyp);
-        }
+    case 3:
+        do_tname(NULL);
         break;
 
     case 4:
