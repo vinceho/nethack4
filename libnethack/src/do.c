@@ -440,7 +440,7 @@ dosinkring(struct obj *obj)
 boolean
 canletgo(struct obj *obj, const char *word)
 {
-    if (obj->owornmask & (W_ARMOR | W_RING | W_AMUL | W_TOOL)) {
+    if (obj->owornmask & W_WORN) {
         if (*word)
             Norep("C{N=%s,V{-,V{V{can},"
                   "V{V=%s,N{s,C{c,N=%s,V{V{wear},N{o,something}}}}}}}}.",

@@ -76,8 +76,8 @@ is_moat(struct level * lev, int x, int y)
     if (!isok(x, y))
         return FALSE;
     ltyp = lev->locations[x][y].typ;
-    if (!Is_juiblex_level(lev) &&
-        (ltyp == MOAT || (ltyp == DRAWBRIDGE &&
+    if (!Is_juiblex_level(&lev->z) &&
+        (ltyp == MOAT || (ltyp == DRAWBRIDGE_UP &&
          (lev->locations[x][y].drawbridgemask & DB_UNDER) == DB_MOAT)))
         return TRUE;
     return FALSE;

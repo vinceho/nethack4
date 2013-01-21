@@ -465,6 +465,8 @@ object_dlevel(struct obj *obj)
     default:
         panic("S{Object is nowhere in object_dlevel}");
     }
+    /* This should not occur, but silence warnings */
+    return 0;
 }
 
 /* used by revive() and animate_statue() */
@@ -2109,6 +2111,9 @@ zapyourself(struct obj *obj, boolean ordinary)
     case WAN_TELEPORTATION:
     case SPE_TELEPORT_AWAY:
         tele();
+        if (Teleport_control || !couldsee(u.ux0, u.uy0) ||
+            (distu(u.ux0, u.uy0) >= 16))
+            makeknown(obj->otyp);
         break;
 
     case WAN_DEATH:
@@ -3710,7 +3715,7 @@ zap_over_floor(xchar x, xchar y, int type, boolean * shopdamage)
     } else if (abstype == ZT_COLD &&
                (is_pool(level, x, y) || is_lava(level, x, y))) {
         boolean lava = is_lava(level, x, y);
-        boolean moat = is_moat(leve, x, y);
+        boolean moat = is_moat(level, x, y);
 
         if (loc->typ == WATER) {
             /* For now, don't let WATER freeze. */

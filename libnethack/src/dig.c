@@ -470,13 +470,13 @@ fillholetyp(int x, int y)
 
     for (x1 = lo_x; x1 <= hi_x; x1++)
         for (y1 = lo_y; y1 <= hi_y; y1++)
-            if (is_moat(lev, x1, y1))
+            if (is_moat(level, x1, y1))
                 moat_cnt++;
-            else if (is_pool(lev, x1, y1))
+            else if (is_pool(level, x1, y1))
                 /* This must come after is_moat since moats are pools but
                  * not vice-versa. */
-                pool++;
-            else if (is_lava(lev, x1, y1))
+                pool_cnt++;
+            else if (is_lava(level, x1, y1))
                 lava_cnt++;
     pool_cnt /= 3;      /* not as much liquid as the others */
 
