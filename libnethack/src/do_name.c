@@ -128,7 +128,7 @@ do_oname(struct obj *obj)
 
     getlin(qbuf, buf);
     if (!*buf || *buf == '\033')
-        return;
+        return 0;
     /* strip leading and trailing spaces; unnames item if all spaces */
     mungspaces(buf);
 
@@ -138,7 +138,7 @@ do_oname(struct obj *obj)
 
     if (obj->oartifact) {
         pline("C{N{artifact},V{V{seem},V{V{resist},N{attempt}}}}.");
-        return;
+        return 0;
     } else if (restrict_name(obj, buf) || exist_artifact(obj->otyp, buf)) {
         int n = rn2((int)strlen(buf));
         char c1, c2;
