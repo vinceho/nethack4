@@ -332,7 +332,6 @@ int
 do_naming(void)
 {
     int n, selected[1];
-    struct obj *obj;
     char classes[20], *s;
     struct menulist menu;
 
@@ -361,7 +360,7 @@ do_naming(void)
                      "C{q,C{N{you},V{V{wish},V{V{name},N{what}}}}}?",
                      PICK_ONE, PLHINT_ANYWHERE, selected);
     free(menu.items);
-    if (n)
+    if (n > 0)
         n = selected[0] - 1;
     else
         return 0;

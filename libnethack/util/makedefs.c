@@ -7,12 +7,6 @@
 #define MAKEDEFS_C      /* use to conditionally include file sections */
 /* #define DEBUG */     /* uncomment for debugging info */
 
-#ifdef __GNUC__
-# define noreturn __attribute__((noreturn))
-#else
-# define noreturn
-#endif
-
 #include "config.h"
 #include "permonst.h"
 #include "objclass.h"
@@ -24,6 +18,12 @@
 #include "you.h"
 #include "flag.h"
 #include "dlb.h"
+
+#ifdef __GNUC__
+# define noreturn __attribute__((noreturn))
+#else
+# define noreturn
+#endif
 
 /* version information */
 #include "nethack.h"
@@ -111,7 +111,7 @@ static const char *usage_info[] = {
 static noreturn void
 usage(char *argv0, char mode, int expected)
 {
-    int i;
+    size_t i;
 
     if (expected)
         fprintf(stderr,

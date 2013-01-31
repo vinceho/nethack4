@@ -18,7 +18,7 @@ static const char *const copyright_banner[] =
     { COPYRIGHT_BANNER_A, COPYRIGHT_BANNER_B, COPYRIGHT_BANNER_C, NULL };
 
 static void wd_message(void);
-static void pre_move_tasks(boolean didmove);
+static void pre_move_tasks(void);
 
 static void newgame(void);
 static void welcome(boolean);
@@ -239,7 +239,7 @@ post_init_tasks(void)
     u.uz0.dlevel = u.uz.dlevel;
 
     /* prepare for the first move */
-    pre_move_tasks(FALSE);
+    pre_move_tasks();
 }
 
 
@@ -288,17 +288,20 @@ err_out:
     return FALSE;
 }
 
-
 enum nh_restore_status
-nh_restore_game(int fd, struct nh_window_procs *rwinprocs, boolean force_replay)
+nh_restore_game(int fd, struct nh_window_procs *rwinprocs,
+                volatile boolean force_replay)
 {
+    /* technically force_replay doesn't need to be volatile because it's never
+       changed after the setjmp call, but some compilers don't realise that */
+
     int playmode, irole, irace, igend, ialign;
     unsigned long long temp_turntime;
     char namebuf[PL_NSIZ];
 
     /* some compilers can't cope with the fact that all subsequent stores to
        error are not dead, but become important if the error handler longjumps
-       back volatile is required to prevent invalid optimization based on that
+       back. volatile is required to prevent invalid optimization based on that
        wrong assumption. */
     volatile enum nh_restore_status error = GAME_RESTORED;
 
@@ -729,7 +732,7 @@ special_vision_handling(void)
 
 
 static void
-pre_move_tasks(boolean didmove)
+pre_move_tasks(void)
 {
     /* recalc attribute bonuses from items */
     calc_attr_bonus();
@@ -812,18 +815,16 @@ command_input(int cmdidx, int rep, struct nh_cmd_arg *arg)
         you_moved();
     }
 
-
-
     /* actual time passed */
- /****************************************/
+    /****************************************/
     /* once-per-player-input things go here */
- /****************************************/
+     /****************************************/
     xmalloc_cleanup();
     iflags.next_msg_nonblocking = 0;
 
     /* prepare for the next move */
     flags.move = 1;
-    pre_move_tasks(didmove);
+    pre_move_tasks();
     if (multi == 0 && !occupation)
         flush_screen(); /* Flush screen buffer */
 
@@ -837,8 +838,8 @@ command_input(int cmdidx, int rep, struct nh_cmd_arg *arg)
 int
 nh_command(const char *cmd, int rep, struct nh_cmd_arg *arg)
 {
-    int cmdidx, cmdresult, pre_moves;
-    unsigned int pre_rngstate;
+    int cmdidx, cmdresult;
+    unsigned int pre_rngstate, pre_moves;
 
     if (!program_state.game_running)
         return ERR_GAME_NOT_RUNNING;
