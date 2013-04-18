@@ -120,7 +120,7 @@ readlibdir(library * lp)
     long liboffset, totalsize;
 
     if (fscanf
-        (lp->fdata, "%ld %ld %ld %ld %ld\n", &lp->rev, &lp->nentries,
+        (lp->fdata, /*nointl*/"%ld %ld %ld %ld %ld\n", &lp->rev, &lp->nentries,
          &lp->strsize, &liboffset, &totalsize) != 5)
         return FALSE;
     if (lp->rev > DLB_MAX_VERS || lp->rev < DLB_MIN_VERS)
@@ -133,7 +133,7 @@ readlibdir(library * lp)
     for (i = 0, sp = lp->sspace; i < lp->nentries; i++) {
         lp->dir[i].fname = sp;
         if (fscanf
-            (lp->fdata, "%c%s %ld\n", &lp->dir[i].handling, sp,
+            (lp->fdata, /*nointl*/"%c%s %ld\n", &lp->dir[i].handling, sp,
              &lp->dir[i].foffset) != 3) {
             free(lp->dir);
             free(lp->sspace);

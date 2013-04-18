@@ -134,7 +134,7 @@ add_rect(struct nhrect *r)
 {
     if (rect_cnt >= MAXRECT) {
         if (wizard)
-            pline("MAXRECT may be too small.");
+            pline("S{MAXRECT may be too small.}");
         return;
     }
     /* Check that this struct nhrect is not included in another one */

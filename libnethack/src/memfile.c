@@ -219,7 +219,7 @@ mdiffflush(struct memfile *mf)
     if (mf->curcmd == MDIFF_EDIT) {
         /* We need to record the actual data to edit with, too. */
         if (mf->curcount > mf->pos || mf->curcount < 0)
-            panic("mdiffflush: trying to edit with too much data");
+            panic("S{mdiffflush: trying to edit with too much data}");
         mdiffwrite(mf, mf->buf + mf->pos - mf->curcount, mf->curcount);
     }
     mf->curcmd = MDIFF_INVALID;
@@ -279,7 +279,7 @@ mread(struct memfile *mf, void *buf, unsigned int len)
     memcpy(buf, &mf->buf[mf->pos], rlen);
     mf->pos += rlen;
     if ((unsigned)rlen != len)
-        panic("Error reading game data.");
+        panic("S{Error reading game data.}");
 }
 
 

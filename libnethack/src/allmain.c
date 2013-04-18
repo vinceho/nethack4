@@ -1016,8 +1016,9 @@ welcome(boolean new_game)
          (ROLE_MALE | ROLE_FEMALE) : currentgend != u.initgend))
         sprintf(eos(buf), " %s", genders[currentgend].adj);
 
-    pline(new_game ? "%s %s, welcome to NetHack!  You are a%s %s %s." :
-          "%s %s, the%s %s %s, welcome back to NetHack!", Hello(NULL), plname,
+    /* TODO: grammartree-ize properly */
+    pline(new_game ? "S{%s %s, welcome to NetHack!  You are a%s %s %s.}" :
+          "S{%s %s, the%s %s %s, welcome back to NetHack!}", Hello(NULL), plname,
           buf, urace.adj, (currentgend &&
                            urole.name.f) ? urole.name.f : urole.name.m);
 }

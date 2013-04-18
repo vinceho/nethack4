@@ -1726,7 +1726,7 @@ view_from(int srow, int scol,   /* starting row and column */
 
     if (range) {
         if (range > MAX_RADIUS || range < 1)
-            panic("view_from called with range %d", range);
+            panic("S{view_from called with range %d}", range);
         limits = circle_ptr(range) + 1; /* start at next row */
         if (left < scol - range)
             left = scol - range;
@@ -1796,7 +1796,7 @@ do_clear_area(int scol, int srow, int range, void (*func) (int, int, void *),
         const char *limits;
 
         if (range > MAX_RADIUS || range < 1)
-            panic("do_clear_area:  illegal range %d", range);
+            panic("S{do_clear_area:  illegal range %d}", range);
         if (vision_full_recalc)
             vision_recalc(0);   /* recalc vision if dirty */
         limits = circle_ptr(range);
