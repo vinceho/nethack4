@@ -84,7 +84,7 @@ make_familiar(struct obj *otmp, xchar x, xchar y, boolean quietly)
         if (otmp && !mtmp) {    /* monster was genocided or square occupied */
             if (!quietly)
                 pline("C{N{figurine},V{+,V{writhe},"
-                      "V{V{shatter},D{e,E{into},N{*,N{o,piece}}}}}}");
+                      "V{V{shatter},D{e,E{into},N{*,N{o,piece}}}}}}!");
             break;
         }
     } while (!mtmp && --trycnt > 0);
@@ -109,7 +109,7 @@ make_familiar(struct obj *otmp, xchar x, xchar y, boolean quietly)
                     /* TODO: Clean up the N{i,feeling} */
                     /* TODO: Put 'about', not 'of' */
                     pline("C{N=%s,V{V{get},"
-                          "N{l,N{N{i,feeling},A{bad}},N{o,this}}}}", you);
+                          "N{l,N{N{i,feeling},A{bad}},N{o,this}}}}.", you);
                 mtmp->mpeaceful = 0;
                 set_malign(mtmp);
             }
@@ -886,13 +886,13 @@ wary_dog(struct monst *mtmp, boolean was_dead)
             if (haseyes(youmonst.data)) {
                 if (haseyes(mtmp->data))
                     pline("C{N=%s,V{V=%s,"
-                          "V{V{V{look},N=%s},D{e,E{in},N=%s}}}}",
+                          "V{V{V{look},N=%s},D{e,E{in},N=%s}}}}.",
                           mon_nam(mtmp),
                           mtmp->mpeaceful ? "V{V{seem},A{unable}}"
                                           : "V{refuse}",
                           you, body_part(EYE));
                 else
-                    pline("C{N=%s,V{V{avoid},N{o,N{gaze},N=%s}}}",
+                    pline("C{N=%s,V{V{avoid},N{o,N{gaze},N=%s}}}.",
                           mon_nam(mtmp), you);
             }
         }

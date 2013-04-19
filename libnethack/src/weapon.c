@@ -1000,7 +1000,7 @@ enhance_weapon_skill(void)
                 /* We can get away with a literal 'you' here because this is
                    only being shown in menus, not being plined */
                 sprintf(buf, "C{s,V{V{V{may},V{V{enhance},"
-                        "N{N=%s,A{V{V{flag},D{t,N{m,S{*}}}}}}}},D=%s}}",
+                        "N{N=%s,A{V{V{flag},D{t,N{m,S{*}}}}}}}},D=%s}}@",
                         eventually_advance == 1 ?
                         "N{skill}" : "N{*,N{skill}}",
                         (u.ulevel < MAXULEV) ?
@@ -1012,7 +1012,7 @@ enhance_weapon_skill(void)
             if (maxxed_cnt > 0) {
                 sprintf(buf, "C{-,C{s,V{V{V{can},V{V{enhance},"
                         "N{N=%s,A{V{V{flag},D{t,N{m,S{#}}}}}}}},"
-                        "D{D{further},D{any}}}}}",
+                        "D{D{further},D{any}}}}}@",
                         eventually_advance == 1 ? "N{skill}" : "N{*,N{skill}}");
                 add_menutext(&menu, buf);
             }
@@ -1062,9 +1062,9 @@ enhance_weapon_skill(void)
             }
 
         strcpy(buf, (to_advance > 0) ?
-               "C{i,V{V{V{pick},N{i,skill}},V{advance}}}:" :
+               "C{i,V{V{V{pick},N{i,skill}},V{advance}}}@:" :
                "N{*,N{N{o,skill},A{current}}}:");
-        sprintf(eos(buf), "  (C{N{%d,N{slot}},V{V{are},A{available}}})",
+        sprintf(eos(buf), "  (C{N{%d,N{slot}},V{V{are},A{available}}}@)",
                 u.weapon_slots);
         n = display_menu(menu.items, menu.icount, buf,
                          to_advance ? PICK_ONE : PICK_NONE, PLHINT_ANYWHERE,
@@ -1223,7 +1223,7 @@ drain_weapon_skill(int n)
             if (P_ADVANCE(skill))
                 P_ADVANCE(skill) = rn2(P_ADVANCE(skill));
             pline("C{N=%s,V{V{V{forget},N{f,N{o,N{training},N=%s},A=%s}},"
-                  "D{t,N=%s}}}", you, you, 
+                  "D{t,N=%s}}}.", you, you, 
                   P_SKILL(skill) >= P_BASIC ? "A{some}" : "A{all}",
                   P_NAME(skill));
         }
@@ -1519,7 +1519,7 @@ setmnotwielded(struct monst *mon, struct obj *obj)
     if (artifact_light(obj) && obj->lamplit) {
         end_burn(obj, FALSE);
         if (canseemon(mon))
-            pline("C{N{N=%s,A{a,N{o,N=%s,N=%s}}},V{V{stop},V{glow}}}",
+            pline("C{N{N=%s,A{a,N{o,N=%s,N=%s}}},V{V{stop},V{glow}}}.",
                   xname(obj), mbodypart(mon, HAND), mon_nam(mon));
     }
     obj->owornmask &= ~W_WEP;

@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
 
 typedef signed char boolean; /* 0 or 1 */
@@ -22,8 +23,32 @@ extern char *malloc_parsestring(const char *, boolean, boolean);
 int
 main(int argc, char **argv) {
     int c;
+    boolean errors_only = FALSE;
+    boolean done_args = FALSE;
+
+    for (char **argv2 = argv + 1; *argv2; argv2++) {
+        if (strcmp(*argv2, "-e") == 0)
+            errors_only = TRUE;
+        else if (strcmp(*argv2, "--") == 0)
+            break;
+        else if ((*argv2)[0] == '-' && (*argv2)[1] != '\0')
+            fprintf(stderr, "Unknown option: %s", *argv2);
+       
+    }
+
     for (argv++; *argv; argv++) {
-        FILE* f = fopen(*argv, "rt");
+        FILE* f;
+        if (!done_args) {
+            if (strcmp(*argv, "--") == 0)
+                done_args = TRUE;
+            if ((*argv[0]) == '-' && (*argv)[1] != '\0')
+                continue;
+        }
+        if ((*argv)[0] == '-' && (*argv)[1] == '\0')
+            f = stdin;
+        else
+            f = fopen(*argv, "rt");
+
         boolean firstline = TRUE;
         boolean prev_newline = FALSE;
         boolean prev_slash = FALSE;
@@ -75,7 +100,8 @@ main(int argc, char **argv) {
                 str[i] = 0;
                 if (i && !prev_slash) { /* not the null string, not a nointl */
                     char *parsed = malloc_parsestring(str, FALSE, TRUE);
-                    printf("%s:%d: %s\n\t%s\n", *argv, linecount, str, parsed);
+                    if (!errors_only || strstr(parsed, "(ERROR") == parsed)
+                        printf("%s:%d: %s\n\t%s\n", *argv, linecount, str, parsed);
                     free(parsed);
                 }
             }

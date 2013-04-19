@@ -277,7 +277,7 @@ docall_inner(int otyp)
 
     /* to help make it more intuitive what Cn does, we pluralize:
        'Call orange potions:' */
-    sprintf(qbuf, "C{i,V{V{call},N{*,N=%s}}}:", simple_typename(otyp));
+    sprintf(qbuf, "C{i,V{V{call},N{*,N=%s}}}@:", simple_typename(otyp));
     getlin(qbuf, buf);
     if (!*buf || *buf == '\033')
         return;
@@ -337,21 +337,21 @@ do_naming(void)
 
     init_menulist(&menu);
 
-    add_menuitem(&menu, 1, "C{i,V{V{name},N{i,monster}}}", 'C', FALSE);
-    add_menuitem(&menu, 2, "C{i,V{V{name},N{N{level},A{current}}}}",
+    add_menuitem(&menu, 1, "C{i,V{V{name},N{i,monster}}}@", 'C', FALSE);
+    add_menuitem(&menu, 2, "C{i,V{V{name},N{N{level},A{current}}}}@",
                  'f', FALSE);
-    add_menuitem(&menu, 3, "C{i,V{V{name},N{N{i,item},A{individual}}}}",
+    add_menuitem(&menu, 3, "C{i,V{V{name},N{N{i,item},A{individual}}}}@",
                  'y', FALSE);
     add_menuitem(&menu, 4, "C{i,V{V{name},"
-                 "N{l,N{N{*,N{i,item}},A{all}},N{N{i,type},A{given}}}}}",
+                 "N{l,N{N{*,N{i,item}},A{all}},N{N{i,type},A{given}}}}}@",
                  'n', FALSE);
     add_menuitem(&menu, 5, "C{i,V{V{V{name},N{N{i,type},A{N{item}}}},"
-                 "D{t,N{o,appearance}}}}", 'A', FALSE);
+                 "D{t,N{o,appearance}}}}@", 'A', FALSE);
     if (flags.recently_broken_otyp != STRANGE_OBJECT) {
         char buf[BUFSZ];
 
         sprintf(buf, "C{i,V{V{name},N{N{*,N{i,item}},"
-                "E{like},N{N=%s,A{p,A{A{broken},D{recently}}}}}}}",
+                "E{like},N{N=%s,A{p,A{A{broken},D{recently}}}}}}}@",
                 obj_typename(flags.recently_broken_otyp));
         add_menuitem(&menu, 6, buf, 'V', FALSE);
     }
@@ -460,11 +460,11 @@ docall(struct obj *obj)
         /* kludge, meaning it's sink water */
         sprintf(buf, "(C{N=%s,V{V{V{can},V{V{name},"
                 "N{f,N{i,stream},N{N{o,fluid},A=%s}}}},"
-                "D{t,N{N{menu},A{N{N{naming},A{N{item}}}}}}}}).",
+                "D{t,N{N{menu},A{N{N{naming},A{N{item}}}}}}}}@).",
                 you, OBJ_DESCR(objects[otemp.otyp]));
     else
         sprintf(buf, "(C{N=%s,V{V{V{can},V{V{name},N=%s}},"
-                "D{t,N{N{menu},A{N{N{naming},A{N{item}}}}}}}}).",
+                "D{t,N{N{menu},A{N{N{naming},A{N{item}}}}}}}}@).",
                 you, an(xname(&otemp)));
     pline(/*nointl*/"%s", buf);
     flags.recently_broken_otyp = otemp.otyp;

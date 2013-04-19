@@ -586,7 +586,7 @@ getspell(int *spell_no)
         return FALSE;
     }
 
-    return dospellmenu("C{i,V{V{V{choose},N{i,spell}},V{cast}}}:",
+    return dospellmenu("C{i,V{V{V{choose},N{i,spell}},V{cast}}}@:",
                        SPELLMENU_CAST, spell_no);
 }
 
@@ -1095,8 +1095,8 @@ dovspell(void)
     else {
         while (dospellmenu("N{N{o,spells},A{A{known},D{currently}}}",
                            SPELLMENU_VIEW, &splnum)) {
-            sprintf(qbuf, "C{i,V{V{reorder},N{*,N{o,spell}}}}: "
-                    "C{q,C{i,V{V{V{swap},N{m,S{%c}}},D{t,N{what}}}}}?",
+            sprintf(qbuf, "C{i,V{V{reorder},N{*,N{o,spell}}}}@: "
+                    "C{q,C{i,V{V{V{swap},N{m,S{%c}}},D{t,N{what}}}}}@?",
                     spellet(splnum));
             if (!dospellmenu(qbuf, splnum, &othnum))
                 break;
