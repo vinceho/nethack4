@@ -2701,6 +2701,7 @@ beam_hit(int ddx, int ddy, int range,   /* direction and range */
     )
 {
     struct monst *mtmp;
+    struct tmp_sym *tsym;
     uchar typ;
     boolean shopdoor = FALSE, point_blank = TRUE;
 
@@ -2717,10 +2718,10 @@ beam_hit(int ddx, int ddy, int range,   /* direction and range */
         bhitpos.y = u.uy;
     }
 
-    if (weapon == FLASHED_LIGHT) {
-        tmp_at(DISP_BEAM, dbuf_effect(E_MISC, E_flashbeam));
-    } else if (weapon != ZAPPED_WAND && weapon != INVIS_BEAM)
-        tmp_at(DISP_OBJECT, dbuf_objid(obj));
+    if (weapon == FLASHED_LIGHT)
+        tsym = tmpsym_init(DISP_BEAM, dbuf_effect(E_MISC, E_flashbeam));
+    else if (weapon != ZAPPED_WAND && weapon != INVIS_BEAM)
+        tsym = tmpsym_initobj(obj);
 
     while (range-- > 0) {
         int x, y;
@@ -2738,7 +2739,7 @@ beam_hit(int ddx, int ddy, int range,   /* direction and range */
 
         if (is_pick(obj) && inside_shop(level, x, y) &&
             (mtmp = shkcatch(obj, x, y))) {
-            tmp_at(DISP_END, 0);
+            tmpsym_end(tsym);
             return mtmp;
         }
 
@@ -2790,7 +2791,7 @@ beam_hit(int ddx, int ddy, int range,   /* direction and range */
             if (weapon != FLASHED_LIGHT) {
                 if (weapon != ZAPPED_WAND) {
                     if (weapon != INVIS_BEAM)
-                        tmp_at(DISP_END, 0);
+                        tmpsym_end(tsym);
                     if (cansee(bhitpos.x, bhitpos.y) && !canspotmon(mtmp)) {
                         if (weapon != INVIS_BEAM) {
                             map_invisible(bhitpos.x, bhitpos.y);
@@ -2814,7 +2815,7 @@ beam_hit(int ddx, int ddy, int range,   /* direction and range */
                     obj->ox = u.ux, obj->oy = u.uy;
                     flash_hits_mon(mtmp, obj);
                 } else {
-                    tmp_at(DISP_END, 0);
+                    tmpsym_end(tsym);
                     return mtmp;        /* caller will call flash_hits_mon */
                 }
             }
@@ -2830,7 +2831,7 @@ beam_hit(int ddx, int ddy, int range,   /* direction and range */
                 ((obj->oclass == COIN_CLASS && OBJ_AT(bhitpos.x, bhitpos.y)) ||
                  ship_object(obj, bhitpos.x, bhitpos.y,
                              costly_spot(bhitpos.x, bhitpos.y)))) {
-                tmp_at(DISP_END, 0);
+                tmpsym_end(tsym);
                 return NULL;
             }
         }
@@ -2863,13 +2864,13 @@ beam_hit(int ddx, int ddy, int range,   /* direction and range */
         }
         if (weapon != ZAPPED_WAND && weapon != INVIS_BEAM) {
             /* 'I' present but no monster: erase */
-            /* do this before the tmp_at() */
+            /* do this before the tmpsym_at() */
             if (level->locations[bhitpos.x][bhitpos.y].mem_invis &&
                 cansee(x, y)) {
                 unmap_object(bhitpos.x, bhitpos.y);
                 newsym(x, y);
             }
-            tmp_at(bhitpos.x, bhitpos.y);
+            tmpsym_at(tsym, bhitpos.x, bhitpos.y);
             win_delay_output();
             /* kicked objects fall in pools */
             if ((weapon == KICKED_WEAPON) &&
@@ -2911,7 +2912,7 @@ beam_hit(int ddx, int ddy, int range,   /* direction and range */
     }
 
     if (weapon != ZAPPED_WAND && weapon != INVIS_BEAM)
-        tmp_at(DISP_END, 0);
+        tmpsym_end(tsym);
 
     if (shopdoor)
         pay_for_damage("destroy", FALSE);
@@ -2925,6 +2926,7 @@ boomhit(int dx, int dy)
     int i, ct;
     int boom = E_boomleft;      /* showsym[] index */
     struct monst *mtmp;
+    struct tmp_sym *tsym;
 
     bhitpos.x = u.ux;
     bhitpos.y = u.uy;
@@ -2932,12 +2934,12 @@ boomhit(int dx, int dy)
     for (i = 0; i < 8; i++)
         if (xdir[i] == dx && ydir[i] == dy)
             break;
-    tmp_at(DISP_FLASH, dbuf_effect(E_MISC, boom));
+    tsym = tmpsym_init(DISP_FLASH, dbuf_effect(E_MISC, boom));
     for (ct = 0; ct < 10; ct++) {
         if (i == 8)
             i = 0;
         boom = (boom == E_boomleft) ? E_boomright : E_boomleft;
-        tmp_at(DISP_CHANGE, dbuf_effect(E_MISC, boom)); /* change glyph */
+        tmpsym_change(tsym, dbuf_effect(E_MISC, boom)); /* change glyph */
         dx = xdir[i];
         dy = ydir[i];
         bhitpos.x += dx;
@@ -2945,7 +2947,7 @@ boomhit(int dx, int dy)
         if (MON_AT(level, bhitpos.x, bhitpos.y)) {
             mtmp = m_at(level, bhitpos.x, bhitpos.y);
             m_respond(mtmp);
-            tmp_at(DISP_END, 0);
+            tmpsym_end(tsym);
             return mtmp;
         }
         if (!ZAP_POS(level->locations[bhitpos.x][bhitpos.y].typ) ||
@@ -2960,19 +2962,19 @@ boomhit(int dx, int dy)
                 thitu(10, rnd(10), NULL, "boomerang");
                 break;
             } else {    /* we catch it */
-                tmp_at(DISP_END, 0);
+                tmpsym_end(tsym);
                 pline("You skillfully catch the boomerang.");
                 return &youmonst;
             }
         }
-        tmp_at(bhitpos.x, bhitpos.y);
+        tmpsym_at(tsym, bhitpos.x, bhitpos.y);
         win_delay_output();
         if (ct % 5 != 0)
             i++;
         if (IS_SINK(level->locations[bhitpos.x][bhitpos.y].typ))
             break;      /* boomerang falls on sink */
     }
-    tmp_at(DISP_END, 0);        /* do not leave last symbol */
+    tmpsym_end(tsym); /* do not leave last symbol */
     return NULL;
 }
 
@@ -3366,6 +3368,7 @@ buzz(int type, int nd, xchar sx, xchar sy, int dx, int dy)
     boolean shopdamage = FALSE;
     const char *fltxt;
     struct obj *otmp;
+    struct tmp_sym *tsym;
     int spell_type;
 
     /* if its a Hero Spell then get its SPE_TYPE */
@@ -3397,7 +3400,7 @@ buzz(int type, int nd, xchar sx, xchar sy, int dx, int dy)
         range = 1;
     save_bhitpos = bhitpos;
 
-    tmp_at(DISP_BEAM, zapdir_to_effect(dx, dy, abstype));
+    tsym = tmpsym_init(DISP_BEAM, zapdir_to_effect(dx, dy, abstype));
     while (range-- > 0) {
         lsx = sx;
         sx += dx;
@@ -3406,7 +3409,7 @@ buzz(int type, int nd, xchar sx, xchar sy, int dx, int dy)
         if (isok(sx, sy) && (loc = &level->locations[sx][sy])->typ) {
             mon = m_at(level, sx, sy);
             if (cansee(sx, sy)) {
-                /* reveal/unreveal invisible monsters before tmp_at() */
+                /* reveal/unreveal invisible monsters before tmpsym_at() */
                 if (mon && !canspotmon(mon))
                     map_invisible(sx, sy);
                 else if (!mon && level->locations[sx][sy].mem_invis) {
@@ -3414,7 +3417,7 @@ buzz(int type, int nd, xchar sx, xchar sy, int dx, int dy)
                     newsym(sx, sy);
                 }
                 if (ZAP_POS(loc->typ) || cansee(lsx, lsy))
-                    tmp_at(sx, sy);
+                    tmpsym_at(tsym, sx, sy);
                 win_delay_output();     /* wait a little */
             }
         } else
@@ -3608,11 +3611,11 @@ buzz(int type, int nd, xchar sx, xchar sy, int dx, int dy)
                     dx = -dx;
                     break;
                 }
-                tmp_at(DISP_CHANGE, zapdir_to_effect(dx, dy, abstype));
+                tmpsym_change(tsym, zapdir_to_effect(dx, dy, abstype));
             }
         }
     }
-    tmp_at(DISP_END, 0);
+    tmpsym_end(tsym);
     if (type == ZT_SPELL(ZT_FIRE))
         explode(sx, sy, type, dice(12, 6), 0, EXPL_FIERY);
     if (shopdamage)
