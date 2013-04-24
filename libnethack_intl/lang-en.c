@@ -348,7 +348,9 @@ append_s(const char *oldstr)
             || !strncmp(spot, " with", 5)       /* " with "? */
             ||!strncmp(spot, " de ", 4)
             || !strncmp(spot, " d'", 3)
-            || !strncmp(spot, " du ", 4)) {
+            || !strncmp(spot, " du ", 4)
+            ||!strncmp(spot, " general", 8) /* attorneys general */
+            || !strncmp(spot, "-general", 8)) {
             excess = oldstr + (int)(spot - str);
             *spot = 0;
             break;
