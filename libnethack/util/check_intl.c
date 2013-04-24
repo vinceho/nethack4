@@ -49,9 +49,9 @@ main(int argc, char **argv) {
         else
             f = fopen(*argv, "rt");
 
-        boolean firstline = TRUE;
         boolean prev_newline = FALSE;
         boolean prev_slash = FALSE;
+        boolean prev_backslash = FALSE;
         boolean preprocline = FALSE;
         int linecount = 1;
         if (!f) {
@@ -68,7 +68,6 @@ main(int argc, char **argv) {
             if (prev_newline && c == '#') preprocline = TRUE;
             prev_newline = (c == '\n');
             if (prev_newline) {
-                firstline = FALSE;
                 preprocline = FALSE;
                 linecount++;
             }
@@ -83,14 +82,31 @@ main(int argc, char **argv) {
                 }
                 continue;
             }
-            if (c == '"' && !preprocline && !firstline) {
+            if (c == '"' && !preprocline) {
                 /* Let's start parsing. */
                 int i = 0;
-                char str[512];
+                unsigned size = 512;
+                char *str = malloc(size);
+                if (str == NULL) {
+                    fprintf(stderr, "ERROR: out of memory\n");
+                    return 1;
+                }
                 do {
-                    while ((c = getc(f)) != EOF && c != '"') {
+                    prev_backslash = FALSE;
+                    while ((c = getc(f)) != EOF &&
+                           (c != '"' || prev_backslash)) {
                         str[i++] = c;
                         if (c == '\n') linecount++;
+                        if (c == '\\') prev_backslash = !prev_backslash;
+                        else prev_backslash = FALSE;
+
+                        if (i == size) {
+                            str = realloc(str, size*=2);
+                            if (str == NULL) {
+                                fprintf(stderr, "ERROR: out of memory\n");
+                                return 1;
+                            }
+                        }
                     }
                     /* Often multiple strings are appended. If we have only
                        whitespace up to the next double quote... */
@@ -103,6 +119,24 @@ main(int argc, char **argv) {
                     if (!errors_only || strstr(parsed, "(ERROR") == parsed)
                         printf("%s:%d: %s\n\t%s\n", *argv, linecount, str, parsed);
                     free(parsed);
+                }
+                free(str);
+            }
+            if (c == '\'' && !preprocline) {
+                /* Assume that this is only one logical character long */
+                if ((c = getc(f)) == '\\') {
+                    getc(f); /* skip first character after slash */
+                    do { /* there may be a oct/hex constant */
+                      c = getc(f);
+                    }  while (c != EOF && c != '\'');
+                } else
+                    c = getc(f);
+
+                if (c != '\'') {
+                    fprintf(stderr,
+                            "%s:%d: ERROR: ill-formed character constant\n",
+                            *argv, linecount);
+                    return 1;
                 }
             }
             prev_slash = (c == '/');
