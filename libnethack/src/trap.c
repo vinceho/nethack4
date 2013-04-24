@@ -2749,19 +2749,13 @@ fire_damage(struct obj *chain, boolean force, boolean here, xchar x, xchar y)
             }
             dindx = (obj->oclass == SCROLL_CLASS) ? 2 : 3;
             if (in_sight)
-                pline("%s %s.", yname(obj),
-                      (obj->quan >
-                       1) ? destroy_strings[dindx * 3 +
-                                            1] : destroy_strings[dindx * 3]);
+                pline("%s %s.", yname(obj), destroy_strings[dindx * 2]);
             delobj(obj);
             retval++;
         } else if (obj->oclass == POTION_CLASS) {
             dindx = 1;
             if (in_sight)
-                pline("%s %s.", yname(obj),
-                      (obj->quan >
-                       1) ? destroy_strings[dindx * 3 +
-                                            1] : destroy_strings[dindx * 3]);
+                pline("%s %s.", yname(obj), destroy_strings[dindx * 2]);
             delobj(obj);
             retval++;
         } else if (is_flammable(obj) && obj->oeroded < MAX_ERODE &&

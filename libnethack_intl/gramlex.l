@@ -33,6 +33,7 @@ L2  [^{},=\x1c]
 "D{"          return D;
 "Q{"          return Q;
 "E{"          return E;
+"J{"          return J;
 "C{"          return C;
 "}"           return END;
 "N="          return NEQUALS;

@@ -506,6 +506,12 @@ append_s(const char *oldstr)
         goto bottom;
     }
 
+    /* whiz/whizzes (verb or noun) */
+    if (len >= 4 && !strcmp(spot - 3, "whiz")) {
+        strcpy(spot + 1, "zes");
+        goto bottom;
+    }
+
     /* note: -eau/-eaux (gateau, bordeau...) */
     /* note: ox/oxen, VAX/VAXen, goose/geese */
 
@@ -1006,7 +1012,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             if (a->rule == adjective_QC || a->rule == adjective_EN ||
                 a->rule == adjective_mN || a->rule == adjective_lN ||
                 a->rule == adjective_aN ||
-                (a->rule == adjective_V &&
+                ((a->rule == adjective_V || a->rule == adjective_cV) &&
                  a->children[0]->rule != gr_literal) ||
                 a->rule == adjective_VN) {
                 nounperson = force_unit(u->children[0], t, quan, p);
@@ -1415,6 +1421,17 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             free(tx);
         }
         break;
+    case verb_JVV: /* "heats but stays intact" */
+        force_unit(u->children[0], t, u->children[0]->quan, p);
+        force_unit(u->children[1], t, u->children[1]->quan, p);
+        force_unit(u->children[2], t, u->children[2]->quan, p);
+        {
+            char *t = astrcat(u->children[1]->content,
+                              u->children[0]->content, " ");
+            u->content = astrcat(t, u->children[2]->content, " ");
+            free(t);
+        }
+        break;
     case adverb_DD: /* "very slowly" */
         force_unit(u->children[0], t, quan, p);
         force_unit(u->children[1], t, quan, p);
@@ -1467,6 +1484,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         break;
     case adverb_QC: /* "while the dragon sleeps" */
     case adverb_EN: /* "from hunger" */
+    case adverb_ED: /* "than before" */
         force_unit(u->children[0], t, quan, p);
         force_unit(u->children[1], t, u->children[1]->quan, p);
         u->content = astrcat(u->children[0]->content,
@@ -1517,7 +1535,8 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             while (a->rule == plus_DD)
                 a = a->children[0];
 
-            if (a->rule == adverb_EN || a->rule == adverb_eEN)
+            if (a->rule == adverb_EN || a->rule == adverb_eEN ||
+                a->rule == adverb_ED)
                 u->content = astrcat(u->children[0]->content,
                                      u->children[1]->content, " ");
             else
@@ -1535,6 +1554,11 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         force_unit(u->children[1], secondary_infinitive, 1, base);
         u->content = astrcat(u->children[0]->content,
                              u->children[1]->content, " ");
+        break;
+    case adjective_cV: /* "boiling" */
+        /* We just use the active participle here. */
+        force_unit(u->children[0], active_participle, 1, base);
+        u->content = astrcat("", u->children[0]->content, "");
         break;
     case adjective_V: /* "painted red" */
         /* We basically just use the passive participle of the verb here. */
@@ -1712,6 +1736,12 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         free_grammarunit(v); /* now free v, x already freed, x->0 still on tree */
         break;
     }
+    case clause_JC: /* "But you survive." */
+        force_unit(u->children[1], t, quan, p);
+        force_unit(u->children[0], t, quan, p);
+        u->content = astrcat(u->children[0]->content, u->children[1]->content,
+                             " ");
+        break;
     case clause_CD: /* "Sadly, you die" */
         force_unit(u->children[1], t, quan, p);
         force_unit(u->children[0], t, quan, p);
@@ -1945,6 +1975,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         case gr_adverb:
         case gr_relative:
         case gr_preposition:
+        case gr_conjunction:
         case gr_clause:
         case gr_sentence:
             return base;

@@ -1898,8 +1898,8 @@ extern boolean cancel_monst(struct monst *, struct obj *, boolean, boolean,
                             boolean);
 extern void weffects(struct obj *, schar, schar, schar);
 extern int spell_damage_bonus(void);
-extern const char *exclam(int force);
-extern void hit(const char *, struct monst *, const char *);
+extern int exclam(int force);
+extern void hit(const char *, struct monst *, int);
 extern void miss(const char *, struct monst *);
 extern struct monst *beam_hit(int, int, int, int,
                               int (*)(struct monst *, struct obj *),

@@ -109,6 +109,9 @@ with this that don't form their imperfect with -d (ending in -e) or -ed
 before their imperfect, are listed here:
 are, have, read
 
+JVV                                Verbs joined with conjunction
+V{J{but},V{tremble},V{V{remain},A{intact}}} "trembles but remains intact"
+
 sVV                                Verb with passive secondary verb
 V{s,V{can},V{open}}
 "can be opened"
@@ -253,6 +256,10 @@ V                                  Generally affected by the verb in question
 A{V{curse}}     A{V{V{paint},N{red}}}
 "cursed"        "painted red"
 
+c,V                                Generally being affected by the verb
+A{c,V{curse}}
+"cursing"
+
 VN                                 Generally affected by a verb and subject
 A{V{curse},P{Rodney}}
 "cursed by Rodney"
@@ -271,13 +278,17 @@ in English. NetHack usually puts them at the start; it's more dramatic that
 way. When being used as adjectives rather than adverbs, they go just after the
 noun they're modifying in English, rather than just before like most adjectives.
 
-EN                                 Qualifying with a noun
+EN                                 Qualifying with a prepositional phrase and noun
 D{E{from},N{hunger}}
 "from hunger"
 A{E{in},N{o,disgust}}
 "in disgust"
 Be careful to only use these when this is truly a modifier, rather than an
 adverb forming part of a verb.
+
+ED                                 Qualifying with an adverb/preposition
+D{E{than},D{before}}
+"than before"
 
 a,NV                               A noun that is verbing
 N{a,N{1|newt},V{V{hit},P{12|Dudley}}}
@@ -321,6 +332,10 @@ C{C{N{o,nothing},V{happen}},D{unfortunately}}
 The adverb is put before the clause, although in English it can usually safely
 go before or after. This hasn't really been thought through for conjunctive
 adverbs, and may need some revising.
+
+JC                                 Clause with hanging conjunction
+C{J{but},C{N{o,nothing},V{happen}}}
+"But nothing happens"
 
 Forming a complete sentence is simply done by putting the punctuation
 after a clause, or by using a complete sentence:

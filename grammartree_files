@@ -19,3 +19,4 @@ libnethack/src/track.c
 libnethack/src/u_init.c
 libnethack/src/weapon.c
 libnethack/src/xmalloc.c
+libnethack/src/zap.c

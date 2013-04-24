@@ -35,22 +35,22 @@ typedef signed char boolean; /* 0 or 1 */
 
 
 enum grammarrole { gr_noun, gr_propernoun, gr_verb, gr_adjective, gr_adverb,
-                   gr_relative, gr_preposition, gr_clause, gr_sentence };
+                   gr_relative, gr_preposition, gr_conjunction, gr_clause, gr_sentence };
 enum grammarrule {
     minus_N, minus_V, minus_A, minus_D, minus_Q, minus_E, minus_C,
     plus_NN, plus_VV, plus_AA, plus_DD, plus_QQ, plus_EE, plus_CC,
-    verb_VN, verb_VA, verb_VD, verb_VV, verb_sVV, verb_mVX,
+    verb_VN, verb_VA, verb_VD, verb_VV, verb_sVV, verb_mVX, verb_JVV,
     noun_NA, noun_NEN, noun_V, noun_fNA, noun_oNN, noun_lNN, noun_mX,
     noun_NV, noun_aNV, noun_qNN, noun_fNN, noun_sC,
     adverb_DD, adverb_tN, adverb_lN, adverb_aN, adverb_dN, adverb_mN,
     adverb_eN, adverb_eEN, adverb_oN, adverb_iN, adverb_QC, adverb_EN,
-    adverb_pV,
+    adverb_ED, adverb_pV,
     adjective_cA, adjective_sA, adjective_AD, adjective_AV, adjective_QC,
     adjective_EN, adjective_lN, adjective_aN, adjective_V, adjective_VN,
-    adjective_N, adjective_pA, adjective_mN, adjective_oA,
+    adjective_N, adjective_pA, adjective_mN, adjective_oA, adjective_cV,
     clause_NV, clause_iNV, clause_pNV, clause_cNV, clause_fNV, clause_qC,
     clause_sV, clause_isV, clause_psV, clause_csV, clause_fsV, clause_iV,
-    clause_CD,
+    clause_CD, clause_JC,
     gr_literal, gr_unknown,
 };
 enum grammargender { gg_male, gg_female, gg_neuter, gg_unknown };
