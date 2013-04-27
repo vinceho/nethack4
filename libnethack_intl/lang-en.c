@@ -238,30 +238,35 @@ articulate(char *s, int quan)
 {
     char *rv, *numname;
     char buf[30];
-    if (quan & (1 << 26)) {
+    if (quan & Q_EXPLICIT) {
         /* Counts work like articles in our system. We need to decide between
            writing the number as digits and writing it as a word; the rule is
            that we use digits if either simple is set, or caps is not set, /and/
            the number is 11 or more, and a word otherwise. (So we have digits in
            menus and similar interface elements, and words in full
            sentences.) */
-        if (((quan & ((1 << 26) - 1)) >= 11 &&
-             (global_simple || !global_caps)) || (quan & (1 << 28))) {
-            sprintf(buf, "%d", quan & ((1 << 26) - 1));
-            if (quan & (1 << 28)) strcpy(buf, "%d");
+        if ((((quan & QM_QUANTITY) >= 11 &&
+             (global_simple || !global_caps)) || (quan & Q_FORMAT))) {
+            sprintf(buf, "%d", quan & QM_QUANTITY);
+            if (quan & Q_FORMAT) strcpy(buf, "%d");
             rv = astrcat(buf, s, " ");
         } else {
-            numname = anumbername(quan & ((1 << 26) - 1), FALSE);
+            numname = anumbername(quan & QM_QUANTITY, FALSE);
             rv = astrcat(numname, s, " ");
             free(numname);
+        }
+        if (!(quan & ~(QM_DEFINITE))) {
+            free(s);
+            s = rv;
+            rv = astrcat("the", s, " ");
         }
         free(s);
         return(rv);
     }
-    if (quan & (1 << 30) && quan & (1 << 27)) return s; /* no article */
+    if (quan & Q_ZEROARTICLE) return s; /* no article */
     if (is_relative_pronoun(s)) return s; /* no article for grammar reasons */
-    if (quan & (1 << 30)) {
-        if (quan != ((1 << 30) | 1)) return s; /* "four apples", etc. */
+    if (quan & Q_INDEFINITE) {
+        if (quan != (Q_INDEFINITE | 1)) return s; /* "four apples", etc. */
         rv = astrcat(vowlish(s) ? "an" : "a", s, " ");
         free(s);
         return rv;        
@@ -709,7 +714,7 @@ conjugate(const char *v, enum tense t, int quan, enum person p)
     which_buffer %= 12;
     char *w = conjugation_buffers[which_buffer];
     char *x, *y;
-    boolean plural = !!(quan & 1 << 29);
+    boolean plural = !!(quan & Q_PLURAL);
     /* There are eight possible tenses that we might have to deal with for each
        verb. Some verbs are regular, and can be conjugated entirely using
        resuffix. Many more are irregular, and need a whole load of special
@@ -984,7 +989,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                     /* a_N is now u->children[1] */
                     force_unit(u->children[1]->children[0], t,
                                u->children[1]->children[0]->
-                               quan & ~(1 << 30), p);
+                               quan & QM_DEFINITE, p);
                     nounperson = force_unit(u->children[0], t, quan, p);
                     u->content = astrcat(u->children[0]->content,
                                          u->children[1]->children[0]->content,
@@ -1029,19 +1034,18 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                    "the", unless the article is suppressed or it's plural
                    ("Vlad", "two Vlads", "the poor Vlad", "two poor Vlads"). */
                 struct grammarunit *n;
-                nounperson = force_unit(u->children[0], t,
-                                        quan | (1 << 30) | (1 << 27), p);
+                nounperson = force_unit(u->children[0], t, quan | Q_ZEROARTICLE,
+                                        p);
                 u->content = astrcat(u->children[1]->content,
                                      u->children[0]->content, " ");
                 for (n = u; n->rule != gr_literal && n->rule != noun_mX &&
                          n->rule != gr_unknown; n = n->children[0]) {}
                 if (n->role == gr_noun && n->rule != gr_unknown)
                     u->content = articulate(u->content, quan);
-                else if (quan & (1 << 29))
-                    u->content = articulate(
-                        u->content, quan | (1 << 27) | (1 << 30));
-                else if (!(quan & (1 << 27)))
-                    u->content = articulate(u->content, quan & ~(1 << 30));
+                else if (quan & Q_PLURAL)
+                    u->content = articulate(u->content, quan | Q_ZEROARTICLE);
+                else if (!(quan & Q_ZEROARTICLE))
+                    u->content = articulate(u->content, quan & QM_DEFINITE);
             }
         }
         return nounperson;
@@ -1073,16 +1077,15 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
     case noun_fNN: /* "the slice of cake" */
     case noun_qNN: /* "boots of speed" */
         nounperson = force_unit(u->children[0], t, quan, p);
-        force_unit(u->children[1], object,
-                   u->children[1]->quan | (1 << 30) | (1 << 27), base);
+        force_unit(u->children[1], object, u->children[1]->quan | Q_ZEROARTICLE,
+                   base);
         u->content = astrcat(u->children[0]->content,
                              u->children[1]->content, " of ");
         return nounperson;
     case noun_oNN: /* "Dudley's dungeon" */
         /* Remove articles on the [0] noun; "the goblin's dagger", not "the
            goblin's the dagger". */
-        nounperson = force_unit(u->children[0], t,
-                                quan | (1 << 30) | (1 << 27), p);
+        nounperson = force_unit(u->children[0], t, quan | Q_ZEROARTICLE, p);
         force_unit(u->children[1], possessive, u->children[1]->quan, base);
         u->content = astrcat(u->children[1]->content,
                              u->children[0]->content, " ");
@@ -1100,7 +1103,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
     case noun_mX: /* anything, in quotes */
         force_unit(u->children[0],
                    u->children[0]->role == gr_noun ? object : present,
-                   u->children[0]->quan | (1 << 30) | (1 << 27), base);
+                   u->children[0]->quan | Q_ZEROARTICLE, base);
         if (u->children[0]->role == gr_clause &&
             u->children[0]->punctuation) {
             char buf[10];
@@ -1113,7 +1116,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         force_unit(u->children[0], t, quan, p);
         force_unit(u->children[1],
                    u->children[1]->role == gr_noun ? object : present,
-                   u->children[0]->quan | (1 << 30) | (1 << 27), base);
+                   u->children[0]->quan | Q_ZEROARTICLE, base);
         /* Uppercase the first letter of u->children[1] unless it's
            arbitrary freeform text */
         if (u->children[1]->role != gr_sentence)
@@ -1139,7 +1142,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             /* Move "the"/"a"/"an" before the adjective. */
             struct grammarunit *n;
             nounperson = force_unit(u->children[0], t,
-                                    quan | (1 << 30) | (1 << 27), p);
+                                    quan | Q_ZEROARTICLE, p);
             force_unit(u->children[1], active_participle, quan, nounperson);
             u->content = astrcat(u->children[1]->content,
                                  u->children[0]->content, " ");
@@ -1155,23 +1158,23 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         }
         return nounperson;
     case noun_NN: /* "the iron boots" */
-        nounperson = force_unit(u->children[0], t, quan | 1 << 30 | 1 << 27, p);
-        force_unit(u->children[1], t, quan | 1 << 30 | 1 << 27, p);
+        nounperson = force_unit(u->children[0], t, quan | Q_ZEROARTICLE, p);
+        force_unit(u->children[1], t, quan | Q_ZEROARTICLE, p);
         u->content = astrcat(u->children[1]->content,
                              u->children[0]->content, " ");
         u->content = articulate(u->content, quan);
         return nounperson;
     case noun_cNV: /* "the flying car" */
-        nounperson = force_unit(u->children[0], t, quan | 1 << 30 | 1 << 27, p);
-        force_unit(u->children[1], active_participle, quan | 1 << 30 | 1 << 27,
+        nounperson = force_unit(u->children[0], t, quan | Q_ZEROARTICLE, p);
+        force_unit(u->children[1], active_participle, quan | Q_ZEROARTICLE,
                    nounperson);
         u->content = astrcat(u->children[1]->content,
                              u->children[0]->content, " ");
         u->content = articulate(u->content, quan);
         return nounperson;
     case noun_pNV: /* "the crushed rock" */
-        nounperson = force_unit(u->children[0], t, quan | 1 << 30 | 1 << 27, p);
-        force_unit(u->children[1], passive_participle, quan | 1 << 30 | 1 << 27,
+        nounperson = force_unit(u->children[0], t, quan | Q_ZEROARTICLE, p);
+        force_unit(u->children[1], passive_participle, quan | Q_ZEROARTICLE,
                    nounperson);
         u->content = astrcat(u->children[1]->content,
                              u->children[0]->content, " ");
@@ -1465,7 +1468,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         break;
     case adverb_tN: /* "with a hammer", "by water" */
         force_unit(u->children[0], object, u->children[0]->quan, base);
-        if (u->children[0]->quan & (1 << 27))
+        if (u->children[0]->quan & Q_ZEROARTICLE)
             u->content = astrcat("", u->children[0]->content, "by ");
         else
             u->content = astrcat("", u->children[0]->content, "with ");
@@ -1590,7 +1593,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
            we want to use the singular form of a plural noun but still show
            the count */
         force_unit(u->children[0], object,
-                   (u->children[0]->quan | (1 << 30) | (1 << 27)) & ~(1 << 29),
+                   (u->children[0]->quan | Q_ZEROARTICLE) & ~(Q_PLURAL),
                    base);
         u->content = astrcat("", u->children[0]->content, "");
         break;
@@ -2016,7 +2019,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                  marked as having an explicit count, we also need to mark
                  quantity;
                - Except for proper nouns, we need "a" for a non-plural noun with
-                 the 1 << 30 bit set, and "the" for a plural or singular noun
+                 the Q_INDEFINITE bit set, and "the" for a plural or singular noun
                  without that bit set - but it needs to go outside adjectives,
                  and not appear if this noun is being possessed;
                - If it's a possessive, we need to add "'" to plural nouns ending
@@ -2031,7 +2034,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                articulate(). So we just need to bother about the other three. */
             if (!strcmp(u->content, "it")) {
                 free(u->content);
-                if (quan & (1 << 29)) {
+                if (quan & Q_PLURAL) {
                     if (t == subject) u->content = astrcat("", "they", "");
                     else if (t == object) u->content = astrcat("", "them", "");
                     else u->content = astrcat("", "their", "");
@@ -2058,7 +2061,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             }
             if (!strcmp(u->content, "I")) {
                 free(u->content);
-                if (quan & (1 << 29)) {
+                if (quan & Q_PLURAL) {
                     if (t == subject) u->content = astrcat("", "we", "");
                     else if (t == object) u->content = astrcat("", "us", "");
                     else u->content = astrcat("", "our", "");
@@ -2089,7 +2092,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                 return third;
             /* If necessary, pluralize. Also add the count (articulate does
                this for us). */
-            if (quan & (1 << 29)) {
+            if (quan & Q_PLURAL) {
                 struct grammarunit *n;
                 char *tx;
                 for (n = u; n->rule != gr_literal && n->rule != noun_mX &&
@@ -2147,7 +2150,7 @@ forcecontent_en(struct grammarunit *u, boolean simple, boolean caps)
     /* Recursively force the content of the unit in question, then initcaps the
        first letter. */
     force_unit(u, simple ? secondary_direct : present,
-               u->quan | (simple ? (1 << 30) | (1 << 27) : 0),
+               u->quan | (simple ? Q_ZEROARTICLE : 0),
                simple ? base : third);
     if (caps) *(u->content) = toupper(*(u->content));
 }

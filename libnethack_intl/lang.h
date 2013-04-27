@@ -65,13 +65,22 @@ struct grammarunit {
     enum grammarrole role;
     enum grammarrule rule;
     enum grammargender gender;
-    int quan; /* quantity; 1 for unknown, 1 << 29 for plural,
-                 1 << 28 for %d, 1 << 30 bit set if indefinite,
-                 1 << 26 bit for explicit count;
-                 we set 1 << 30 and 1 << 27 for no article */
+    int quan; /* quantity; see the Q_* flags below */
     boolean tagged; /* used internally by lang-?? to reorder sentences,
                        everything else should maintain it at FALSE */
 };
+
+#define Q_PLURAL      (1 << 29)
+/* Indicates the use of a format string for the quantity. */
+#define Q_FORMAT      (1 << 28)
+#define Q_INDEFINITE  (1 << 30)
+#define Q_ZEROARTICLE (1 << 27)
+/* Indicates that an explicit quantity was specified. */
+#define Q_EXPLICIT    (1 << 26)
+/* M for mask */
+#define QM_DEFINITE   (~(Q_INDEFINITE | Q_ZEROARTICLE))
+#define QM_QUANTITY   (~(Q_PLURAL | Q_FORMAT | Q_INDEFINITE | Q_ZEROARTICLE | \
+                         Q_EXPLICIT))
 
 extern void forcecontent(struct grammarunit *, boolean, boolean);
 extern void free_grammarunit(struct grammarunit *);

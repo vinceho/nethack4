@@ -135,8 +135,8 @@ literalinner:
 | FCOMMA literalinner         { $$ = $2; $$->gender = gg_female; }
 | MCOMMA literalinner         { $$ = $2; $$->gender = gg_male;   }
 | NCOMMA literalinner         { $$ = $2; $$->gender = gg_neuter; }
-| ICOMMA literalinner         { $$ = $2; $$->quan |= (1 << 30);  }
-| OCOMMA literalinner         { $$ = $2; $$->quan |= (1 << 30) | (1 << 27); }
+| ICOMMA literalinner         { $$ = $2; $$->quan |= Q_INDEFINITE;  }
+| OCOMMA literalinner         { $$ = $2; $$->quan |= Q_ZEROARTICLE; }
 ;
 
 /* TODO: Allow empty children. */
@@ -166,11 +166,11 @@ nounish:
 | P literalinner                         { $$ = $2; $$->role = gr_propernoun; }
 | NEQUALS nounish                        { $$ = $2; }
 | UNKNOWN                                { $$=mu( 0, 0, 0,noun,gr_unknown); }
-| N STARCOMMA nounish END                { $$ = $3; $$->quan |= 1 << 29; }
+| N STARCOMMA nounish END                { $$ = $3; $$->quan |= Q_PLURAL; }
 | N COUNTCOMMA nounish END               {
       $$ = $3;
-      $$->quan = ($$->quan & (1 << 30)) | (1 << 26) | $2;
-      if ($2 != 1) $$->quan |= (1 << 29);
+      $$->quan = ($$->quan & ~(QM_DEFINITE)) | Q_EXPLICIT | $2;
+      if ($2 != 1) $$->quan |= Q_PLURAL;
   }
 | N nounish COMMA nounish END            { $$=mu($2,$4, 0,noun,noun_NN); }
 | N nounish COMMA adjectivish END        { $$=mu($2,$4, 0,noun,noun_NA); }
