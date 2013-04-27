@@ -257,6 +257,7 @@ adjectivish:
 
 prepositionish:
   E literalinner                        { $$ = $2; $$->role = gr_preposition; }
+| EEQUALS prepositionish                { $$ = $2; }
 | E MINUSCOMMA prepositionish END       { $$=mu($3,0,0,preposition,minus_E); }
 | E PLUSCOMMA prepositionish COMMA prepositionish END  {
       $$=mu($3,$5,0,preposition,plus_EE);
@@ -281,7 +282,12 @@ conjunctionish:
     $$ = $2;
     $$->role = gr_conjunction;
   }
-|  JEQUALS conjunctionish                  { $$ = $2; }
+| JEQUALS conjunctionish                  { $$ = $2; }
+| JEQUALS PERCENT_S                       {
+  $$ = mu(0, 0, 0, conjunction, gr_literal);
+      $$->content = malloc(3);
+      strcpy($$->content, "%s");
+  }
 ;
 
 clausish:
