@@ -114,7 +114,7 @@ cursed_book(struct obj *bp)
         make_confused(HConfusion + rn1(7, 16), FALSE);
         break;
     case 5:
-        pline("C{i,s,V{V{V{coat},N{book}},D{t,N{N{o,poison},A{contact}}}}}!");
+        pline("C{i,s,V{V{V{coat},N{book}},D{E{with},N{N{o,poison},N{contact}}}}}!");
         if (uarmg) {
             if (uarmg->oerodeproof || !is_corrodeable(uarmg)) {
                 pline("C{s,V{V{seem},V{V{-,V{affect}},"
@@ -140,8 +140,8 @@ cursed_book(struct obj *bp)
         bp->in_use = FALSE;
         losestr(Poison_resistance ? rn1(2, 1) : rn1(4, 3));
         losehp(rnd(Poison_resistance ? 6 : 10),
-               "N{N{i,spellbook},A{A{V{poison}},"
-               "D{t,N{N{o,poison},A{contact}}}}}", KILLED_BY_AN);
+               "N{N{i,spellbook},C{n,p,V{V{coat},"
+               "D{E{with},N{N{o,poison},N{contact}}}}}}", KILLED_BY_AN);
         bp->in_use = TRUE;
         break;
     case 6:
@@ -1165,7 +1165,7 @@ dump_spells(void)
 {
     /* note: the actual dumping is done in dump_display_menu(), we just need to 
        get the data there. */
-    dospellmenu("N{N{*,N{i,spell}},A{V{V{know},D{m,N{end}}}}}:",
+    dospellmenu("N{N{*,N{i,spell}},C{n,p,V{V{know},D{E{at},N{end}}}}}:",
                 SPELLMENU_VIEW, NULL);
 }
 

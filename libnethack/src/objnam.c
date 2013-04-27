@@ -196,7 +196,7 @@ generic_typename(int otyp, boolean show_notes, boolean desc_known,
     if (!show_uname) un = NULL;
     if (force_unknown) nn = 0;
 
-    if (un) sprintf(called, "A{V{V{call},N{m,S{\x1c%s\x1c}}}}", un);
+    if (un) sprintf(called, "C{n,p,V{V{call},N{m,S{\x1c%s\x1c}}}}@", un);
 
     if (Role_if(PM_SAMURAI) && Japanese_item_name(otyp))
         actualn = Japanese_item_name(otyp);
@@ -240,10 +240,10 @@ generic_typename(int otyp, boolean show_notes, boolean desc_known,
         else if (nn || !dn) {
             /* identified or always-identified */
             if (!dn || !strcmp(dn, UNID_ADJ) || !show_notes) {
-                if (un) sprintf(buf, "N{N=%s,A=%s}", RU(actualn), called);
+                if (un) sprintf(buf, "N{N=%s,C=%s}", RU(actualn), called);
                 else sprintf(buf, "N=%s", RU(actualn));
             } else {
-                if (un) sprintf(buf, "N{N{N=%s,A{p,A=%s}},A=%s}",
+                if (un) sprintf(buf, "N{N{N=%s,A{p,A=%s}},C=%s}",
                                 RU(actualn), dn, called);
                 else sprintf(buf, "N{N=%s,A{p,A=%s}}", RU(actualn), dn);
             }
@@ -251,9 +251,9 @@ generic_typename(int otyp, boolean show_notes, boolean desc_known,
             /* not identified */
             if (un) {
                 if (!strcmp(dn, UNID_ADJ) || !show_notes)
-                    sprintf(buf, "N{N=%s,A=%s}", RU(basetype), called);
+                    sprintf(buf, "N{N=%s,C=%s}", RU(basetype), called);
                 else
-                    sprintf(buf, "N{N{N=%s,A{p,A=%s}},A=%s}", RU(basetype),
+                    sprintf(buf, "N{N{N=%s,A{p,A=%s}},C=%s}", RU(basetype),
                             dn, called);
             } else
                 sprintf(buf, "N{N=%s,A=%s}", RU(basetype), dn);
@@ -373,23 +373,24 @@ generic_typename(int otyp, boolean show_notes, boolean desc_known,
            called: 'scroll called foo (labeled KIRJE)'
            formal: 'scroll of mail (labeled KIRJE)' or
                    'scroll of mail (called foo and labeled KIRJE)' */
+        /* TODO: Get parentheses on these clauses */
         if (!dn) break; /* fall through to impossible */
         if (!nn && !un)
-            sprintf(buf, "N{N=%s,A{V{V{label},N=%s}}}", RU(basetype), dn);
+            sprintf(buf, "N{N=%s,C{n,p,V{V{label},N=%s}}}", RU(basetype), dn);
         else if (!nn) {
             if (show_notes)
-                sprintf(buf, "N{N{N=%s,A=%s},A{p,A{V{V{label},N=%s}}}}",
+                sprintf(buf, "N{N{N=%s,C=%s},C{n,p,V{V{label},N=%s}}}",
                         RU(basetype), called, dn);
             else
-                sprintf(buf, "N{N=%s,A=%s}", RU(basetype), called);
+                sprintf(buf, "N{N=%s,C=%s}", RU(basetype), called);
         } else if (!un || !show_notes) {
             if (show_notes)
-                sprintf(buf, "N{N{q,N=%s,N=%s},A{p,A{V{V{label},N=%s}}}}",
+                sprintf(buf, "N{N{q,N=%s,N=%s},C{n,p,V{V{label},N=%s}}}",
                         RU(basetype), actualn, dn);
             else
                 sprintf(buf, "N{q,N=%s,N=%s}", RU(basetype), actualn);
         } else
-            sprintf(buf, "N{N{q,N=%s,N=%s},A{p,A{+,A=%s,A{V{V{label},N=%s}}}}}",
+            sprintf(buf, "N{N{q,N=%s,N=%s},C{+,C=%s,C{n,p,V{V{label},N=%s}}}}",
                     RU(basetype), actualn, called, dn);
         return buf;
     }
@@ -605,11 +606,11 @@ generic_xname(const struct obj *obj, boolean ignore_oquan,
         }
         if (obj->known && recharged) {
             if (obj->recharged >= 3)
-                ADD_ADJECTIVE("A{V{V{recharge},D{repeatedly}}}");
+                ADD_ADJECTIVE("C{n,p,V{V{recharge},D{repeatedly}}}@");
             else if (obj->recharged == 2)
-                ADD_ADJECTIVE("A{V{V{recharge},D{twice}}}");
+                ADD_ADJECTIVE("C{n,p,V{V{recharge},D{twice}}}@");
             else if (obj->recharged >= 1)
-                ADD_ADJECTIVE("A{V{recharge}}");
+                ADD_ADJECTIVE("C{n,p,V{recharge}}@");
         }
         if (ignitable(obj) && obj->known && obj->otyp != MAGIC_LAMP &&
             !artifact_light(obj)) {
@@ -623,7 +624,7 @@ generic_xname(const struct obj *obj, boolean ignore_oquan,
         }
         if (obj->known && charges != -2) {
             if (charges == -1)
-                ADD_ADJECTIVE("A{V{cancel}}");
+                ADD_ADJECTIVE("C{n,p,V{cancel}}@");
             else if (charges == 0)
                 ADD_ADJECTIVE("A{empty}");
             else {
@@ -676,7 +677,7 @@ generic_xname(const struct obj *obj, boolean ignore_oquan,
         sprintf(tbuf, "A{N=%s}", mons[obj->corpsenm].mname);
         ADD_ADJECTIVE(tbuf);
         if (obj->spe && precise_adjectives) {
-            sprintf(tbuf, "A{V{lay},N=%s}", you);
+            sprintf(tbuf, "C{n,p,V{V{lay},D{E{by},N=%s}}}@", you);
             ADD_ADJECTIVE(tbuf);
         }
     }
@@ -765,7 +766,7 @@ generic_xname(const struct obj *obj, boolean ignore_oquan,
         }
 
         /* Some objects can be lit. */
-        if (ignitable(obj) && obj->lamplit) ADD_ADJECTIVE("A{V{light}}");
+        if (ignitable(obj) && obj->lamplit) ADD_ADJECTIVE("C{n,p,V{light}}@");
 
         /* Blessed or cursed, if the player knows about it.
            TODO: We could really do with a better word for 'uncursed'. */
@@ -781,13 +782,16 @@ generic_xname(const struct obj *obj, boolean ignore_oquan,
 #endif
 
         if (obj->owornmask & W_WEP) {
-            if (!mrg_to_wielded) ADD_ADJECTIVE("A{V{wield}}");
-        } else if (obj->owornmask & W_SWAPWEP)
-            ADD_ADJECTIVE(u.twoweap ? "A{V{offhand}}" : "A{V{ready}}");
+            if (!mrg_to_wielded) ADD_NOUN_MOD('p',"V{wield}");
+        } else if (obj->owornmask & W_SWAPWEP && u.twoweap)
+            ADD_ADJECTIVE("A{offhand}");
+        else if (obj->owornmask & W_SWAPWEP)
+            ADD_NOUN_MOD('p',"V{ready}");
         else if (obj->owornmask & W_QUIVER)
-            ADD_ADJECTIVE("A{V{quiver}}");
+            ADD_NOUN_MOD('p',"V{quiver}");
         else if (obj->owornmask ||
-                 (typ == LEASH && obj->leashmon)) ADD_ADJECTIVE("A{V{equip}}");
+                 (typ == LEASH && obj->leashmon))
+            ADD_NOUN_MOD('p',"V{equip}");
 
         /* Objects can have price tags. */
         if (obj->unpaid) {
@@ -799,12 +803,15 @@ generic_xname(const struct obj *obj, boolean ignore_oquan,
                 costly_spot(ox, oy) &&
                 (shkp = shop_keeper(level, *in_rooms(level, ox, oy, SHOPBASE))))
                 quotedprice += contained_cost(obj, shkp, 0L, FALSE, TRUE);
-            sprintf(tbuf, "A{V{V{price at},N{%ld,N{i,zorkmid}}}}", quotedprice);
+            sprintf(tbuf, "C{n,p,V{V{price},D{E{at},N{%ld,N{i,zorkmid}}}}}@",
+                    quotedprice);
             ADD_ADJECTIVE(tbuf);
         } else if (with_price) {
             long price = shop_item_cost(obj);
             if (price > 0) {
-                sprintf(tbuf, "A{V{V{price at},N{%ld,N{i,zorkmid}}}}", price);
+                sprintf(tbuf,
+                        "C{n,p,V{V{price},D{E{at},N{%ld,N{i,zorkmid}}}}}@",
+                        price);
                 ADD_ADJECTIVE(tbuf);
             }
         }

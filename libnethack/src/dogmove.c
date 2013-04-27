@@ -408,7 +408,7 @@ dog_hunger(struct monst *mtmp, struct edog *edog)
             else if (couldsee(mtmp->mx, mtmp->my))
                 beg(mtmp);
             else
-                pline("C{N=%s,V{V{feel},A{V{V{worry about},N=%s}}}}.",
+                pline("C{N=%s,V{V{feel},A{V{V{worry},D{E{about},N=%s}}}}}.",
                       you, y_monnam(mtmp));
             stop_occupation();
         } else if (moves > edog->hungrytime + 750 || mtmp->mhp < 1) {
@@ -751,7 +751,7 @@ dog_move(struct monst *mtmp, int after)
     }
     if (!Conflict && !mtmp->mconf && mtmp == u.ustuck && !sticks(youmonst.data)) {
         unstuck(mtmp);  /* swallowed case handled above */
-        pline("C{N=%s,V{V{get},A{V{release}}}}!", you);
+        pline("C{N=%s,V{V{get},C{p,n,V{release}}}}!", you);
     }
 
 /*

@@ -353,7 +353,7 @@ e_died(struct entity *etmp, int dest, int how)
             /* use more specific killer if specified */
             if (!killer) {
                 killer_format = KILLED_BY_AN;
-                killer = "N{N{i,drawbridge},A{V{fall}}}";
+                killer = "N{c,N{i,drawbrdige},V{fall}}";
             }
             done(how);
             /* So, you didn't die */
@@ -500,8 +500,8 @@ do_entity(struct entity *etmp)
         }
     } else {
         if (crm->typ == DRAWBRIDGE_DOWN) {
-            pline("C{N=%s,V{V{are},A{A{V{crush}},"
-                  "D{E{underneath},N{drawbridge}}}}}.", e_nam(etmp));
+            pline("C{s,V{V{V{crush},N=%s},D{E{underneath},N{drawbridge}}}}.",
+                  e_nam(etmp));
             e_died(etmp, e_inview ? 3 : 2, CRUSHING);   /* no corpse */
             return;     /* Note: Beyond this point, we know we're */
         }       /* not at an opened drawbridge, since all */
@@ -513,10 +513,10 @@ do_entity(struct entity *etmp)
                 relocates = TRUE;
             } else {
                 if (e_inview)
-                    pline("C{N{N{portcullis},A{V{fall}}},V{V{crush},N=%s}}!",
+                    pline("C{N{c,N{portcullis},V{fall}},V{V{crush},N=%s}}!",
                           e_nam(etmp));
                 else if (flags.soundok)
-                    You_hear("N{N{i,sound},A{crushing^sound}}");
+                    You_hear("N{N{i,sound},N{V{crush}}}");
                 e_died(etmp, e_inview ? 3 : 2, CRUSHING);
                 /* no corpse */
                 return;

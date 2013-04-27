@@ -621,7 +621,7 @@ x_monnam(const struct monst *mtmp,
         if (mdat == &mons[PM_GHOST]) {
             sprintf(bp, /*nointl*/"N{o,N{ghost},P{\x1c%s\x1c}}", name);
         } else if (called) {
-            sprintf(bp, "N{N=%s,A{V{V{call},N{m,S{\x1c%s\x1c}}}}}",
+            sprintf(bp, "N{N=%s,C{n,p,V{V{call},N{m,S{\x1c%s\x1c}}}}}",
                     mdat->mname, name);
         } else if (is_mplayer(mdat)) {
             /* Player-monster names are written in grammartree, unlike

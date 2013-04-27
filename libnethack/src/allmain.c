@@ -29,9 +29,9 @@ static void
 wd_message(void)
 {
     if (discover)
-        /* TODO: Add tenses to adjective_V */
-        pline("C{N=%s,V{V{are},A{a,N{N{o,discovery mode},"
-              "A{-,A{V{score}}}}}}}.", you);
+        /* TODO: "not scoring" -> "non-scoring" */
+        pline("C{N=%s,V{V{are},D{E{in},"
+              "N{c,N{N{mode},N{discovery}},V{-,V{score}}}}}}.", you);
 }
 
 

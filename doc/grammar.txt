@@ -70,6 +70,10 @@ VV                                 Verb with secondary verb
 V{V{can},V{V{open},N{door}}}
 "can open the door"
 
+VC                                 Verb with subordinate clause
+V{V{get},C{p,n,V{release}}}
+"get released"
+
 (In English, secondary verbs are either chained with the primary, as in "can
 open" or "must want"; or infinitivized and chained, as in "want to go"; or work
 via the active participle, as in "stops fighting". Secondary verbs can also be
@@ -124,11 +128,14 @@ NA, PA                             Noun with adjective
 N{N{potion},A{orange}}
 "orange potion"
 
+NC                                 Noun with subordinate clause
+N{N{potion},C{n,p,V{V{call},A{red}}}}
+"potion called red"
+
 V
 N{V{smash}}                        Gerund
 "smashing"
-N{V{V{eat},N{food}}}
-"eating of food"
+Note that this is shorthand for N{C{n,c,V{smash}}}
 
 NEN                                Noun relative to another noun
 N{N{body},E{on},N{altar}}
@@ -247,22 +254,30 @@ NV                                 Noun with verb
 N{N{will},V{live}}
 "will to live"
 
+NN                                 Noun modified by noun
+N{N{boots},N{iron}}
+"the iron boots"
+
+pNV                                Noun modified by passive participle
+N{p,N{rock},V{crush}}
+"the crushed rock"
+
+cNV                                Noun modified by active participle
+N{c,N{car},V{fly}}
+"the flying car"
+
 p,V                                Purpose of an action
 V{V{stop},D{p,V{think}}}
 "stop to think"
 (V{V{stop},V{think}} would be "stop thinking")
 
 V                                  Generally affected by the verb in question
-A{V{curse}}     A{V{V{paint},N{red}}}
-"cursed"        "painted red"
-
-c,V                                Generally being affected by the verb
-A{c,V{curse}}
-"cursing"
-
-VN                                 Generally affected by a verb and subject
-A{V{curse},P{Rodney}}
-"cursed by Rodney"
+A{V{curse}}
+"cursed"
+Be careful to only use this where the participle is truly acting as an
+adjective; it should accept adverbs like "very" or comparative clauses like
+"more ... than ...". If it does not, it should probably be a subordinate clause
+instead.
 
 N                                  Generally limited by the noun in question
 N{N{corpse},A{N{gnome}}}
@@ -336,6 +351,21 @@ adverbs, and may need some revising.
 JC                                 Clause with hanging conjunction
 C{J{but},C{N{o,nothing},V{happen}}}
 "But nothing happens"
+
+
+Forms of secondary clauses.
+Secondary clauses have more forms as they can have non-finite verbs or be
+verbless altogether. Verbless clauses are made by simply omitting the verb;
+the n, modifier marks a clause as non-finite, and in such a case a secondary
+modifier may be used to incidate the active or passive participle. In any
+case, with a non-finite or a verbless clause, the subject noun is optional.
+
+Examples include:
+
+ncV                                 active participle clause without subject
+C{N{N{goblin},C{n,c,V{V{hide},D{E{from},N{you}}}}},V{V{die},D{suddenly}}}
+"The goblin hiding from you suddenly dies."
+
 
 Forming a complete sentence is simply done by putting the punctuation
 after a clause, or by using a complete sentence:

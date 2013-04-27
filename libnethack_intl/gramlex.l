@@ -71,6 +71,7 @@ L2  [^{},=\x1c]
 "%ld,"        yylval->i = (1 << 28); return COUNTCOMMA;
 {UI}"|"       { yylval->s = malloc(yyleng); yytext[yyleng-1] = 0;
                 strcpy(yylval->s, yytext); return UNIQUIFIER; }
+"@"           return AT;
 "?" |
 "!" |
 "." |

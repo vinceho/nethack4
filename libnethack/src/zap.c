@@ -3922,12 +3922,12 @@ break_statue(struct obj *obj)
 }
 
 const char *const destroy_strings[] = { /* also used in trap.c */
-    "V{+,V{freeze},V{shatter}}", "N{N{i,potion},A{V{shatter}}}",
-    "V{+,V{boil},V{explode}}", "N{N{i,potion},A{c,V{boil}}}",
-    "V{+,V{catch fire},V{burn}}", "N{N{i,scroll},A{c,V{burn}}}",
-    "V{+,V{catch fire},V{burn}}", "N{N{i,book},A{c,V{burn}}}",
+    "V{+,V{freeze},V{shatter}}", "N{p,N{i,potion},V{shatter}}",
+    "V{+,V{boil},V{explode}}", "N{c,N{i,potion},V{boil}}",
+    "V{+,V{catch fire},V{burn}}", "N{c,N{i,scroll},V{burn}}",
+    "V{+,V{catch fire},V{burn}}", "N{c,N{i,book},V{burn}}",
     "V{+,V{V{turn},D{E{to},N{o,dust}}},V{vanish}}", "?{}",
-    "V{+,V{break apart},V{explode}}", "N{N{i,wand},A{c,V{explode}}}"
+    "V{+,V{break apart},V{explode}}", "N{c,N{i,wand},V{explode}}"
 };
 
 void
@@ -4274,7 +4274,7 @@ retry:
     otmp = readobjnam(buf, &nothing, TRUE);
     if (!otmp) {
         /* TODO: Determiner "that" */
-        pline("C{N{N{o,nothing},A{c,V{V{fit},N{o,that description}}}},"
+        pline("C{N{N{o,nothing},C{n,c,V{V{fit},N{N{o,description},N{that}}}}},"
               "V{V{exist},D{E{in},N{game}}}}.");
         if (++tries < 5)
             goto retry;

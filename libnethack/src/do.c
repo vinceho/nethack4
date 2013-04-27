@@ -263,15 +263,9 @@ doaltarobj(struct obj *obj)
             if (!Hallucination)
                 otmp->bknown = 1;
         }
-        if (bcucount == 1) {
-            pline("C{N=%s,V{V{see},"
-                  "N{N{N{i,flash},A{V{color}}},E{inside},N=%s}}}.",
-                  you, xname(obj));
-        } else if (bcucount > 1) {
-            pline("C{N=%s,V{V{see},"
-                  "N{N{N{*,N{i,flash}},A{V{color}}},E{inside},N=%s}}}.",
-                  you, xname(obj));
-        }
+        pline("C{N=%s,V{V{V{see},N{p,N=%s,V{color}}},D{E{inside},N=%s}}}.",
+              you, bcucount == 1 ? "N{i,flash}" : "N{*,N{i,flash}}",
+              xname(obj));
     }
 
 }
@@ -308,7 +302,7 @@ dosinkring(struct obj *obj)
         pline("C{N{sink},V{V{V{quiver},D{upward}},D{d,N{i,moment}}}}.");
         break;
     case RIN_POISON_RESISTANCE:
-        pline("C{N=%s,V{V{smell},N{N{*,N=%s},A{V{rot}}}}}.", you,
+        pline("C{N=%s,V{V{smell},N{p,N{*,N=%s},V{rot}}}}.", you,
               fruitname(FALSE));
         break;
     case RIN_AGGRAVATE_MONSTER:
@@ -323,7 +317,7 @@ dosinkring(struct obj *obj)
                  "N{a,N{N{*,N{i,noise}},A{loud}},V{V{come from},N{drain}}}");
         break;
     case RIN_SUSTAIN_ABILITY:  /* KMH */
-        pline("C{N{water flow},V{V{seem},A{V{fix}}}}.");
+        pline("C{N{N{flow},N{water}},V{V{seem},A{V{fix}}}}.");
         break;
     case RIN_GAIN_STRENGTH:
         pline("C{N{water flow},V{V{V{seem},A{c,A=%s}},D{now}}}.",
@@ -1387,7 +1381,7 @@ deferred_goto(void)
 
         assign_level(&dest, &u.utolev);
         if (dfr_pre_msg)
-            pline("C=%s", dfr_pre_msg);
+            pline("%s", dfr_pre_msg);
         goto_level(&dest, ! !(typmask & 1), ! !(typmask & 2), ! !(typmask & 4));
         if (typmask & 0200) {   /* remove portal */
             struct trap *t = t_at(level, u.ux, u.uy);
@@ -1398,7 +1392,7 @@ deferred_goto(void)
             }
         }
         if (dfr_post_msg)
-            pline("C=%s", dfr_post_msg);
+            pline("%s", dfr_post_msg);
     }
     u.utotype = 0;      /* our caller keys off of this */
     if (dfr_pre_msg)
@@ -1476,8 +1470,8 @@ revive_corpse(struct obj *corpse)
                    repeated rather than pronouned, we need 'the' for
                    the second occurrence */
                 if (canseemon(mcarry))
-                    pline("C{N{N=%s,A{V{startle}}},V{V{V{drop},N=%s},"
-                          "D{Q{as},C{N=%s,V{revive}}}}}!",
+                    pline("C{C{N=%s,V{V{V{drop},N=%s},"
+                          "D{Q{as},C{N=%s,V{revive}}}}},D{startled}}!",
                           mon_nam(mcarry), cname, cname);
                 else
                     pline(chewed ? "C{N=%s,V{V{appear},D{suddenly}}}!" :

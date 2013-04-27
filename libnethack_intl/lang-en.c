@@ -1012,9 +1012,8 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             if (a->rule == adjective_QC || a->rule == adjective_EN ||
                 a->rule == adjective_mN || a->rule == adjective_lN ||
                 a->rule == adjective_aN ||
-                ((a->rule == adjective_V || a->rule == adjective_cV) &&
-                 a->children[0]->rule != gr_literal) ||
-                a->rule == adjective_VN) {
+                (a->rule == adjective_V &&
+                 a->children[0]->rule != gr_literal)) {
                 nounperson = force_unit(u->children[0], t, quan, p);
                 u->content = astrcat(u->children[0]->content,
                                      u->children[1]->content, " ");
@@ -1156,6 +1155,35 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                                  u->children[1]->content, " ");
         }
         return nounperson;
+    case noun_NN: /* "the iron boots" */
+        nounperson = force_unit(u->children[0], t, quan | 1 << 30 | 1 << 27, p);
+        force_unit(u->children[1], t, quan | 1 << 30 | 1 << 27, p);
+        u->content = astrcat(u->children[1]->content,
+                             u->children[0]->content, " ");
+        u->content = articulate(u->content, quan);
+        return nounperson;
+    case noun_cNV: /* "the flying car" */
+        nounperson = force_unit(u->children[0], t, quan | 1 << 30 | 1 << 27, p);
+        force_unit(u->children[1], active_participle, quan | 1 << 30 | 1 << 27,
+                   nounperson);
+        u->content = astrcat(u->children[1]->content,
+                             u->children[0]->content, " ");
+        u->content = articulate(u->content, quan);
+        return nounperson;
+    case noun_pNV: /* "the crushed rock" */
+        nounperson = force_unit(u->children[0], t, quan | 1 << 30 | 1 << 27, p);
+        force_unit(u->children[1], passive_participle, quan | 1 << 30 | 1 << 27,
+                   nounperson);
+        u->content = astrcat(u->children[1]->content,
+                             u->children[0]->content, " ");
+        u->content = articulate(u->content, quan);
+        return nounperson;
+    case noun_NC: /* "the rock damaged by weather" */
+        nounperson = force_unit(u->children[0], t, quan, p);
+        force_unit(u->children[1], t, quan, nounperson);
+        u->content = astrcat(u->children[0]->content,
+                             u->children[1]->content, " ");
+        return nounperson;
     case minus_V:
         /* If we have a primary verb, we're converting this to a secondary
            behind "do not". If it's a secondary, we're just prefixing "not".
@@ -1270,6 +1298,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         break;
     case verb_VN:
     case verb_VA:
+    case verb_VC:
         /* In English, in both these cases, we put the subject (VN) or
            complement (VA) just after the verb. Adjectives in English don't have
            to agree with the gender or quantity of the noun; if they did, we'd
@@ -1555,22 +1584,10 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         u->content = astrcat(u->children[0]->content,
                              u->children[1]->content, " ");
         break;
-    case adjective_cV: /* "boiling" */
-        /* We just use the active participle here. */
-        force_unit(u->children[0], active_participle, 1, base);
-        u->content = astrcat("", u->children[0]->content, "");
-        break;
-    case adjective_V: /* "painted red" */
+    case adjective_V: /* "painted" */
         /* We basically just use the passive participle of the verb here. */
         force_unit(u->children[0], passive_participle, 1, base);
         u->content = astrcat("", u->children[0]->content, "");
-        break;
-    case adjective_VN: /* "blessed by the gods" */
-        /* We use the passive participle of the verb, and add a preposition. */
-        force_unit(u->children[0], passive_participle, 1, base);
-        force_unit(u->children[1], subject, u->children[1]->quan, base);
-        u->content = astrcat(u->children[0]->content,
-                             u->children[1]->content, " by ");
         break;
     case adjective_N: /* "gnome" */
         /* Be careful not to pass on t or quan; also, suppress "the"; also,
@@ -1643,6 +1660,18 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                                  tx, ", ");
             free(tx);
         }
+        break;
+    }
+    case clause_pnV: /* "killed" */
+    case clause_cnV: /* "fitting that discription" */
+    {
+        /* The verb gets its person and quantity information from the context of
+         * the subordinate clause. */
+        force_unit(u->children[0],
+                   u->rule == clause_pnV ? passive_participle :
+                                             active_participle,
+                   quan, p);
+        u->content = astrcat("", u->children[0]->content, "");
         break;
     }
     case clause_sV:  /* "you are killed" */

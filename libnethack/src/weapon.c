@@ -730,7 +730,8 @@ mon_wield_item(struct monst *mon)
 
                 if (bimanual(mw_tmp))
                     mon_hand = makeplural(mon_hand);
-                sprintf(welded_buf, "A{V{V{weld},D{i,N{o,N=%s,N=%s}}}}",
+                sprintf(welded_buf,
+                        "C{n,p,V{V{weld},D{E{to},N{o,N=%s,N=%s}}}}@",
                         mon_hand, mon_nam(mon));
 
                 if (obj->otyp == PICK_AXE) {
@@ -999,19 +1000,19 @@ enhance_weapon_skill(void)
             if (eventually_advance > 0) {
                 /* We can get away with a literal 'you' here because this is
                    only being shown in menus, not being plined */
-                sprintf(buf, "C{s,V{V{V{may},V{V{enhance},"
-                        "N{N=%s,A{V{V{flag},D{t,N{m,S{*}}}}}}}},D=%s}}@",
+                sprintf(buf, "C{s,V{V{V{may},V{V{enhance},N{N=%s,"
+                        "C{n,p,V{V{flag},D{E{with},N{m,S{*}}}}}}}},D=%s}}@",
                         eventually_advance == 1 ?
                         "N{skill}" : "N{*,N{skill}}",
                         (u.ulevel < MAXULEV) ?
                         "D{Q{when},C{N{you},V{V{are},A{c,A{experienced}}}}}" :
-                        "D{Q{if},C{N{*,N{N{i,slot},A{N{skill}}}},"
+                        "D{Q{if},C{N{*,N{N{i,slot},N{skill}}},"
                         "V{V{become},A{available}}}}");
                 add_menutext(&menu, buf);
             }
             if (maxxed_cnt > 0) {
                 sprintf(buf, "C{-,C{s,V{V{V{can},V{V{enhance},"
-                        "N{N=%s,A{V{V{flag},D{t,N{m,S{#}}}}}}}},"
+                        "N{N=%s,C{n,p,V{V{flag},D{E{with},N{m,S{#}}}}}}}},"
                         "D{D{further},D{any}}}}}@",
                         eventually_advance == 1 ? "N{skill}" : "N{*,N{skill}}");
                 add_menutext(&menu, buf);

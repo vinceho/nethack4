@@ -31,7 +31,7 @@
     static int gyyparse(boolean simple, boolean caps);
 %}
 
-%token N P V A D Q E J C UNKNOWN END COMMA EOFTOKEN INVALIDCHAR
+%token N P V A D Q E J C UNKNOWN END COMMA EOFTOKEN INVALIDCHAR AT
 %token FCOMMA MCOMMA NCOMMA ICOMMA PCOMMA CCOMMA OCOMMA LCOMMA SCOMMA TCOMMA
 %token ACOMMA DCOMMA ECOMMA QCOMMA MINUSCOMMA PLUSCOMMA STARCOMMA
 %token PERCENT_S PC_COMMA
@@ -44,7 +44,7 @@
 
 %type <s> substel substels
 %type <u> nounish verbish adjectivish adverbish relativish prepositionish
-%type <u> conjunctionish clausish sentenceish anything
+%type <u> conjunctionish clausish clausish_noat sentenceish anything
 %type <u> literalinner literalinner2
 
 %token-table
@@ -91,6 +91,10 @@ substel:
   }
 | LITERAL                                { $$ = $1; }
 | PUNCTUATION                            { $$ = $1; }
+| PERCENT_S                              {
+  $$ = malloc(3);
+  strcpy($$, "%s");
+}
 ;
 
 anything:
@@ -101,17 +105,11 @@ anything:
 | relativish                             { $$ = $1; }
 | prepositionish                         { $$ = $1; }
 | sentenceish                            { $$ = $1; }
-| clausish PUNCTUATION                   { $$ = $1; $$->punctuation = $2; }
-| CEQUALS PERCENT_S                       {
-    /* C=%s becomes C=C{...}. or whatever, so it has a special case for
-       punctuation here (and isn't a clausish, for the same reason; you'd
-       end up double-punctuated after expansion if it were) */
-      $$ = mu(0, 0, 0, clause, gr_literal);
-      $$->content = malloc(3);
-      strcpy($$->content, "%s");
-      $$->punctuation = 0;
+| clausish_noat PUNCTUATION              { $$ = $1; $$->punctuation = $2; }
+| clausish_noat AT                       {
+      $$ = $1;
+      $$->punctuation = calloc(1, 1);
   }
-
 ;
 
 literalinner2:
@@ -149,6 +147,7 @@ verbish:
 | V verbish COMMA adjectivish END        { $$=mu($2,$4, 0,verb,verb_VA ); }
 | V verbish COMMA adverbish END          { $$=mu($2,$4, 0,verb,verb_VD ); }
 | V verbish COMMA verbish END            { $$=mu($2,$4, 0,verb,verb_VV ); }
+| V verbish COMMA clausish END           { $$=mu($2,$4, 0,verb,verb_VC ); }
 | V MCOMMA verbish COMMA anything END    { $$=mu($3,$5, 0,verb,verb_mVX); }
 | V SCOMMA verbish COMMA verbish END     { $$=mu($3,$5, 0,verb,verb_sVV); }
 | V MINUSCOMMA verbish END               { $$=mu($3, 0, 0,verb,minus_V ); }
@@ -173,10 +172,14 @@ nounish:
       $$->quan = ($$->quan & (1 << 30)) | (1 << 26) | $2;
       if ($2 != 1) $$->quan |= (1 << 29);
   }
+| N nounish COMMA nounish END            { $$=mu($2,$4, 0,noun,noun_NN); }
 | N nounish COMMA adjectivish END        { $$=mu($2,$4, 0,noun,noun_NA); }
+| N nounish COMMA clausish END           { $$=mu($2,$4, 0,noun,noun_NC); }
 | N nounish COMMA prepositionish COMMA
   nounish END                            { $$=mu($2,$4,$6,noun,noun_NEN); }
 | N verbish END                          { $$=mu($2, 0, 0,noun,noun_V); }
+| N CCOMMA nounish COMMA verbish END     { $$=mu($3,$5, 0,noun,noun_cNV); }
+| N PCOMMA nounish COMMA verbish END     { $$=mu($3,$5, 0,noun,noun_pNV); }
 | N FCOMMA nounish COMMA adjectivish END { $$=mu($3,$5, 0,noun,noun_fNA); }
 | N FCOMMA nounish COMMA nounish END     { $$=mu($3,$5, 0,noun,noun_fNN); }
 | N OCOMMA nounish COMMA nounish END     { $$=mu($3,$5, 0,noun,noun_oNN); }
@@ -236,8 +239,6 @@ adjectivish:
 | A LCOMMA nounish END               { $$=mu($3, 0,0,adjective,adjective_lN); }
 | A MCOMMA nounish END               { $$=mu($3, 0,0,adjective,adjective_mN); }
 | A verbish END                      { $$=mu($2, 0,0,adjective,adjective_V ); }
-| A CCOMMA verbish END               { $$=mu($3, 0,0,adjective,adjective_cV); }
-| A verbish COMMA nounish END        { $$=mu($2,$4,0,adjective,adjective_V ); }
 | A nounish END                      { $$=mu($2, 0,0,adjective,adjective_N ); }
 | A adjectivish COMMA adverbish END  { $$=mu($2,$4,0,adjective,adjective_AD); }
 | A adjectivish COMMA verbish END    { $$=mu($2,$4,0,adjective,adjective_AV); }
@@ -284,10 +285,15 @@ conjunctionish:
 ;
 
 clausish:
+  clausish_noat                           { $$ = $1; }
+| clausish AT                             { $$ = $1; }
+;
+
+clausish_noat:
 /* Literal clauses would seem inadvisable compared to literal sentences, but
    just in case we ever need one... */
   C literalinner                          { $$ = $2; $$->role = gr_clause; }
-| CEQUALS clausish                        { $$ = $2; }
+| CEQUALS clausish_noat                   { $$ = $2; }
 | C nounish COMMA verbish END             { $$=mu($2,$4,0,clause,clause_NV ); }
 | C clausish COMMA adverbish END          { $$=mu($2,$4,0,clause,clause_CD ); }
 | C conjunctionish COMMA clausish END     { $$=mu($2,$4,0,clause,clause_JC ); }
@@ -304,10 +310,19 @@ clausish:
 | C SCOMMA PCOMMA verbish END             { $$=mu($4, 0,0,clause,clause_psV); }
 | C SCOMMA CCOMMA verbish END             { $$=mu($4, 0,0,clause,clause_csV); }
 | C SCOMMA FCOMMA verbish END             { $$=mu($4, 0,0,clause,clause_fsV); }
+| C NCOMMA CCOMMA verbish END             { $$=mu($4, 0,0,clause,clause_cnV); }
+| C NCOMMA PCOMMA verbish END             { $$=mu($4, 0,0,clause,clause_pnV); }
+| C CCOMMA NCOMMA verbish END             { $$=mu($4, 0,0,clause,clause_cnV); }
+| C PCOMMA NCOMMA verbish END             { $$=mu($4, 0,0,clause,clause_pnV); }
 | C QCOMMA clausish END                   { $$=mu($3, 0,0,clause,clause_qC ); }
 | C ICOMMA verbish END                    { $$=mu($3, 0,0,clause,clause_iV ); }
 | C MINUSCOMMA clausish END               { $$=mu($3, 0,0,clause,minus_C); }
 | C PLUSCOMMA clausish COMMA clausish END { $$=mu($3,$5,0,clause,plus_CC); }
+| CEQUALS PERCENT_S                       {
+        $$ = mu(0, 0, 0, clause, gr_literal);
+        $$->content = malloc(3);
+        strcpy($$->content, "%s");
+  }
 ;
 
 sentenceish:
