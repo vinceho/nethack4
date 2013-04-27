@@ -16,7 +16,7 @@ enum tense {
     /* "You die", "You have died", "You died", "You are dying", "dying",
        "died", "die", "to die", "dying" */
     present, perfect, imperfect, continuous, future, active_participle,
-    passive_participle, secondary_direct, secondary_infinitive, gerund,
+    passive_participle, secondary_direct, secondary_infinitive,
     /* OK, so nouns don't have tenses, but we use the same method:
        "I", "me", "my" */
     subject, object, possessive,
@@ -785,7 +785,6 @@ conjugate(const char *v, enum tense t, int quan, enum person p)
         if (special_case_verb(w, v, t, plural, p)) return w;
         strcpy(w, resuffix(v, "ed"));
         break;
-    case gerund: /* for regular verbs, the gerund is the active participle */
     case active_participle: /* resuffix -ing, for regular verbs */
         if (special_case_verb(w, v, t, plural, p)) return w;
         strcpy(w, resuffix(v, "ing"));
@@ -1057,8 +1056,8 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             free(t);
         }
         return nounperson;
-    case noun_V: /* "smashing" */
-        nounperson = force_unit(u->children[0], gerund, 1, base);
+    case noun_C: /* "smashing" */
+        nounperson = force_unit(u->children[0], t, quan, base);
         u->content = astrcat("",u->children[0]->content,"");
         return nounperson;
     case noun_fNA: /* "two of the daggers" */
@@ -1123,7 +1122,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         /* the ! are for padding */
         u->content = astrcat(u->children[0]->content,
                              u->children[1]->content,
-                             t == gerund ? " of \"!!!!!!" : ": \"!!!!!!");
+                             ": \"!!!!!!");
         sprintf(u->content + strlen(u->children[0]->content) + 3,
                 "%s%.5s\"", u->children[1]->content,
                 u->children[1]->role == gr_clause &&
@@ -1286,9 +1285,6 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                 conjugate(u->children[0]->content, t, quan, p) + 3,
                 " ");
             break;
-        case gerund:
-            u->content = astrcat("", "(ERROR: Gerund negated)", "");
-            break;
         case subject:
         case object:
         case possessive:
@@ -1330,13 +1326,13 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             char *tx;
             tx = astrcat(u->children[0]->content,
                          u->children[1]->content,
-                         t == gerund ? " of \x1e" : " \x1e");
+                         " \x1e");
             u->content = astrcat(tx, "\x1e", "");
             free(tx);
         } else
             u->content = astrcat(u->children[0]->content,
                                  u->children[1]->content,
-                                 t == gerund ? " of " : " ");
+                                 " ");
         break;
     case verb_sVV:
         /* We change this to a verb_VV with the secondary verb behind

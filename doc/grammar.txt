@@ -132,10 +132,10 @@ NC                                 Noun with subordinate clause
 N{N{potion},C{n,p,V{V{call},A{red}}}}
 "potion called red"
 
-V
-N{V{smash}}                        Gerund
+C
+N{C{n,c,V{smash}}}                 Subordinate nominal clause
 "smashing"
-Note that this is shorthand for N{C{n,c,V{smash}}}
+This can be used to form the gerund as in this example.
 
 NEN                                Noun relative to another noun
 N{N{body},E{on},N{altar}}

@@ -3806,7 +3806,7 @@ zap_over_floor(xchar x, xchar y, int type, boolean * shopdamage)
         case ZT_LIGHTNING:
             new_doormask = D_BROKEN;
             strcpy(see_buf, "C{N{door},V{splinter}}!");
-            strcpy(hear_buf, "N{V{crackle}}");
+            strcpy(hear_buf, "N{C{n,c,V{crackle}}}");
             break;
         default:
         def_case:

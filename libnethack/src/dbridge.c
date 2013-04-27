@@ -516,7 +516,7 @@ do_entity(struct entity *etmp)
                     pline("C{N{c,N{portcullis},V{fall}},V{V{crush},N=%s}}!",
                           e_nam(etmp));
                 else if (flags.soundok)
-                    You_hear("N{N{i,sound},N{V{crush}}}");
+                    You_hear("N{N{i,sound},N{C{c,n,V{crush}}}}");
                 e_died(etmp, e_inview ? 3 : 2, CRUSHING);
                 /* no corpse */
                 return;
@@ -668,7 +668,7 @@ close_drawbridge(int x, int y)
     set_entity(x2, y2, &(occupants[1]));        /* do_entity for worm tail */
     do_entity(&(occupants[1]));
     if (OBJ_AT(x, y) && flags.soundok)
-        You_hear("N{+,N{V{smash}},N{V{crush}}}");
+        You_hear("N{+,N{C{n,c,V{smash}}},N{C{n,c,V{crush}}}}");
     revive_nasty(x, y, NULL);
     revive_nasty(x2, y2, NULL);
     delallobj(x, y);

@@ -177,7 +177,7 @@ nounish:
 | N nounish COMMA clausish END           { $$=mu($2,$4, 0,noun,noun_NC); }
 | N nounish COMMA prepositionish COMMA
   nounish END                            { $$=mu($2,$4,$6,noun,noun_NEN); }
-| N verbish END                          { $$=mu($2, 0, 0,noun,noun_V); }
+| N clausish END                         { $$=mu($2, 0, 0,noun,noun_C  ); }
 | N CCOMMA nounish COMMA verbish END     { $$=mu($3,$5, 0,noun,noun_cNV); }
 | N PCOMMA nounish COMMA verbish END     { $$=mu($3,$5, 0,noun,noun_pNV); }
 | N FCOMMA nounish COMMA adjectivish END { $$=mu($3,$5, 0,noun,noun_fNA); }
