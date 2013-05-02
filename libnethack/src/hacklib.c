@@ -9,45 +9,10 @@
 # include <sys/time.h>
 #endif
 
-/*=
+/*
     Assorted 'small' utility routines.  They're virtually independent of
 NetHack, except that rounddiv may call panic().
-
-      return type     routine name    argument type(s)
-        boolean         digit           (char)
-        boolean         letter          (char)
-        char            highc           (char)
-        char            lowc            (char)
-        char *          lcase           (char *)
-        char *          upstart         (char *)
-        char *          mungspaces      (char *)
-        char *          eos             (char *)
-        char *          strkitten       (char *,char)
-        char *          s_suffix        (const char *)
-        char *          xcrypt          (const char *, char *)
-        boolean         onlyspace       (const char *)
-        char *          tabexpand       (char *)
-        char *          visctrl         (char)
-        const char *    ordin           (int)
-        char *          sitoa           (int)
-        int             sgn             (int)
-        int             rounddiv        (long, int)
-        int             distmin         (int, int, int, int)
-        int             dist2           (int, int, int, int)
-        boolean         online2         (int, int)
-        boolean         pmatch          (const char *, const char *)
-        int             strncmpi        (const char *, const char *, int)
-        char *          strstri         (const char *, const char *)
-        boolean         fuzzymatch      (const char *,const char *,const char *,boolean)
-        void            setrandom       (void)
-        int             getyear         (void)
-        char *          yymmdd          (time_t)
-        long            yyyymmdd        (time_t)
-        int             phase_of_the_moon       (void)
-        boolean         friday_13th     (void)
-        int             night           (void)
-        int             midnight        (void)
-=*/
+*/
 
 
 void
@@ -133,21 +98,6 @@ eos(char *s)
 }
 
 char *
-s_suffix(const char *s)
-{       /* return a name converted to possessive */
-    static char buf[BUFSZ];
-
-    strcpy(buf, s);
-    if (!strcmpi(buf, "it"))
-        strcat(buf, "s");
-    else if (*(eos(buf) - 1) == 's')
-        strcat(buf, "'");
-    else
-        strcat(buf, "'s");
-    return buf;
-}
-
-char *
 xcrypt(const char *str, char *buf)
 {       /* trivial text encryption routine (see makedefs) */
     const char *p;
@@ -201,26 +151,6 @@ tabexpand(char *sbuf)
 }
 
 
-const char *
-ordin(int n)
-{       /* return the ordinal suffix of a number */
-    /* note: n should be non-negative */
-    int dd = n % 10;
-
-    return (dd == 0 || dd > 3 || (n % 100) / 10 == 1) ? "th" :
-        (dd == 1) ? "st" : (dd == 2) ? "nd" : "rd";
-}
-
-
-char *
-sitoa(int n)
-{       /* make a signed digit string from a number */
-    static char buf[13];
-
-    sprintf(buf, (n < 0) ? "%d" : "+%d", n);
-    return buf;
-}
-
 int
 sgn(int n)
 {       /* return the sign of a number: -1, 0, or 1 */
@@ -235,7 +165,7 @@ rounddiv(long x, int y)
     int divsgn = 1;
 
     if (y == 0)
-        panic("division by zero in rounddiv");
+        panic("S{division by zero in rounddiv}");
     else if (y < 0) {
         divsgn = -divsgn;
         y = -y;

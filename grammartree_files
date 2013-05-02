@@ -6,6 +6,7 @@ libnethack/src/do.c
 libnethack/src/dog.c
 libnethack/src/dogmove.c
 libnethack/src/do_name.c
+libnethack/src/hacklib.c
 libnethack/src/memfile.c
 libnethack/src/mkmaze.c
 libnethack/src/monst.c
