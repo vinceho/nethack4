@@ -1,6 +1,7 @@
 libnethack/src/allmain.c
 libnethack/src/dbridge.c
 libnethack/src/decl.c
+libnethack/src/display.c
 libnethack/src/dlb.c
 libnethack/src/do.c
 libnethack/src/dog.c

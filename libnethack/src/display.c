@@ -416,7 +416,7 @@ display_monster(xchar x, xchar y,       /* display position */
     if (mon_mimic && (sightflags == PHYSICALLY_SEEN)) {
         switch (mon->m_ap_type) {
         default:
-            impossible("display_monster:  bad m_ap_type value [ = %d ]",
+            impossible("S{display_monster:  bad m_ap_type value [ = %d ]}",
                        (int)mon->m_ap_type);
 
         case M_AP_FURNITURE:{
@@ -930,7 +930,7 @@ struct tmp_sym *
 tmpsym_init(int style, int sym)
 {
     if (style == DISP_OBJECT)
-        panic("Use tmpsym_initobj for DISP_OBJECT!");
+        panic("S{Use tmpsym_initobj for DISP_OBJECT!}");
 
     return tmpsym_initimpl(style, sym, 0);
 }
@@ -958,7 +958,7 @@ tmpsym_change(struct tmp_sym *tsym, int sym)
 {
     /* Since we won't necessarily update extra correctly. */
     if (tsym->style == DISP_OBJECT)
-        panic("Can't change symbol of DISP_OBJECT tmpsym!");
+        panic("S{Can't change symbol of DISP_OBJECT tmpsym!}");
 
     tsym->sym = sym;
 }
@@ -1739,7 +1739,8 @@ back_to_cmap(struct level *lev, xchar x, xchar y)
             idx = (!cansee(x, y) && !ptr->waslit) ? S_darkroom : S_room;
             break;
         default:
-            impossible("Strange db-under: %d", ptr->drawbridgemask & DB_UNDER);
+            impossible("S{Strange db-under: %d}",
+                       ptr->drawbridgemask & DB_UNDER);
             idx = S_room;       /* something is better than nothing */
             break;
         }
@@ -1748,7 +1749,8 @@ back_to_cmap(struct level *lev, xchar x, xchar y)
         idx = (ptr->horizontal) ? S_hodbridge : S_vodbridge;
         break;
     default:
-        impossible("back_to_cmap:  unknown location type [ = %d ]", ptr->typ);
+        impossible("S{back_to_cmap:  unknown location type [ = %d ]}",
+                   ptr->typ);
         idx = S_room;
         break;
     }
@@ -1768,7 +1770,7 @@ static int
 swallow_to_effect(int mnum, int loc)
 {
     if (loc < S_sw_tl || S_sw_br < loc) {
-        impossible("swallow_to_effect: bad swallow location");
+        impossible("S{swallow_to_effect: bad swallow location}");
         loc = S_sw_br;
     }
     return ((E_SWALLOW << 16) | (what_mon(mnum) << 3) | loc) + 1;
@@ -1792,7 +1794,7 @@ int
 zapdir_to_effect(int dx, int dy, int beam_type)
 {
     if (beam_type >= NUM_ZAP) {
-        impossible("zapdir_to_effect:  illegal beam type");
+        impossible("S{zapdir_to_effect:  illegal beam type}");
         beam_type = 0;
     }
     dx = (dx == dy) ? 2 : (dx && dy) ? 3 : dx ? 1 : 0;
@@ -1833,7 +1835,7 @@ dump_screen(FILE * dumpfp)
         }
 
         scrline[COLNO] = '\0';
-        fprintf(dumpfp, "%s\n", scrline);
+        fprintf(dumpfp, /*nointl*/ "%s\n", scrline);
     }
 }
 
@@ -2113,9 +2115,10 @@ static const int cross_matrix[4][6] = {
 static void
 t_warn(struct rm *loc)
 {
-    static const char warn_str[] = "wall_angle: %s: case %d: seenv = 0x%x";
+    static const char warn_str[] = "S{wall_angle: %s: case %d: seenv = 0x%x}";
     const char *wname;
 
+    /* !nointl{ */
     if (loc->typ == TUWALL)
         wname = "tuwall";
     else if (loc->typ == TLWALL)
@@ -2126,6 +2129,7 @@ t_warn(struct rm *loc)
         wname = "tdwall";
     else
         wname = "unknown";
+    /* }nointl! */
     impossible(warn_str, wname, loc->wall_info & WM_MASK,
                (unsigned int)loc->seenv);
 }
@@ -2222,7 +2226,7 @@ wall_angle(struct rm *loc)
 
             break;
         default:
-            impossible("wall_angle: unknown T wall mode %d",
+            impossible("S{wall_angle: unknown T wall mode %d}",
                        loc->wall_info & WM_MASK);
             col = T_stone;
             break;
@@ -2246,7 +2250,7 @@ wall_angle(struct rm *loc)
             idx = seenv & (SV0 | SV1 | SV5 | SV6 | SV7) ? S_vwall : S_stone;
             break;
         default:
-            impossible("wall_angle: unknown vwall mode %d",
+            impossible("S{wall_angle: unknown vwall mode %d}",
                        loc->wall_info & WM_MASK);
             idx = S_stone;
             break;
@@ -2266,7 +2270,7 @@ wall_angle(struct rm *loc)
             idx = seenv & (SV0 | SV1 | SV2 | SV3 | SV7) ? S_hwall : S_stone;
             break;
         default:
-            impossible("wall_angle: unknown hwall mode %d",
+            impossible("S{wall_angle: unknown hwall mode %d}",
                        loc->wall_info & WM_MASK);
             idx = S_stone;
             break;
@@ -2279,23 +2283,27 @@ wall_angle(struct rm *loc)
         case WM_C_OUTER: idx = seenv &  (outer) ? which : S_stone; break;   \
         case WM_C_INNER: idx = seenv & ~(inner) ? which : S_stone; break;   \
         default:                                                            \
-            impossible("wall_angle: unknown %s mode %d", name,              \
+            impossible("S{wall_angle: unknown %s mode %d}", name,           \
                 (loc)->wall_info & WM_MASK);                                \
             idx = S_stone;                                                  \
             break;                                                          \
     }
 
     case TLCORNER:
-        set_corner(idx, loc, S_tlcorn, (SV3 | SV4 | SV5), SV4, "tlcorn");
+        set_corner(idx, loc, S_tlcorn, (SV3 | SV4 | SV5), SV4,
+                   /*nointl*/ "tlcorn");
         break;
     case TRCORNER:
-        set_corner(idx, loc, S_trcorn, (SV5 | SV6 | SV7), SV6, "trcorn");
+        set_corner(idx, loc, S_trcorn, (SV5 | SV6 | SV7), SV6,
+                   /*nointl*/ "trcorn");
         break;
     case BLCORNER:
-        set_corner(idx, loc, S_blcorn, (SV1 | SV2 | SV3), SV2, "blcorn");
+        set_corner(idx, loc, S_blcorn, (SV1 | SV2 | SV3), SV2,
+                   /*nointl*/ "blcorn");
         break;
     case BRCORNER:
-        set_corner(idx, loc, S_brcorn, (SV7 | SV0 | SV1), SV0, "brcorn");
+        set_corner(idx, loc, S_brcorn, (SV7 | SV0 | SV1), SV0,
+                   /*nointl*/ "brcorn");
         break;
 
 
@@ -2366,7 +2374,7 @@ wall_angle(struct rm *loc)
                 } else if (seenv & SV7) {
                     col = seenv & SV1 ? C_crwall : C_tlwall;
                 } else {
-                    impossible("wall_angle: bottom of crwall check");
+                    impossible("S{wall_angle: bottom of crwall check}");
                     col = C_crwall;
                 }
 
@@ -2397,14 +2405,14 @@ wall_angle(struct rm *loc)
             break;
 
         default:
-            impossible("wall_angle: unknown crosswall mode");
+            impossible("S{wall_angle: unknown crosswall mode}");
             idx = S_stone;
             break;
         }
         break;
 
     default:
-        impossible("wall_angle: unexpected wall type %d", loc->typ);
+        impossible("S{wall_angle: unexpected wall type %d}", loc->typ);
         idx = S_stone;
     }
     return idx;
