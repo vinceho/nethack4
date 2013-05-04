@@ -112,12 +112,13 @@ losexp(const char *drainer)
 
     /* override life-drain resistance when handling an explicit wizard mode
        request to reduce level; never fatal though */
-    if (drainer && !strcmp(drainer, "#levelchange"))
+    if (drainer && !strcmp(drainer, "N{\x1e#levelchange\x1e}"))
         drainer = 0;
     else if (resists_drli(&youmonst))
         return;
 
     if (u.ulevel > 1) {
+        /* TODO: Goodbye */
         pline("%s level %d.", Goodbye(), u.ulevel--);
         /* remove intrinsic abilities */
         adjabil(u.ulevel + 1, u.ulevel);
@@ -185,7 +186,7 @@ pluslvl(boolean incr)
     int num;
 
     if (!incr)
-        pline("You feel more experienced.");
+        pline("C{N=%s,V{V{feel},A{c,A{experienced}}}}.");
     num = newhp();
     u.uhpmax += num;
     u.uhp += num;
@@ -217,8 +218,10 @@ pluslvl(boolean incr)
         ++u.ulevel;
         if (u.ulevelmax < u.ulevel) {
             u.ulevelmax = u.ulevel;
-            historic_event(FALSE, "advanced to experience level %d.", u.ulevel);
+            historic_event(FALSE, "V{V{advance},D{E{to},"
+                           "N{N{N{level},N{experience}},N{%d}}}}", u.ulevel);
         }
+        /* TODO: Welcome */
         pline("Welcome to experience level %d.", u.ulevel);
         adjabil(u.ulevel - 1, u.ulevel);        /* give new intrinsics */
         reset_rndmonst(NON_PM); /* new monster selection */

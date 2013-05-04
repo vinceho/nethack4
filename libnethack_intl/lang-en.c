@@ -1180,6 +1180,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
                              u->children[0]->content, " ");
         u->content = articulate(u->content, quan);
         return nounperson;
+    case noun_ND: /* "the floor of the room", "the staircase up" */
     case noun_NC: /* "the rock damaged by weather" */
         nounperson = force_unit(u->children[0], t, quan, p);
         force_unit(u->children[1], t, quan, nounperson);

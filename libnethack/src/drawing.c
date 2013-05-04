@@ -9,36 +9,37 @@
 /* Object class names.  Used in object_detect(). */
 const char *const oclass_names[] = {
 /* 0*/ 0,
-    "illegal objects",
-    "weapons",
-    "armor",
-    "rings",
-/* 5*/ "amulets",
-    "tools",
-    "food",
-    "potions",
-    "scrolls",
-/*10*/ "spellbooks",
-    "wands",
-    "coins",
-    "rocks",
-    "large stones",
-/*15*/ "iron balls",
-    "chains",
-    "venoms"
+    "N{N{o,object},A{illegal}}",
+    "N{o,weapon}",
+    "N{armor}",
+    "N{o,ring}",
+/* 5*/ "N{o,amulet}",
+    "N{o,tool}",
+    "N{o,food}",
+    "N{o,potion}",
+    "N{o,scroll}",
+/*10*/ "N{o,spellbook}",
+    "N{o,wand}",
+    "N{o,coin}",
+    "N{o,rock}",
+    "N{N{o,stone},A{large}}",
+/*15*/ "N{N{o,ball},N{iron}}",
+    "N{o,chain}",
+    "N{o,venom}"
 };
 
 
 const char *const warnexplain[] = {
-    "unknown creature causing you worry",
-    "unknown creature causing you concern",
-    "unknown creature causing you anxiety",
-    "unknown creature causing you disquiet",
-    "unknown creature causing you alarm",
-    "unknown creature causing you dread"
+    "N{o,worry}",
+    "N{o,concern}",
+    "N{o,anxiety}",
+    "N{o,disquiet}",
+    "N{o,alarm}",
+    "N{o,dread}",
 };
 
 
+/* !nointl{ */
 const struct nh_symdef warnsyms[WARNCOUNT] = {
     {'0', "warn1", CLR_WHITE},  /* white warning */
     {'1', "warn2", CLR_RED},    /* pink warning */
@@ -47,90 +48,93 @@ const struct nh_symdef warnsyms[WARNCOUNT] = {
     {'4', "warn5", CLR_MAGENTA},        /* purple warning */
     {'5', "warn6", CLR_BRIGHT_MAGENTA}  /* black warning */
 };
+/* }nointl! */
 
 const char *const defexplain[] = {
-    /* 0 */ "unexplored area",
+    /* 0 */ "N{N{i,area},A{unknown}}",
     /* unexplored */
-    "solid rock",       /* stone */
-    "wall",     /* vwall */
-    "wall",     /* hwall */
-    "wall",     /* tlcorn */
-    "wall",     /* trcorn */
-    "wall",     /* blcorn */
-    "wall",     /* brcorn */
-    "wall",     /* crwall */
-    "wall",     /* tuwall */
-    /* 10 */ "wall",
+    "N{N{i,rock},A{solid}}",       /* stone */
+    "N{i,wall}",     /* vwall */
+    "N{i,wall}",     /* hwall */
+    "N{i,wall}",     /* tlcorn */
+    "N{i,wall}",     /* trcorn */
+    "N{i,wall}",     /* blcorn */
+    "N{i,wall}",     /* brcorn */
+    "N{i,wall}",     /* crwall */
+    "N{i,wall}",     /* tuwall */
+    /* 10 */ "N{i,wall}",
     /* tdwall */
-    "wall",     /* tlwall */
-    "wall",     /* trwall */
-    "corridor", /* dark corr */
-    "lit corridor",     /* lit corr */
-    "the floor of a room",      /* room */
-    "dark part of a room",      /* darkroom */
-    "water",    /* pool */
-    "air",      /* open air */
-    "cloud",    /* [part of] a cloud */
-    /* 20 */ "water",
+    "N{i,wall}",     /* tlwall */
+    "N{i,wall}",     /* trwall */
+    "N{i,corridor}", /* dark corr */
+    "N{N{i,corridor},A{V{light}}}",     /* lit corr */
+    "N{N{floor},D{E{of},N{i,room}}}",      /* room */
+    "N{N{N{i,part},A{dark}},D{E{of},N{i,room}}}",      /* darkroom */
+    "N{o,water}",    /* pool */
+    "N{o,air}",      /* open air */
+    "N{i,cloud}",    /* [part of] a cloud */
+    /* 20 */ "N{o,water}",
     /* under water */
-    "ice",      /* ice */
-    "molten lava",      /* lava */
-    "doorway",  /* ndoor */
+    "N{o,ice}",      /* ice */
+    "N{N{o,lava},A{molten}}",      /* lava */
+    "N{i,doorway}",  /* ndoor */
     /* "features" start here */
-    "open door",        /* vodoor */
-    "open door",        /* hodoor */
-    "closed door",      /* vcdoor */
-    "closed door",      /* hcdoor */
-    "iron bars",        /* bars */
-    "tree",     /* tree */
-    /* 30 */ "staircase up",
+    "N{N{i,door},A{open}}",        /* vodoor */
+    "N{N{i,door},A{open}}",        /* hodoor */
+    "N{N{i,door},A{closed}}",      /* vcdoor */
+    "N{N{i,door},A{closed}}",      /* hcdoor */
+    "N{N{*,N{i,bar}},A{iron}}",        /* bars */
+    "N{i,tree}",     /* tree */
+    /* 30 */ "N{N{i,staircase},D{up}}",
     /* upstair */
-    "staircase down",   /* dnstair */
-    "ladder up",        /* upladder */
-    "ladder down",      /* dnladder */
-    "long staircase up",        /* upsstair */
-    "long staircase down",      /* dnsstair */
-    "altar",    /* altar */
-    "grave",    /* grave */
-    "opulent throne",   /* throne */
-    "sink",     /* sink */
-    /* 40 */ "fountain",
+    "N{N{i,staircase},D{down}}",   /* dnstair */
+    "N{N{i,ladder},D{up}}",        /* upladder */
+    "N{N{i,ladder},D{down}}",      /* dnladder */
+    "N{N{N{i,staircase},A{long}},D{up}}",        /* upsstair */
+    "N{N{N{i,staircase},A{long}},D{down}}",      /* dnsstair */
+    "N{i,altar}",    /* altar */
+    "N{i,grave}",    /* grave */
+    "N{N{i,throne},A{opulent}}",   /* throne */
+    "N{i,sink}",     /* sink */
+    /* 40 */ "N{i,fountain}",
     /* fountain */
-    "lowered drawbridge",       /* vodbridge */
-    "lowered drawbridge",       /* hodbridge */
-    "raised drawbridge",        /* vcdbridge */
-    "raised drawbridge",        /* hcdbridge */
+    "N{N{i,drawbridge},A{V{lower}}}",       /* vodbridge */
+    "N{N{i,drawbridge},A{V{lower}}}",       /* hodbridge */
+    "N{N{i,drawbridge},A{V{raise}}}",        /* vcdbridge */
+    "N{N{i,drawbridge},A{V{raise}}}",        /* hcdbridge */
 };
 
 
 const char *const trapexplain[] = {
-    "arrow trap",
-    "dart trap",
-    "falling rock trap",
-    "squeaky board",
-    "bear trap",
-    "land mine",
-    "rolling boulder trap",
-    "sleeping gas trap",
-    "rust trap",
-/*50*/ "fire trap",
-    "pit",
-    "spiked pit",
-    "hole",
-    "trap door",
-    "vibrating square",
-    "teleportation trap",
-    "level teleporter",
-    "magic portal",
-    "web",
-/*60*/ "statue trap",
-    "magic trap",
-    "anti-magic field",
-    "polymorph trap"
+    "N{N{i,trap},N{arrow}}",
+    "N{N{i,trap},N{dart}}",
+    "N{N{i,trap},N{c,N{rock},V{fall}}}",
+    "N{N{i,board},N{squeaky}}",
+    "N{N{i,trap},N{bear}}",
+    "N{N{i,mine},N{land}}",
+    "N{N{i,trap},N{c,N{boulder},V{roll}}}",
+    /* TODO: The gas is not sleeping; is there a better grammartreeization? */
+    "N{N{i,trap},N{c,N{gas},V{sleep}}}",
+    "N{N{i,trap},N{rust}}",
+/*50*/ "N{N{i,trap},N{fire}}",
+    "N{i,pit}",
+    "N{N{i,pit},A{spiked}}",
+    "N{i,hole}",
+    "N{N{i,door},N{trap}}",
+    "N{c,N{i,square},V{vibrate}}",
+    "N{N{i,trap},N{teleportation}}",
+    "N{N{i,teleporter},N{level}}",
+    "N{N{i,portal},N{magic}}",
+    "N{i,web}",
+/*60*/ "N{N{i,trap},N{statue}}",
+    "N{N{i,trap},N{magic}}",
+    "N{N{i,field},N{anti-magic}}",
+    "N{N{i,trap},N{polymorph}}"
 };
 
 /*
  *  Default screen symbols with explanations and colors.
+ *  !nointl{
  */
 const struct nh_symdef defsyms[] = {
 /* 0*/ {' ', "unexplored", CLR_GRAY},
@@ -273,6 +277,7 @@ static const struct nh_symdef swallowsyms[] = {
     {'-', "swallow_bot_c", CLR_ORANGE}, /* swallow bottom center */
     {'/', "swallow_bot_r", CLR_ORANGE}, /* swallow bottom right */
 };
+/* }nointl! */
 
 static int unnamed_cnt[MAXOCLASSES];
 
@@ -293,7 +298,10 @@ make_object_name(int otyp)
 
     nameptr = obj_descr[otyp].oc_name;
 
-    /* catch dummy objects (scrolls, wands, ...) without names */
+    /* catch dummy objects (scrolls, wands, ...) without names
+     * TODO: This will grab grammartree from obj_descr. We need to stifle that.
+     * !nointl{
+     */
     if (!nameptr) {
         unnamed_cnt[(int)const_objects[otyp].oc_class]++;
         snprintf(buf2, 40, "unnamed %d", unnamed_cnt[class]);
@@ -322,6 +330,7 @@ make_object_name(int otyp)
         snprintf(buffer, 40, "scroll of %s", nameptr);
     else
         snprintf(buffer, 40, "%s", nameptr);
+    /* }nointl! */
 
     ret = xmalloc(strlen(buffer) + 1);
     strcpy(ret, buffer);
@@ -335,11 +344,15 @@ make_mon_name(int mnum)
 {
     char *name;
 
+    /* TODO: This will grab grammartree from mname. We need to stifle that.
+     * !nointl{
+     */
     if (mons[mnum].mlet == S_HUMAN && !strncmp(mons[mnum].mname, "were", 4)) {
         name = xmalloc(strlen(mons[mnum].mname) + strlen("human ") + 1);
         sprintf(name, "human %s", mons[mnum].mname);
         return name;
     }
+    /* }nointl! */
     return mons[mnum].mname;
 }
 
@@ -370,7 +383,7 @@ nh_get_drawing_info(void)
     tmp = xmalloc(sizeof (struct nh_symdef));
     tmp->ch = DEF_INVISIBLE;
     tmp->color = NO_COLOR;
-    tmp->symname = "invisible monster";
+    tmp->symname = /*nointl*/ "invisible monster";
     di->invis = tmp;
 
     di->num_monsters = NUMMONS;

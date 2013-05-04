@@ -266,6 +266,12 @@ cNV                                Noun modified by active participle
 N{c,N{car},V{fly}}
 "the flying car"
 
+ND                                 Noun modified by an adverb/prepositional
+N{N{floor},D{E{of},N{i,room}}}
+"the floor of a room"
+N{N{i,staircase},D{up}}
+"staircase up"
+
 p,V                                Purpose of an action
 V{V{stop},D{p,V{think}}}
 "stop to think"

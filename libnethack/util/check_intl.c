@@ -53,6 +53,8 @@ main(int argc, char **argv) {
         boolean prev_slash = FALSE;
         boolean prev_backslash = FALSE;
         boolean preprocline = FALSE;
+        boolean prev_nointl = FALSE;
+        boolean all_nointl = FALSE;
         int linecount = 1;
         if (!f) {
             perror(*argv);
@@ -65,13 +67,21 @@ main(int argc, char **argv) {
                filenames surrounded by double quotes. Finally, code that
                manipulates grammartree may need to write fragments; we mark
                these with a comment "nointl". */
-            if (prev_newline && c == '#') preprocline = TRUE;
+            if (prev_newline && c == '#') {
+                preprocline = TRUE;
+                prev_nointl = FALSE;
+            }
             prev_newline = (c == '\n');
             if (prev_newline) {
                 preprocline = FALSE;
                 linecount++;
             }
             if (prev_slash && c == '*') {
+                prev_nointl = FALSE;
+                /* We use a rolling buffer to look for "nointl" and 
+                 * "!nointl{" and "}nointl!" */
+                static const int bufsz = 512;
+                char buf[bufsz], *b = buf;
                 while ((c = getc(f)) != EOF) {
                     /* Re-use prev-slash as a misnomer */
                     if (prev_slash && c == '/')
@@ -79,7 +89,26 @@ main(int argc, char **argv) {
                     prev_slash = (c == '*');
                     if (c == '\n')
                         linecount++;
+                    *b++ = c;
+                    if (b == buf + bufsz - 1) {
+                        *b = 0;
+                        if (strstr(buf, "!nointl{"))
+                            all_nointl = TRUE;
+                        else if (strstr(buf, "}nointl!"))
+                            all_nointl = FALSE;
+                        else if (strstr(buf, "nointl"))
+                            prev_nointl = TRUE;
+                        memcpy(buf, b - 10, 10);
+                        b = buf + 10;
+                    }
                 }
+                *b = 0;
+                if (strstr(buf, "!nointl{"))
+                    all_nointl = TRUE;
+                else if (strstr(buf, "}nointl!"))
+                    all_nointl = FALSE;
+                else if (strstr(buf, "nointl"))
+                    prev_nointl = TRUE;
                 continue;
             }
             if (c == '"' && !preprocline) {
@@ -114,15 +143,18 @@ main(int argc, char **argv) {
                         if (c == '\n') linecount++;
                 } while (c == '"');
                 str[i] = 0;
-                if (i && !prev_slash) { /* not the null string, not a nointl */
+                if (i && !prev_nointl && !all_nointl) {
+                    /* not the null string, not a nointl */
                     char *parsed = malloc_parsestring(str, FALSE, TRUE);
                     if (!errors_only || strstr(parsed, "(ERROR") == parsed)
                         printf("%s:%d: %s\n\t%s\n", *argv, linecount, str, parsed);
                     free(parsed);
                 }
                 free(str);
+                prev_nointl = FALSE;
             }
             if (c == '\'' && !preprocline) {
+                prev_nointl = FALSE;
                 /* Assume that this is only one logical character long */
                 if ((c = getc(f)) == '\\') {
                     getc(f); /* skip first character after slash */
@@ -140,6 +172,8 @@ main(int argc, char **argv) {
                 }
             }
             prev_slash = (c == '/');
+            if (!isspace(c))
+                prev_nointl = FALSE;
         }
         fclose(f);
     }

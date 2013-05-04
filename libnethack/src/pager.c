@@ -339,7 +339,9 @@ describe_mon(int x, int y, int monnum, char *buf)
     } else if (monnum >= NUMMONS) {
         monnum -= NUMMONS;
         if (monnum < WARNCOUNT)
-            strcat(buf, warnexplain[monnum]);
+            sprintf(eos(buf),
+                    "N{N{N{i,creature},A{unknown}},"
+                    "C{n,c,V{V{V{cause},N{you}},N=%s}}}", warnexplain[monnum]);
 
     } else if ((mtmp = m_at(level, x, y))) {
         bhitpos.x = x;

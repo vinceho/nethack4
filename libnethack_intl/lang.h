@@ -43,6 +43,7 @@ enum grammarrule {
     verb_VN, verb_VA, verb_VD, verb_VV, verb_VC, verb_sVV, verb_mVX, verb_JVV,
     noun_NA, noun_NEN, noun_C, noun_fNA, noun_oNN, noun_lNN, noun_mX, noun_NC,
     noun_NV, noun_aNV, noun_qNN, noun_fNN, noun_sC, noun_cNV, noun_pNV, noun_NN,
+    noun_ND,
     adverb_DD, adverb_tN, adverb_lN, adverb_aN, adverb_dN, adverb_mN, adverb_eN,
     adverb_eEN, adverb_oN, adverb_iN, adverb_QC, adverb_EN, adverb_ED,
     adverb_pV,
