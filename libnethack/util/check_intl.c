@@ -146,8 +146,10 @@ main(int argc, char **argv) {
                 if (i && !prev_nointl && !all_nointl) {
                     /* not the null string, not a nointl */
                     char *parsed = malloc_parsestring(str, FALSE, TRUE);
-                    if (!errors_only || strstr(parsed, "(ERROR") == parsed)
+                    if (!errors_only)
                         printf("%s:%d: %s\n\t%s\n", *argv, linecount, str, parsed);
+                    else if (strstr(parsed, "(ERROR") == parsed)
+                        printf("%s:%d: %s\n", *argv, linecount, parsed);
                     free(parsed);
                 }
                 free(str);
