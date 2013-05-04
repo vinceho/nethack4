@@ -1240,7 +1240,7 @@ extern void suppress_more(void);
 extern void impossible(const char *, ...) PRINTFLIKE;
 extern void Norep(const char *, ...) PRINTFLIKE;
 extern void free_youbuf(void);
-extern void You_hear(const char *, const char *, ...) PRINTFLIKE2;
+extern void You_hear(char, const char *, ...) PRINTFLIKE2;
 extern void verbalize(const char *, ...) PRINTFLIKE;
 extern void raw_printf(const char *, ...) PRINTFLIKE;
 extern const char *align_str(aligntyp);

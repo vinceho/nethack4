@@ -521,7 +521,7 @@ display_warning(struct monst *mon)
         monnum = dbuf_monid(mon);
         mflag = 0;
     } else {
-        impossible("display_warning did not match warning type?");
+        impossible("S{display_warning did not match warning type?}");
         return;
     }
 

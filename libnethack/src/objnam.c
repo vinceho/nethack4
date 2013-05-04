@@ -364,7 +364,7 @@ generic_typename(int otyp, boolean show_notes, boolean desc_known,
         return buf;
 
         /* 'scroll labeled FOO' */
-    case SCROLL_CLASS: basetype = "scroll";
+    case SCROLL_CLASS: basetype = "N{scroll}";
         /* blank paper is a special case, following the potion naming pattern
            we also do this if the player can't see the scroll*/
         if (otyp == SCR_BLANK_PAPER || !desc_known) goto a_of_b;
@@ -1036,12 +1036,14 @@ ysimple_name(const struct obj *obj)
     return outbuf;
 }
 
+/* !nointl{ */
 static const char *const wrp[] = {
     "wand", "ring", "potion", "scroll", "gem", "amulet",
     "spellbook", "spell book",
     /* for non-specific wishes */
     "weapon", "armor", "armour", "tool", "food", "comestible",
 };
+/* }nointl! */
 
 static const char wrpsym[] = {
     WAND_CLASS, RING_CLASS, POTION_CLASS, SCROLL_CLASS, GEM_CLASS,
@@ -1067,7 +1069,8 @@ struct o_range {
     int f_o_range, l_o_range;
 };
 
-/* wishable subranges of objects */
+/* wishable subranges of objects
+ * !nointl{ */
 static const struct o_range o_ranges[] = {
     {"bag", TOOL_CLASS, SACK, BAG_OF_TRICKS},
     {"lamp", TOOL_CLASS, OIL_LAMP, MAGIC_LAMP},
@@ -1090,6 +1093,7 @@ static const struct o_range o_ranges[] = {
     {"gray stone", GEM_CLASS, LUCKSTONE, FLINT},
     {"grey stone", GEM_CLASS, LUCKSTONE, FLINT},
 };
+/* }nointl! */
 
 #define BSTRCMP(base,ptr,string) ((ptr) < base || strcmp((ptr),string))
 #define BSTRCMPI(base,ptr,string) ((ptr) < base || strcmpi((ptr),string))
@@ -1108,13 +1112,14 @@ makesingular(const char *oldstr)
     char *str = nextobuf();
 
     if (!oldstr || !*oldstr) {
-        impossible("singular of null?");
+        impossible("S{singular of null?}");
         str[0] = 0;
         return str;
     }
     strcpy(str, oldstr);
     bp = str;
 
+    /* !nointl{ */
     while (*bp == ' ')
         bp++;
     /* find "cloves of garlic", "worthless pieces of blue glass" */
@@ -1200,6 +1205,7 @@ makesingular(const char *oldstr)
         /* here we cannot find the plural suffix */
     }
     return bp;
+    /* }nointl! */
 }
 
 /* compare user string against object name string using fuzzy matching */
@@ -1211,6 +1217,7 @@ wishymatch(const char *u_str,   /* from user, so might be variant spelling */
     /* special case: wizards can wish for traps.  The object is "beartrap" and
        the trap is "bear trap", so to let wizards wish for both we must not
        fuzzymatch. */
+    /* !nointl{ */
     if (wizard && !strcmp(o_str, "beartrap"))
         return !strncmpi(o_str, u_str, 8);
 
@@ -1262,12 +1269,15 @@ wishymatch(const char *u_str,   /* from user, so might be variant spelling */
     }
 
     return FALSE;
+    /* }nointl! */
 }
 
 /* alternate spellings; if the difference is only the presence or
    absence of spaces and/or hyphens (such as "pickaxe" vs "pick axe"
    vs "pick-axe") then there is no need for inclusion in this list;
-   likewise for ``"of" inversions'' ("boots of speed" vs "speed boots") */
+   likewise for ``"of" inversions'' ("boots of speed" vs "speed boots")
+
+   !nointl{ */
 static const struct alt_spellings {
     const char *sp;
     int ob;
@@ -1299,6 +1309,7 @@ static const struct alt_spellings {
     "eucalyptus", EUCALYPTUS_LEAF}, {
     "grapple", GRAPPLING_HOOK}, {
 NULL, 0},};
+/* }nointl! */
 
 /*
  * Return something wished for.  Specifying a null pointer for
@@ -1359,6 +1370,7 @@ readobjnam(char *bp, struct obj *no_wish, boolean from_user)
     oclass = 0;
     actualn = dn = un = 0;
 
+    /* !nointl{ */
     if (!bp)
         goto any;
     /* first, remove extra whitespace they may have typed */
@@ -1966,6 +1978,7 @@ srch:
 
     if (!oclass)
         return NULL;
+    /* }nointl! */
 any:
     if (!oclass)
         oclass = wrpsym[rn2((int)sizeof (wrpsym))];

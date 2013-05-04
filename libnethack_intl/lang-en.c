@@ -41,6 +41,8 @@ is_simple_adjective(const char *s)
     if (!strcmp(s, "keen")) return TRUE;
     if (!strcmp(s, "old")) return TRUE;
     if (!strcmp(s, "weak")) return TRUE;
+    /* NetHackism */
+    if (!strcmp(s, "dead^er")) return TRUE;
     return FALSE;
 }
 
@@ -860,13 +862,16 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         break;
     case minus_A:
         /* "not red" or "nonred"; we apply "non" only to literally negating
-           adjectives which contain no spaces */
+           adjectives which contain no spaces. For comparatives, use "no"
+           instead of "not" (e.g. "no more red") */
         force_unit(u->children[0], t, quan, p);
-        if (u->children[0]->rule != gr_literal ||
-            strchr(u->children[0]->content, ' '))
-            u->content = astrcat("not", u->children[0]->content, " ");
-        else
+        if (u->children[0]->rule == gr_literal &&
+            !strchr(u->children[0]->content, ' '))
             u->content = astrcat("non", u->children[0]->content, "");
+        else if (u->children[0]->rule == adjective_cA)
+            u->content = astrcat("no", u->children[0]->content, " ");
+        else
+            u->content = astrcat("not", u->children[0]->content, " ");
         break;
     case minus_D: /* "Not slowly" is about the best we can do in general for
                      verbs. "Not very" is perfect for adjectives. For some
@@ -932,6 +937,15 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             u->children[0]->children[2] = 0;
             u->children[0]->rule = (u->rule == clause_qC ? minus_C : minus_V);
             return force_unit(u, t, quan, p); /* tail-recurse */
+        case clause_JC:
+            /* clause is the second child of our first child */
+            u->rule = u->children[0]->rule;
+            u->children[0]->rule = minus_C;
+            u->children[1] = u->children[0];
+            u->children[0] = u->children[1]->children[0];
+            u->children[1]->children[0] = u->children[1]->children[1];
+            u->children[1]->children[1] = 0;
+            return force_unit(u, t, quan, p);
         default:
             /* can't impossible() from grammar code, and we could have a
                literal; use an unwieldy but always clear negation */

@@ -100,7 +100,7 @@ boulder_hits_pool(struct obj * otmp, int rx, int ry, boolean pushing)
                           xname(otmp), fills_up ? "V{fill}" : "V{fall into}",
                           what);
                 } else if (flags.soundok)
-                    You_hear(".", lava ?
+                    You_hear('.', lava ?
                              "N{N{i,splash},A{sizzling}}" : "N{i,splash}");
                 wake_nearto(rx, ry, 40);
             }
@@ -177,9 +177,9 @@ flooreffects(struct obj * obj, int x, int y, const char *verb)
             if (Blind && couldsee(x, y)) {
                 if (flags.soundok) {
                     if ((x == u.ux) && (y == u.uy))
-                        You_hear(".", "N{N{i,CRASH},D{E{beneath},N=%s}}", you);
+                        You_hear('.', "N{N{i,CRASH},D{E{beneath},N=%s}}", you);
                     else
-                        You_hear("!", "N{N{i,CRASH},D{nearby}}");
+                        You_hear('!', "N{N{i,CRASH},D{nearby}}");
                 }
             } else if (cansee(x, y)) {
                 char *verb = t->ttyp == TRAPDOOR ? "V{V{plug},N{i,trap door}}"
@@ -192,7 +192,7 @@ flooreffects(struct obj * obj, int x, int y, const char *verb)
                 else
                     pline("C{N{boulder},V=%s}.", verb);
             } else if (flags.soundok) {
-                You_hear("!", "N{N{i,CRASH},A{distant}}");
+                You_hear('!', "N{N{i,CRASH},A{distant}}");
             }
         }
         deltrap(lev, t);
@@ -224,7 +224,7 @@ flooreffects(struct obj * obj, int x, int y, const char *verb)
                (t->ttyp == PIT || t->ttyp == SPIKED_PIT)) {
         /* you escaped a pit and are standing on the precipice */
         if (Blind && flags.soundok)
-            You_hear(".", "N{a,N=%s,V{V{tumble},D{downwards}}}", xname(obj));
+            You_hear('.', "N{a,N=%s,V{V{tumble},D{downwards}}}", xname(obj));
         else
             pline("C{N=%s,V{V{tumble},D{e,E{into},N=%s}}}.", xname(obj),
                   the_your("N{pit}",t->madeby_u));
@@ -314,7 +314,7 @@ dosinkring(struct obj *obj)
         pline("C{N{o,static electricity},V{V{surround},N{sink}}}.");
         break;
     case RIN_CONFLICT:
-        You_hear(".",
+        You_hear('.',
                  "N{a,N{N{*,N{i,noise}},A{loud}},V{V{come from},N{drain}}}");
         break;
     case RIN_SUSTAIN_ABILITY:  /* KMH */
@@ -421,7 +421,7 @@ dosinkring(struct obj *obj)
     if (ideed)
         trycall(obj);
     else
-        You_hear(".", "N{a,N{ring},V{V{bounce down},N{drainpipe}}}");
+        You_hear('.', "N{a,N{ring},V{V{bounce down},N{drainpipe}}}");
     if (!rn2(20)) {
         pline("C{N{sink},V{+,V{back up},V{V{leave},N=%s}}}.", doname(obj));
         obj->in_use = FALSE;
@@ -1382,7 +1382,7 @@ deferred_goto(void)
 
         assign_level(&dest, &u.utolev);
         if (dfr_pre_msg)
-            pline("%s", dfr_pre_msg);
+            pline(/*nointl*/ "%s", dfr_pre_msg);
         goto_level(&dest, ! !(typmask & 1), ! !(typmask & 2), ! !(typmask & 4));
         if (typmask & 0200) {   /* remove portal */
             struct trap *t = t_at(level, u.ux, u.uy);
@@ -1393,7 +1393,7 @@ deferred_goto(void)
             }
         }
         if (dfr_post_msg)
-            pline("%s", dfr_post_msg);
+            pline(/*nointl*/ "%s", dfr_post_msg);
     }
     u.utotype = 0;      /* our caller keys off of this */
     if (dfr_pre_msg)

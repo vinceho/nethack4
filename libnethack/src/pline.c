@@ -111,7 +111,7 @@ free_youbuf(void)
  strcat((YouPrefix(pointer, prefix, text), pointer), text)
 
 void
-You_hear(const char *punct, const char *noun, ...)
+You_hear(char punct, const char *noun, ...)
 {
     va_list the_args;
     char *tmp;

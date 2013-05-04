@@ -1005,7 +1005,7 @@ rndcolor(void)
     int k = rn2(CLR_MAX);
 
     return Hallucination ? hcolor(NULL) :
-        (k == NO_COLOR) ? "colorless" : c_obj_colors[k];
+        (k == NO_COLOR) ? "A{colorless}" : c_obj_colors[k];
 }
 
 /* Aliases for road-runner nemesis

@@ -18,6 +18,7 @@ D{slowly}        An adverb
 Q{as}            A relative pronoun not being used as a noun
 S{Ouch!}         An entire sentence (usually used for interjections)
 E{above}         A preposition that isn't being used with a verb
+J{but}           A conjunction
 ?{}              An unknown noun (used as a noun)
 C{}              A clause (always made out of a combination of words)
 

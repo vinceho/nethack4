@@ -1885,10 +1885,10 @@ dozap(struct obj *obj)
     if (check_capacity(NULL))
         return 0;
 
-    if (obj && !validate_object(obj, zap_syms, "zap"))
+    if (obj && !validate_object(obj, zap_syms, /*nointl*/ "zap"))
         return 0;
     else if (!obj)
-        obj = getobj(zap_syms, "zap");
+        obj = getobj(zap_syms, /*nointl*/ "zap");
     if (!obj)
         return 0;
 
@@ -2122,8 +2122,8 @@ zapyourself(struct obj *obj, boolean ordinary)
             pline((obj->otyp ==
                    WAN_DEATH) ? "C{N{wand},V{V{V{shoot},N{N{i,beam},"
                   "A{A{harmless},D{apparently}}}},D{E{at^toward},N=%s}}}." :
-                  /* TODO: "than before"? */
-                  "You seem no deader than before.", you);
+                  "C{N=%s,V{V{seem},"
+                  "A{A{-,A{c,A{dead^er}}},D{E{than},D{before}}}}}.");
             break;
         }
         /* TODO: with/by */
@@ -3430,11 +3430,13 @@ buzz(int type, int nd, xchar sx, xchar sy, int dx, int dy)
                 mon->mstrategy &= ~STRAT_WAITMASK;
         buzzmonst:
             if (zap_hit_check(find_mac(mon), spell_type)) {
-                if (mon_reflects(mon, NULL)) {
+                if (const char *what = mon_reflects(mon)) {
                     if (cansee(mon->mx, mon->my)) {
                         hit(fltxt, mon, exclam(0));
                         shieldeff(mon->mx, mon->my);
-                        mon_reflects(mon, "But it reflects from %s %s!");
+                        /* TODO: Interjection! */
+                        pline("C{J{but},C{N=%s,V{V{reflect},"
+                              "D{E{from},N=%s}}}}!", fltxt, what);
                     }
                     dx = -dx;
                     dy = -dy;
@@ -3444,7 +3446,7 @@ buzz(int type, int nd, xchar sx, xchar sy, int dx, int dy)
 
                     if (is_rider(mon->data) && abs(type) == ZT_BREATH(ZT_DEATH)) {
                         if (canseemon(mon)) {
-                            hit(fltxt, mon, ".");
+                            hit(fltxt, mon, '.');
                             pline("C{N=%s,V{disintegrate}}.", mon_nam(mon));
                             pline("C{N{o,N{body},N=%s},V{V{reintegrate},"
                                   "D{E{before},N{o,N=%s,N=%s}}}}!",
@@ -3456,7 +3458,7 @@ buzz(int type, int nd, xchar sx, xchar sy, int dx, int dy)
                     }
                     if (mon->data == &mons[PM_DEATH] && abstype == ZT_DEATH) {
                         if (canseemon(mon)) {
-                            hit(fltxt, mon, ".");
+                            hit(fltxt, mon, '.');
                             pline("C{N=%s,V{V{absorb},N{N=%s,A{deadly}}}}!",
                                   mon_nam(mon), type == ZT_BREATH(ZT_DEATH) ?
                                     "N{blast}" : "N{ray}");
@@ -3526,7 +3528,7 @@ buzz(int type, int nd, xchar sx, xchar sy, int dx, int dy)
             }
         } else if (sx == u.ux && sy == u.uy && range >= 0) {
             nomul(0, NULL);
-            if (u.usteed && !rn2(3) && !mon_reflects(u.usteed, NULL)) {
+            if (u.usteed && !rn2(3) && !mon_reflects(u.usteed)) {
                 mon = u.usteed;
                 goto buzzmonst;
             } else if (zap_hit_check((int)u.uac, 0)) {
@@ -3534,8 +3536,9 @@ buzz(int type, int nd, xchar sx, xchar sy, int dx, int dy)
                 pline("C{N=%s,V{V{hit},N=%s}}!", fltxt, you);
                 if (Reflecting) {
                     if (!Blind) {
-                        pline("C{J{but},C{N=%s,V{V{reflect},"
-                              "D{E{from},N{o,N=%s,N=%s}}}}}!", fltxt, ureflects(), you);
+                        if (const char *what = ureflects())
+                            pline("C{J{but},C{N=%s,V{V{reflect},"
+                                  "D{E{from},N=%s}}}}!", fltxt, what);
                     } else
                         /* TODO: handle determiner "some"? */
                         pline("C{C{s,V{V{-,V{affect}},N=%s}},"
@@ -3912,7 +3915,7 @@ break_statue(struct obj *obj)
     if (Role_if(PM_ARCHEOLOGIST) && !flags.mon_moving &&
         (obj->spe & STATUE_HISTORIC)) {
         if (cansee(obj->ox, obj->oy))
-            /* TODO: relative clauses are hard */
+            /* TODO: What do do with "such"? */
             pline("You feel guilty about damaging such a historic statue.");
         adjalign(-1);
     }
