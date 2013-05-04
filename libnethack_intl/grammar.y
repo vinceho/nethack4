@@ -208,12 +208,10 @@ adverbish:
 | D TCOMMA nounish END                      { $$=mu($3, 0,0,adverb,adverb_tN); }
 | D LCOMMA nounish END                      { $$=mu($3, 0,0,adverb,adverb_lN); }
 | D ACOMMA nounish END                      { $$=mu($3, 0,0,adverb,adverb_aN); }
-| D OCOMMA nounish END                      { $$=mu($3, 0,0,adverb,adverb_oN); }
 | D DCOMMA nounish END                      { $$=mu($3, 0,0,adverb,adverb_dN); }
 | D MCOMMA nounish END                      { $$=mu($3, 0,0,adverb,adverb_mN); }
 | D ECOMMA nounish END                      { $$=mu($3, 0,0,adverb,adverb_eN); }
 | D ECOMMA prepositionish COMMA nounish END { $$=mu($3,$5,0,adverb,adverb_eEN);}
-| D ICOMMA nounish END                      { $$=mu($3, 0,0,adverb,adverb_iN); }
 | D PCOMMA verbish END                      { $$=mu($3, 0,0,adverb,adverb_pV); }
 | D relativish COMMA clausish END           { $$=mu($2,$4,0,adverb,adverb_QC); }
 | D prepositionish COMMA nounish END        { $$=mu($2,$4,0,adverb,adverb_EN); }

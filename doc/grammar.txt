@@ -230,14 +230,6 @@ D{e,E{onto},N{altar}}
 This should only be used for actual locations; the EN form should be used for
 other prepositions.
 
-i,N                                Indirect object
-D{i,N{*,N{god}}}
-"to the gods"
-
-o,N                                Accompanying sound/visual effect
-D{o,N{i,bang}}
-"with a bang"
-
 p,A                                Parenthesized adjective
 A{p,A{hot}}
 "(hot)"

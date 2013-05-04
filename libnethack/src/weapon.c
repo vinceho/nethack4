@@ -757,7 +757,7 @@ mon_wield_item(struct monst *mon)
             pline("C{N=%s,V{V{wield},N=%s}}%c", mon_nam(mon),
                   singular(obj, doname), mon->mtame ? '.' : '!');
             if (obj->cursed && obj->otyp != CORPSE) {
-                pline("C{N=%s,V{V{V{weld},N=%s},D{i,N{o,N=%s,N=%s}}}}!",
+                pline("C{N=%s,V{V{V{weld},N=%s},D{E{to},N{o,N=%s,N=%s}}}}!",
                       imprecise_xname(obj), imprecise_xname(obj),
                       mbodypart(mon, HAND), mon_nam(mon));
                 obj->bknown = 1;

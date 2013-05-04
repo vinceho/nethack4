@@ -397,7 +397,7 @@ learn(void)
             incrnknow(i);
             book->spestudied++;
             if (i > 0)
-                pline("C{N=%s,V{V{V{add},N=%s},D{i,N{o,N{repertoire},N=%s}}}}.",
+                pline("C{N=%s,V{V{V{add},N=%s},D{E{to},N{o,N{repertoire},N=%s}}}}.",
                       you, splname, you);
             else
                 pline("C{N=%s,V{V{learn},N=%s}}.", you, splname);

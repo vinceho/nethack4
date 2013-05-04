@@ -95,7 +95,8 @@ boulder_hits_pool(struct obj * otmp, int rx, int ry, boolean pushing)
         if (!fills_up || !pushing) {    /* splashing occurs */
             if (!u.uinwater) {
                 if (pushing ? !Blind : cansee(rx, ry)) {
-                    pline("C{N=%s,V{V{V=%s,N=%s},D{o,N{N{i,splash},A{loud}}}}}.",
+                    pline("C{N=%s,V{V{V=%s,N=%s},D{E{with},"
+                          "N{N{i,splash},A{loud}}}}}.",
                           xname(otmp), fills_up ? "V{fill}" : "V{fall into}",
                           what);
                 } else if (flags.soundok)
@@ -108,8 +109,8 @@ boulder_hits_pool(struct obj * otmp, int rx, int ry, boolean pushing)
                 u.uinwater = 0;
                 doredraw();
                 vision_full_recalc = 1;
-                pline("C{N=%s,V{V{V{V{find},N=%s},D{e,E{on},N{N{o,land},A{dry}}}},"
-                      "D{again}}}!", you, you);
+                pline("C{N=%s,V{V{V{V{find},N=%s},"
+                      "D{e,E{on},N{N{o,land},A{dry}}}},D{again}}}!", you, you);
             } else if (lava && distu(rx, ry) <= 2) {
                 pline("C{s,V{V{V{hit},D{t,N{N{o,lava},A{molten}}}},N=%s}}%c",
                       you, Fire_resistance ? '.' : '!');

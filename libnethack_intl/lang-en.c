@@ -1468,11 +1468,7 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         else
             u->content = astrcat("", u->children[0]->content, "with ");
         break;
-    case adverb_oN: /* "with a bright flash" */
-        force_unit(u->children[0], object, u->children[0]->quan, base);
-        u->content = astrcat("", u->children[0]->content, "with ");
-        break;
-    case adverb_lN: /* "at the door" */
+    case adverb_lN:
     case adjective_lN:
         force_unit(u->children[0], object, u->children[0]->quan, base);
         u->content = astrcat("", u->children[0]->content, "at ");
@@ -1500,10 +1496,6 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
         force_unit(u->children[1], object, u->children[1]->quan, base);
         u->content = astrcat(u->children[0]->content,
                              u->children[1]->content, " ");
-        break;
-    case adverb_iN: /* "to his mother" */
-        force_unit(u->children[0], object, u->children[0]->quan, base);
-        u->content = astrcat("", u->children[0]->content, "to ");
         break;
     case adverb_QC: /* "while the dragon sleeps" */
     case adverb_EN: /* "from hunger" */
