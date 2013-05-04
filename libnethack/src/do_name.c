@@ -351,7 +351,7 @@ do_naming(void)
         char buf[BUFSZ];
 
         sprintf(buf, "C{i,V{V{name},N{N{*,N{i,item}},"
-                "E{like},N{N=%s,A{p,A{A{broken},D{recently}}}}}}}@",
+                "D{E{like},N{N=%s,A{p,A{A{broken},D{recently}}}}}}}}@",
                 obj_typename(flags.recently_broken_otyp));
         add_menuitem(&menu, 6, buf, 'V', FALSE);
     }
@@ -429,7 +429,7 @@ do_naming(void)
         }
         n = display_menu(menu.items, menu.icount,
                          "C{q,C{i,V{V{name},N{N{*,N{i,item}},"
-                         "E{with},N{N{o,appearance},A{which}}}}}}?",
+                         "D{E{with},N{N{o,appearance},A{which}}}}}}}?",
                          PICK_ONE, PLHINT_INVENTORY, selected);
         free(menu.items);
         if (n == 1)

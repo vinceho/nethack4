@@ -137,10 +137,6 @@ N{C{n,c,V{smash}}}                 Subordinate nominal clause
 "smashing"
 This can be used to form the gerund as in this example.
 
-NEN                                Noun relative to another noun
-N{N{body},E{on},N{altar}}
-"body on the altar"
-
 n,N, n,P *,n *,P                   Noun with quantity
 N{2,N{123|dagger}}           N{*,N{rune}}
 "2 daggers", "two daggers"   "runes"

@@ -176,9 +176,9 @@ flooreffects(struct obj * obj, int x, int y, const char *verb)
             if (Blind && couldsee(x, y)) {
                 if (flags.soundok) {
                     if ((x == u.ux) && (y == u.uy))
-                        You_hear(".", "N{N{i,CRASH},E{beneath},N=%s}", you);
+                        You_hear(".", "N{N{i,CRASH},D{E{beneath},N=%s}}", you);
                     else
-                        You_hear("!", "N{N{i,CRASH},A{nearby}}");
+                        You_hear("!", "N{N{i,CRASH},D{nearby}}");
                 }
             } else if (cansee(x, y)) {
                 char *verb = t->ttyp == TRAPDOOR ? "V{V{plug},N{i,trap door}}"
@@ -797,7 +797,7 @@ dodown(void)
     if (on_level(&valley_level, &u.uz) && !u.uevent.gehennom_entered) {
         char buf[BUFSZ];
         pline("C{c,N=%s,V{V{stand},"
-              "D{l,N{N{gate},E{to^connection},P{Gehennom}}}}}.", you);
+              "D{l,N{N{gate},D{E{to^connection},P{Gehennom}}}}}}.", you);
         pline("C{N{+,N{N{o,cruelty},A{unspeakable}},N{o,harm}},"
               "V{V{lurk},D{D{there},D{down}}}}.");
         sprintf(buf, "C{q,C{N=%s,V{V{are},N{N{o,sure},A{Q{that},"

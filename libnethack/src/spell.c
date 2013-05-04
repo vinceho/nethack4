@@ -673,10 +673,10 @@ cast_protection(void)
             const char *hgolden = hcolor("A{golden}");
 
             if (u.uspellprot)
-                pline("C{N{N{N{haze},A=%s},E{around},N=%s},"
+                pline("C{N{N{N{haze},A=%s},D{E{around},N=%s}},"
                       "V{V{become},A{A{dense},D{more}}}}.", hgolden, you);
             else
-                pline("C{N{N=%s,E{around},N=%s},V{V{begin},"
+                pline("C{N{N=%s,D{E{around},N=%s}},V{V{begin},"
                       "V{V{shimmer with},N{N{i,haze},A=%s}}}}.",
                       (Underwater || Is_waterlevel(&u.uz)) ? "N{water}" :
                       u.uswallow ? mbodypart(u.ustuck, STOMACH) :
@@ -993,7 +993,8 @@ spelleffects(int spell, boolean atme)
         /* at present, only one thing blocks clairvoyance */
         else if (uarmh && uarmh->otyp == CORNUTHAUM)
             pline("C{N=%s,V{V{sense},N{N{N{i,hat},A{pointy}},"
-                  "E{on top of},N{o,N=%s,N=%s}}}}.", you, body_part(HEAD), you);
+                  "D{E{on top of},N{o,N=%s,N=%s}}}}}.", you,
+                  body_part(HEAD), you);
         break;
     case SPE_PROTECTION:
         cast_protection();

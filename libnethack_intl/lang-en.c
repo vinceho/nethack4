@@ -1049,17 +1049,6 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             }
         }
         return nounperson;
-    case noun_NEN: /* "kitten in a pit trap" */
-        nounperson = force_unit(u->children[0], t, quan, p);
-        force_unit(u->children[1], t, quan, p);
-        force_unit(u->children[2], object, u->children[2]->quan, base);
-        {
-            char *t;
-            t = astrcat(u->children[0]->content, u->children[1]->content, " ");
-            u->content = astrcat(t, u->children[2]->content, " ");
-            free(t);
-        }
-        return nounperson;
     case noun_C: /* "smashing" */
         nounperson = force_unit(u->children[0], t, quan, base);
         u->content = astrcat("",u->children[0]->content,"");
@@ -1464,8 +1453,13 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
     case adverb_DD: /* "very slowly" */
         force_unit(u->children[0], t, quan, p);
         force_unit(u->children[1], t, quan, p);
-        u->content = astrcat(u->children[1]->content,
-                             u->children[0]->content, " ");
+        if (u->children[1]->children[0] &&
+            u->children[1]->children[0]->role == gr_preposition)
+            u->content = astrcat(u->children[0]->content,
+                                 u->children[1]->content, " ");
+        else
+            u->content = astrcat(u->children[1]->content,
+                                 u->children[0]->content, " ");
         break;
     case adverb_tN: /* "with a hammer", "by water" */
         force_unit(u->children[0], object, u->children[0]->quan, base);
@@ -1564,8 +1558,8 @@ force_unit(struct grammarunit *u, enum tense t, int quan, enum person p)
             while (a->rule == plus_DD)
                 a = a->children[0];
 
-            if (a->rule == adverb_EN || a->rule == adverb_eEN ||
-                a->rule == adverb_ED)
+            if (u->children[1]->children[0] &&
+                u->children[1]->children[0]->role == gr_preposition)
                 u->content = astrcat(u->children[0]->content,
                                      u->children[1]->content, " ");
             else

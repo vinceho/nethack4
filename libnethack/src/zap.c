@@ -2506,7 +2506,7 @@ zap_updown(struct obj *obj, schar dz)
                     /* only affects things in stone */
                     pline(Hallucination ?
                           "C{N{floor},V{V{run},D{E{like},N{o,butter}}}}." :
-                          "C{N{N{*,N{edge}},E{on},N{floor}},"
+                          "C{N{N{*,N{edge}},D{E{on},N{floor}}},"
                           "V{V{get},A{smoother}}}.");
                     wipe_engr_at(level, x, y, dice(2, 4));
                 }
