@@ -27,13 +27,19 @@ main(int argc, char **argv) {
     boolean done_args = FALSE;
 
     for (char **argv2 = argv + 1; *argv2; argv2++) {
-        if (strcmp(*argv2, "-e") == 0)
-            errors_only = TRUE;
-        else if (strcmp(*argv2, "--") == 0)
+        if (strcmp(*argv2, "--") == 0)
             break;
-        else if ((*argv2)[0] == '-' && (*argv2)[1] != '\0')
-            fprintf(stderr, "Unknown option: %s", *argv2);
-       
+        if ((*argv2)[0] == '-') {
+            for (char *opt = (*argv2) + 1; *opt; ++opt) {
+                switch (*opt) {
+                case 'e':
+                    errors_only = TRUE;
+                    break;
+                default:
+                    fprintf(stderr, "Unknown option: %s", *argv2);
+                }
+            }
+        }
     }
 
     for (argv++; *argv; argv++) {
@@ -150,6 +156,9 @@ main(int argc, char **argv) {
                         printf("%s:%d: %s\n\t%s\n", *argv, linecount, str, parsed);
                     else if (strstr(parsed, "(ERROR") == parsed)
                         printf("%s:%d: %s\n", *argv, linecount, parsed);
+                    else if (!strchr(str, '{') && !strstr(str, "=%s"))
+                        printf("%s:%d: (ERROR) Ungrammartree-ized string: %s\n",
+                               *argv, linecount, str);
                     free(parsed);
                 }
                 free(str);
