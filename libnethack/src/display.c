@@ -899,12 +899,12 @@ tmpsym_initimpl(int style, int sym, int extra)
     tsym->extra = extra;
     flush_screen(); /* flush buffered glyphs */
     
-    tsym->prev = 0;
+    tsym->prev = NULL;
     if (tsym_head) {
         tsym_head->prev = tsym;
         tsym->next = tsym_head;
     } else
-        tsym->next = 0;
+        tsym->next = NULL;
     tsym_head = tsym;
     return tsym;
 }
@@ -1034,7 +1034,7 @@ tmpsym_at(struct tmp_sym *tsym, int x, int y)
  * Free all still-extant tmp_sym data structures. Used for when the game ends
  * while temporary symbols are still active.
  */
-void tmpsym_freeall()
+void tmpsym_freeall(void)
 {
     struct tmp_sym *tsym;
     while (tsym_head) {
