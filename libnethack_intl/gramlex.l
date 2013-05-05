@@ -78,7 +78,6 @@ L2  [^{},=\x1c]
 "%c" |
 "..."         { yylval->s = malloc(yyleng+1); strcpy(yylval->s, yytext);
                 return PUNCTUATION; }
-"@"           { yylval->s = malloc(1); *(yylval->s) = 0; return PUNCTUATION; }
 {LIT}{L2}*/[^{=]  { yylval->s = malloc(yyleng+1); strcpy(yylval->s, yytext);
                       return LITERAL; }
 "%d" |
