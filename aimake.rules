@@ -108,6 +108,12 @@ $tilecompile_copyright = "(c) Alex Smith 2014, Andrew Apted 2002, Slash'EM Devel
             depends => 'optstring:-D_DARWIN_C_SOURCE',
             on_failure => 'conditional'
         },
+        _sokogen_headers_are_c11 => {
+            # This is something of an awful hack.
+            # We really need a way to add depedencies on to specific rules.
+            object => qr=^dependencies:headerstub_dependencies:b?path:sokogen/.*\.h$=,
+            depends => 'optionset:c11_option',
+        },
         _cflags => {
             object => 'optionset:CFLAGS',
             depends => [
