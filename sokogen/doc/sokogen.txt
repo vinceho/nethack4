@@ -1,0 +1,877 @@
+About this document:
+Last modified by Alex Smith, 2014-04-02
+
+Copyright (C) 2014 Alex Smith.
+
+This document is licensed under the NetHack General Public License.  See
+libnethack/dat/license for details.
+
+
+
+This document describes the Sokoban puzzle generator used by NetHack
+4.
+
+
+Rules of NetHack Sokoban
+========================
+
+Sokoban is a puzzle game, which can exist standalone (e.g. via a Sokoban
+player such as `xsok`), but whose simple rules mean that it can often be
+embedded into the engine of other games; as such, it can appear in games as
+different as Enigma and Pokémon, and, of course, NetHack.
+
+The original rules of Sokoban appear to have been designed by "Thinking
+Rabbit", and are as follows:
+
+  * The game is played on a grid of square tiles.  There are the following
+    possibilities for what can be on each tile (two of which are combinations
+    of other posibilities; the five that are not each have an identifying
+    ASCII character used by NetHack to show them):
+
+      * `-` or `|` wall;
+      * `.` floor;
+      * `0` crate;
+      * `^` target;
+      * `@` player;
+      * crate on target;
+      * player on target.
+
+    There is always exactly one player, and traditionally, the number of
+    crates equals the number of targets.  Floor and targets are open space;
+    everything else is solid.
+
+  * Two tiles count as "adjacent" if they touch along an entire edge (touching
+    at a corner is not enough).
+
+  * The player has two sorts of move available:
+
+      * The player can move into an adjacent open space.  This changes their
+        old square from "player" or "player on target" to "floor" or "target"
+        respectively; and their new square from "floor" or "target" to
+        "player" or "player on target" respectively;
+
+      * The player can push an adjacent crate, if there is open space beyond
+        it.  (For instance, if there is a crate to the right of the player,
+        there must be open space to the right of the crate.)  The crate moves
+        away from its current location (changing it from "crate" or "crate on
+        target" to "floor" or "target" respectively), and into the open space
+        beyond it (changing it from "floor" or "target" to "crate" or "crate
+        on target" respectively).
+
+  * In order to win the game, the player must bring about a situation in which
+    every target has a crate on it.
+
+Although relatively simple, there is a surprising amount of depth in the game.
+In terms of mathematical complexity, it has been proven to be PSPACE-complete,
+which is the highest complexity typically seen among board games; and even in
+practice, it is possible to create a large collection of Sokoban puzzles where
+no two rely on the same principle.
+
+However, the rules often get distorted when fit into the engine of another
+game.  The version in NetHack has many restrictions to attempt to force the
+player to obey the rules of Sokoban, but there is one large difference:
+
+  * "player on target" and "crate on target" statuses do not exist.  Instead,
+    if a crate is pushed onto a target, the two cancel out and become floor.
+    The goal of the game is to move the player to a particular floor tile
+    (which in the levels provided with NetHack, require destroying all the
+    targets); this is marked with a `<` on the maps drawn.
+
+In the Sokoban levels provided with NetHack, the targets are always drawn in a
+pattern where this distinction does not matter.  For instance, here is the
+first level in the description file (`4-1` internally):
+
+    ------  -----
+    |....|  |...|
+    |.0..----.0.|
+    |.0......0..|
+    |..|-|@|-|0.|
+    ---------|.---
+    |..^^^<|.....|
+    |..----|0....|
+    --^|   |.0...|
+     |^|---|.0...|
+     |..^^^^0.0..|
+     |..|---------
+     ----
+
+Under the official Sokoban rules, this puzzle is solved by pushing crates onto
+the furthest target first, with the last target to be filled being the one
+nearest the starting point; the most distant targets have to be filled first
+because once there is a crate on them, they block the movement of other crates
+(in addition to the player).  Under NetHack rules, the targets are filled in
+the opposite direction, because they start impassable but become passable when
+filled; the solution is still effectively identical, though, just with the
+final sequence reversed.
+
+It should also be noted that there are more crates than targets here, a
+pattern that continues throughout the other NetHack puzzles.  This is to allow
+the player some chance to recover from mistakes.
+
+The two rulesets are not equivalent, though.  Here's a puzzle possible under
+official rules, but impossible to fill every target under NetHack rules:
+
+    -------
+    |@^.0.|
+    ---...|
+      -----
+
+and here's a puzzle where it's possible to fill every target and reach the
+goal under NetHack rules, but not to fill every target under the official
+rules:
+
+    --------
+    |@0^0^<|
+    --------
+
+It should also be noted that NetHack places several restrictions on its game
+mechanics in order to constrain the rules to resemble Sokoban.  It uses
+boulders to represent crates, and holes to represent targets; but these
+NetHack objects don't have exactly the same properties as the Sokoban objects
+they represent.  The most major difference is that in regular NetHack game
+mechanics, diagonal movement is possible (both for pushing boulders, and for
+moving around without pushing).  It also has several restrictions to prevent
+sequence breaking: normally walls and boulders can be destroyed (and boulders
+can be created), holes can be levitated over, and the player might be able to
+teleport, but all that is prevented while in a Sokoban puzzle.
+
+It is thus interesting to consider what a puzzle would be like if it obeyed
+the rules of NetHack's boulders and holes, rather than attempting to restrict
+itself to the official rules of Sokoban (that aren't followed anyway).  In
+terms of the sequence breaking restrictions, it is probably best just to not
+worry about them, unless the sequence break is *very* easy; NetHack is a game
+about resourcefulness, and if players want to skip a puzzle via using their
+items, that seems like a reasonable course of action.  There are probably only
+three sequence breaks that seem easy enough to warrant blocking, each of which
+skips the entire level at a minimal item cost:
+
+  * Digging to the goal square, ignoring the entire puzzle.  This requires
+    only a pick-axe (which the player is likely to have by that point), and
+    the pick-axe isn't even consumed in the process.  Luckily, nondiggable
+    walls are a concept that exists elsewhere in NetHack, and so making the
+    walls in Sokoban nondiggable is not paticularly jarring.
+
+  * Teleporting to the goal square, again ignoring the entire puzzle.
+    (Teleporting *within* the puzzle is not a large enough issue to worry
+    about.)  Again, this a problem whose solution already exists in NetHack;
+    levels have teleport regions, and teleportation is constrained to only be
+    allowed within a single region (not from one region into another).  This
+    can thus be solved via placing a teleport region around the area beyond
+    the last hole.
+
+  * Levitating to the goal square, ignoring most of the puzzle (the boulders
+    still need to be moved out of the way, but not placed anywhere in
+    particular).  This is best solved via clever puzzle design; it is
+    impossible to push boulders while levitating, so you can simply design the
+    goal area something like this:
+
+        -------
+        ^^^0^<|
+        -------
+
+    This doesn't help against a player who can levitate *and* destroy boulders
+    (while writing this, I discovered that at least in NetHack 3.4.3, it's
+    possible to break boulders with a pick-axe while levitating; perhaps it
+    would be a good idea to change that, because it doesn't make much sense,
+    although balance issues outside Sokoban would need consideration).
+
+The biggest change, of course, is being able to move diagonally.  This turns
+out to only expand the number of puzzles available, because for each puzzle
+that works with orthogonal movement, there is an equivalent puzzle for
+diagonal movement:
+
+       ----     ---
+       |..|    --@-- ---
+    ----0.--   |.-.---.--
+    |@..0^^|   --.-.-0-.|
+    |...--<|    --.-0-.--
+    --------     ----^--
+                    --^|
+                    |<--
+                    ---
+
+The puzzle on the left is designed for orthogoal movement; the puzzle on the
+right can be seen to be the same, just rotated 45 degrees, and with a wall in
+every other position, checkerboard-style; this forces *only* diagonal movement
+to be possible, which is equivalent to only orthogonal movement being
+possible.
+
+However, this method of making puzzles seems unsatisfactory.  For one thing,
+they look ugly (and hard to follow by looking at them); for another, while
+diagonal chokepoints can be passed in NetHack, they can only be passed if the
+player drops most of their inventory, which leads to tedious gameplay.
+
+In this document, we consider three Sokoban variants:
+
+  * Official Sokoban, although mostly as a comparison;
+
+  * NetHack-rules Sokoban with orthogonal movement;
+
+  * NetHack-rules Sokoban with diagonal movement, although (because of the
+    ugliness mentioned above) only considering maps where there are no
+    diagonal chokepoints (i.e. if two walls touch diagonally, at least one of
+    the two squares adjacent to both of them must also be a wall).
+
+
+Evolutionary Design (and why we don't use it)
+=============================================
+
+One set of techniques for generating puzzles on a computer is to randomly
+generate them, and then refine them to make them more difficult; the result is
+a (hopefully) maximally difficult puzzle given certain constraints, but often
+looks unlike anything a human would produce.
+
+For example, this is the puzzle produced by the Sokoban generator [SokEvo][1]
+when given a 7 by 7 area to work with, and a NetHack-style goal area (this
+puzzle is not actually maximally difficult given these constraints, but it's
+the hardest one it found on my first test run):
+
+    -----
+    |...----
+    |...|..--
+    --..|.0.-----
+     |..|...^^^<|
+     |..|0..-----
+     |.@0..--
+     |..|..|
+     -------
+
+This puzzle might not look that familiar to NetHack players, but there's
+actually a Sokoban puzzle in NetHack that uses the same principle: the "bag of
+holding level".  The reason it looks different from what is expected is that
+the crates have been moved to maximally difficult locations to start with;
+there are several forced moves at the start, making for a kind of separate
+puzzle of "how do I even get to the place where the puzzle starts working?"
+After several moves, the crates end up here, which should be a little more
+familiar:
+
+    -----
+    |...----
+    |...|..--
+    --..|0..-----
+     |..|...^^^<|
+     |0.|0..-----
+     |@....--
+     |..|..|
+     -------
+
+For several of the walls, their entire purpose is simply to ensure that the
+player moves the crates to these positions before they can start the actual
+puzzle (there is no solution to the puzzle that does not leave the crates
+arranged like this at some point).  This sort of adjustment to the start of a
+level is not necessarily bad, but it is characteristic of machine-generated
+puzzles, which cannot distinguish between the "prelude" to a level and the
+main idea of the level itself.  I also don't know how to make these
+adjustments, except via brute force.
+
+More glaringly, this puzzle is somewhat "wasteful".  Here's the same puzzle
+from above, followed by another two puzzles that use the same principle (also
+generated by SokEvo, after I gave it various hints on what sort of thing I was
+looking for, then looked through its output manually for the puzzles I
+expected to be there):
+
+    -----
+    |...----        --------            ----
+    |...|..--       |...|..--       ----|..--
+    --..|.0.-----   |...|.0.-----   |..-|.0.-----
+     |..|...^^^<|   --..|...^^^<|   |...|...^^^<|
+     |..|0..-----    |..|0..-----   |...|0..-----
+     |.@0..--        |.@0..--       --.@0..--
+     |..|..|         |..|..|         |..|..|
+     -------         -------         -------
+
+These three puzzles are all basically the same in principle, and have
+effectively the same solution.  However, in the first puzzle – the one
+favoured by SokEvo, because it has the longest solution – there is extra space
+in the leftmost chamber, sufficient to store one more crate (I get into more
+detail on crate storage later).  This is because I'm so used to human-crafted
+puzzles that I assumed that if I was being given extra space for crate
+storage, it would be because it was needed!  As the second puzzle shows, the
+space is not actually required for the puzzle to be solvable; after the
+mandatory initial moves, only two crates need to be active at any one time
+(the third crate, in the top-right, moves one space to the left during the
+initial moves and then never needs to be touched again until the other two
+crates are already in the goal area).  The third diagram shows an even smaller
+area in which effectively the same puzzle is solvable.
+
+In my opinion, the third puzzle here is the best, and the second is almost as
+good; the first is substantially worse, because of the wastefulness.  However,
+it is very hard for a computer to make this decision without having some
+concept of how a puzzle is solved in practice; a difficult puzzle requires
+more reorganization of boxes (thus more pushes), and has less space to work
+with (thus fewer pushes).
+
+Despite this issue, a puzzle generator that produces the same sort of puzzles
+that SokEvo does would be typically entirely appropriate for NetHack; people
+tend to be forgiving of weirdness in procedurally generated content.  There is
+one huge reason why evolution-based puzzle setters are inappropriate, though:
+the above puzzles took several minutes to design, running at 100% CPU power,
+which is simply unacceptable for level generation.  (It might be possible to
+make it work by generating Sokoban levels in a background thread while the
+rest of the game is being played, but that adds a huge amount of extra
+complexity.)
+
+
+Sokoban Strategy
+================
+
+The alternative, then, is to have a puzzle generator that has some sort of
+idea about how players will typically solve the puzzle; with this knowledge,
+the puzzle generator can first decide upon a skeleton for the solution, then
+work backwards to a puzzle from there.
+
+Thus, the next step is to describe how I solve Sokoban puzzles, in the hope
+that I'm reasonably typical among humans in terms of how the puzzles are
+solved.  (I'm not sure how good I am at Sokoban generally; I have solved
+hundreds of human-designed puzzles outside NetHack, though, and I'm one of the
+very few players who solves the bag of holding level without trapping
+boulders, so I assume I'm pretty good relative to other NetHack players, but
+probably not very good relative to serious Sokoban players.)
+
+
+Chambers
+--------
+
+Trying to solve a large Sokoban level as a whole can be very difficult, so it
+makes sense, if possible, to break it into pieces.  (This principle is also
+important for a puzzle creator; due to the exponential nature of brute-force
+Sokoban solving, it is much faster to create two half-sized puzzles and
+combine them, than it would be to create the combined puzzle directly.  Being
+able to create the puzzle a piece at a time means that a library of pieces can
+be built, and then combined together to make a range of different puzzles.)
+
+The most sensible way to divide up a Sokoban puzzle is into "chambers"; walled
+areas with only one-tile-wide gaps in their walls to separate them.  Although
+this does not work on all puzzles (e.g. it gives a major simplification on
+five out of the eight that come with NetHack, but is only mildly helpful on
+the other three), it does tend to greatly help on the puzzle where it works,
+and the majority of Sokoban puzzles I've seen divide into at least two
+chambers (for small puzzles, normally they'll have one for the targets and one
+or more that hold the crates initially; it should thus be no surprise that
+some of the hardest puzzles start with targets and crates all mixed together).
+
+We formalize separation into chambers like this: two areas are separate
+chambers if it would be possible to separate them by a one-square-wide
+straight corridor while preserving a one-to-one mapping between solutions to
+the old puzzle and the new puzzle.  (This applies even if it is impossible for
+the corridors to be straight in practice; at least in variants of Sokoban
+where diagonal moves are illegal, it is possible to bend a corridor while
+having it mathematically equivalent to a straight corridor, at least if the
+player is unwilling to get crates permanently trapped in it.)
+
+Here's the SokEvo-designed puzzle from earlier, this time split into chambers:
+
+    -----
+    |...|     ----
+    |...|     |..--
+    --..|     |.0.|     -----
+     |..|     |....#####^^^<|
+     |..|     |0..|     -----
+     |.@.#####0..--
+     |..|     |..|
+     ----     ----
+
+This diagram uses `#` symbols to represent the connections between chambers,
+based on the way that corridors are drawn in NetHack.  (You could also place
+each of the targets in separate chambers, but that would not really be an
+improvement.)
+
+The reason that this is so useful is that it allows a puzzle to be broken down
+into a high-level description of the solution, together with specific
+strategies for each chamber.  Here's the high-level solution to the above
+puzzle:
+
+  * Push two crates from the central chamber into the left chamber;
+
+  * Push two crates from the left chamber through the central chamber into the
+    right chamber;
+
+  * Push the third crate from the central chamber into the left chamber;
+
+  * Push the third crate from the left chaber through the central chamber into
+    the right chamber.
+
+This high-level solution can be calculated without knowing the details of all
+the chambers, from the following high-level descriptions of them:
+
+  * Left chamber: connects only to the central chamber; so long as there are
+    fewer than 3 crates currently in the chamber, can accept a crate from the
+    central chamber without locking up the puzzle; crates can be removed at
+    any time; starts with no crates.
+
+  * Central chamber: connects to the left and right chambers; has two areas in
+    which crates might be, the left wall and the common area; starts (after
+    the mandatory prelude) with the player and three crates on the left wall;
+    can accept crates from the left chamber so long as it contains at most 2
+    crates and at most 1 on the left wall; blocks the player if it contains 3
+    crates (but not if it contains fewer crates); crates on the left wall can
+    only leave to the left chamber; crates in the common area can move to
+    either chamber (or the left wall).
+
+  * Right chamber: connects to the central chamber; contains targets, requires
+    3 crates to complete the level.
+
+In other words, solving Sokoban can be seen as a problem of calculating
+descriptions (and solutions matching them) for each chamber, then working out
+a combined strategy that matches those descriptions.  In the case where the
+problem does not divide neatly into chambers, the former step is equivalent to
+solving Sokoban itself, and the latter step trivial; but it gives a large gain
+when the problem collapses to separate chambers, each of which are simple.
+
+When *creating* a Sokoban problem, this process works in reverse; first we
+choose behaviours we want our chambers to have, then find appropriate chambers
+with those properties (probably from a library of chambers).  This has a large
+advantage over solving: a Sokoban solver should theoretically be fully general
+(or it isn't really a solver), meaning that it has to be able to handle
+arbitrary complex chambers (including the entire level, in the worst case),
+but for a Sokoban puzzle generator, it is acceptable to restrict ourselves to
+chambers simple enough for the puzzle generator to handle.
+
+
+Chambers with one connection
+----------------------------
+
+The problem of Sokoban creation, then, boils down to what sort of descriptions
+are available for chambers.  The simplest of all chamber types that can
+usefully be combined into a larger puzzle is a chamber with one connection.
+
+For a full description of how such a chamber behaves, we'd need a list of all
+possible sequences of crate and player motions into and out of the chamber; I
+would be surprised if it were impossible to design a chamber whose behaviour
+was "for the first four crates inserted into the chamber, at least two crates
+must be removed between each insertion", at least in official Sokoban (with
+the chamber containing targets).  However, in practice, most chambers have
+rather simpler behaviour than this.
+
+There are three commonly seen types of one-connection chamber:
+
+  * A *feed chamber* starts packed with crates; except in very easy puzzles, a
+    feed chamber is normally packed so tightly that it would be impossible to
+    fit any more crates in, and typically designed without regard to what
+    happens when crates are inserted (doing so may well be impossible or
+    uninteresting).  This is because there's never any reason to put crates
+    back into a feed chamber; it was packed to start with (frequently more
+    tightly than the number of crates that would fit in a storage chamber of
+    the same shape), and instead of removing and reinserting crates, you could
+    just leave them in their original locations.  (Occasionally, a level will
+    require pushing a crate into a feed chamber as part of its prelude, but
+    level preludes don't follow the normal rules of Sokoban anyway.)
+
+  * A *storage chamber* typically starts empty, or well below capacity,
+    because the main difficulty in most Sokoban puzzles (say, over 80% of the
+    ones I've played) is to work out how to store crates in a chamber, and
+    showing the chamber at full capacity in advance would be a spoiler. The
+    purpose of a storage chamber is to serve as somewhere to put crates to
+    free up space in other chambers (in official Sokoban, most commonly a goal
+    lock, although puzzles can find plenty of other reasons to use them too).
+
+  * A *goal chamber* also typically starts empty, and contains targets
+    (usually, it is the only chamber that contains targets).  In easy Sokoban
+    puzzles, this is just the opposite of a feed chamber, giving somewhere to
+    navigate the crates to.  In more difficult Sokoban puzzles, if the goal
+    chamber has one connection, it tends to be a storage puzzle.
+
+There is a simple symmetry between these chamber types; a feed chamber cares
+only about removing crates; a storage chamber about both inserting and
+removing crates; a goal chamber only about inserting.
+
+
+Goal chambers vary a lot between rulesets; it is easy to make an interesting
+goal chamber under official rules, but much harder (and perhaps impossible)
+under NetHack rules.  Here's a (relatively easy) goal chamber design as an
+example:
+
+        -----
+        |^..|
+    ####....|
+        --.^|
+         ----
+
+Under orthogonal NetHack rules, there is only one place to place the first
+crate (in the bottom-right corner), and then the second crate can be placed in
+the top-left, walking over the now-plugged target in the bottom right.  This
+is straightforward, and uninteresting in the sense that all the moves are
+forced (which tends not to do much for a puzzle's difficulty), but still more
+interesting than any goal chamber in NetHack 3.4.3.  (The reason for this,
+incidentally, is that NetHack's orthogonals enforcer does not ban moving
+diagonally between a boulder and hole, or a hole and a wall, so this
+arrangement would not work with the current game engine.)
+
+Under official rules, this chamber is more interesting; the first crate can be
+placed on either target, but if it is placed on the bottom-right target (the
+more obvious one to reach), the top-left target becomes inaccessible (because
+any further crates can only slide along the bottom wall, a "wall lock"; a
+one-square-wide dead end does not allow a player into it while a crate covers
+the entrance).
+
+
+For storage chambers, the most important value is their *capacity*: the number
+of crates that can be placed into them, and then removed again.  It is unclear
+whether this sort of simple description is enough to describe the storage
+behaviour of all possible 1-connection chambers.  At the least, a storage
+chamber has a well-defined capacity if it's always possible to insert crates
+while it's below capacity (assuming that they were inserted "correctly" in the
+first place), and always possible to remove correctly inserted crates while
+there are any there. A storage chamber can be drawn at maximum capacity to
+give a strong spoiler on how it functions; removing any subset of the crates
+gives a correct arrangement for some lower capacity.
+
+
+Here's a simple example of a storage chamber with capacity 2 (i.e. that can
+store two crates):
+
+        -------
+    ####..0.0.|
+        |.....|
+        -------
+
+Experienced Sokoban players will be aware that there is no way to fit three
+crates into such a chamber without trapping at least one of them (in fact, I
+believe it would require trapping at least two of them). It is also possible
+to remove either of the crates; the left crate can be removed directly, the
+right crate via first removing the left crate, and then pushing the right
+crate onto its former location.  The reverse operations can be used to
+re-insert the crates (this does not work for all chambers, but does work for
+this particular chamber).
+
+
+Feed chambers are probably the simplest sort of chambers to design; their
+difficulty comes entirely from one dimension, which is how difficult it is to
+work out how to remove the crates (compared to official-rules goal chambers,
+where the difficulty is "which order do I fill targets and/or store crates
+in", and storage chambers, where the difficulty is "where do I put the crates
+to be able to remove them again, and do I have to do anything special in
+between?").  Normally, when I'm solving a Sokoban problem with a feed chamber,
+it only takes around 10-20% of the time for solving the problem (except in
+puzzles that have a particularly hard feed chamber and that just connect it to
+an easy goal chamber to compensate).  The easier Sokoban puzzles in NetHack
+3.4.3 consist almost entirely of feed and woefully under-capacity directed
+chambers, which is the reason *why* they're easy.
+
+One thing to note when designing a feed chamber is that you can (and typically
+should) pack them well beyond their normal limits, using tricks like placing
+crates in unreachable positions, starting the player in a position they
+couldn't get to with the current crate arangement, and the like.  Here's an
+example:
+
+    -------    -------    -------
+    |@....|    |.....|    |.....|
+    |.000.|    |.00..|    |.^.^.|
+    |.0.0.|    |...0.|    |.....|
+    ---.---    ---.---    ---.---
+       #          #          #
+       #          #          #
+       #          #          #
+
+When used as a feed chamber, this simple 3x5 chamber fits five crates, using
+the patern shown on the left (four if the player starts outside the chamber).
+As a storage chamber, it fits only three (the simplest such pattern is shown
+in the middle); the reason is that under official rules, the goal chamber
+shown on the right is unsolvable, and there are only three other spaces
+available for crates plus the space at the entrance (which blocks the player
+from entering), so the capacity of the chamber is 3.
+
+
+The difficulty of a Sokoban puzzle normally comes mostly from the storage part
+of the puzzle (whether that's a storage chamber, or some other storage puzzle,
+typically in the goal chamber or as part of a particularly complex lock).  To
+give an idea of this, most of the examples above took me effectively no time
+to think about; I immediately knew that the 3x5 chamber above could feed five
+crates, for instance.  However, working out how many crates could be stored in
+the same chamber took a couple of minutes of thought, which is quite a lot of
+thought for a chamber that small.  (In an actual puzzle, it's normally easier;
+you normally know a chamber can store three crates because you're given three
+crates to store in it.  Such spoilers can be avoided by using multiple storage
+chambers, thus giving the player an idea only of the total number of crates to
+be stored, but this technique is rare.  More commonly, a puzzle will be
+designed so that it looks like a crate must be stored, but it isn't.)
+
+
+Locked squares
+--------------
+
+When trying to solve a Sokoban puzzle, one of the most important shortcuts is
+to know which squares are *locked*; these are squares on which, if a crate is
+placed, it will never be able to reach the goal.  (I draw locked squares with
+an `8`, one of the few characters not used for anything in NetHack.)  The most
+familiar lock is a *corner lock*:
+
+    ----
+    |88|
+    |8..####
+    ----
+
+The above chamber is not very interesting, because it is mostly made of
+corners; it can feed one crate, and has a capacity of 0.  The problem is that
+if any crate is placed in a corner, there will be nowhere to push it from, so
+the crate is stuck there forever.  In Sokoban implementations that provide any
+help to the user at all, preventing crates being pushed into corners is one of
+the first aids they provide, and often the only such aid.
+
+A corner lock can be generalized into a *wall lock*:
+
+    ------
+    |8888----
+    |8.....8|
+    |8......####
+    ---------
+
+Several locked squares here are not in corners, but nonetheless obviously
+locked; the problem is that crates in those positions can only be pushed along
+the wall, never away from it, and so are stuck almost as badly as if they were
+in a corner.  Not all walls lock their adjacent squares; the right part of the
+top wall in this example does not because it has a backwards corner (allowing
+crates to be pushed to the left and then downwards away from the wall), and
+the bottom wall does not because crates being pushed along it can nonetheless
+be pushed out of the entrance (which likely has an backwards corner somewhere
+in the next chamber).
+
+A corner lock can be generalized a different way into a *chokepoint lock*:
+
+    -------
+    |88|88|
+    |88...|
+    |-8.@.|
+    |88...|
+    |88|8..####
+    -------
+
+Despite two of the squares in the second column not even being adjacent to
+walls, the entire column is locked!  To see why, consider what would happen if
+a crate were on the locked square in the top-left, a knight's-move away from
+the player; although it has pushes (to the right, or downwards) to unlocked
+squares, the player would have to somehow get behind it to push it there, and
+it's blocking the way to the areas behind it.  Thus, if a crate is pushed from
+that square, it can only be to a corner-locked square.  The square two spaces
+west of the player ends up wall-locked as a result; although there are outside
+corners on that (very short) wall, they cannot be used to rescue the crate due
+to being chokepoint locked.
+
+One other sort of lock to watch out for, which is normally not noticed by
+humans due to being so obvious, but needs to be explicitly explained to a
+computer:
+
+    ---------
+    |8888888|
+    |8888888|--
+    |8888888|88####
+    |888888888|
+    -----------
+
+This chamber is pretty spacious, but the whole area is locked because there's
+obviously no way to get a crate through the entrance.  I call this a
+*connectivity lock*.
+
+Knowing about these locking patterns can save a huge amount of effort for both
+humans and computers in solving and designing Sokoban problems.  You can break
+a problem down into smaller and smaller pieces, but it is eventually going to
+come down to brute force; and brute force is exponentially faster the smaller
+an area it has to deal with.  If a locked square does not contain a target, it
+is never going to be part of a solution that rescues all the crates, full
+stop; thus there is no need to even consider placing a crate there.  Given
+that a typical Sokoban chamber is over half locked, this can cause speedups of
+orders of magnitude in analysing them, for solving or for setting.
+
+
+Crate locks
+-----------
+
+Instead of being locked by the shape of a chamber, crates can be locked by
+other crates instead:
+
+             ----
+    ----------88|
+    |8.0..00....|
+    |800........|
+    |--.........|
+    |80.....00..|
+    |8.0...0.0...####
+    -------------
+
+None of the crates at the top are in inherently locked positions, but
+nonetheless, none of them can move; they're all blocking each other's
+movement, *crate locked*.  The crates at the bottom can all potentially be
+moved at some point in the future, but although none is in an inherently
+locked position, it will be impossible to rescue the entirety of either of the
+two groups, because the only way to rescue any of the crates is by pushing
+another to a position that will corner-lock or crate-lock another's movement.
+Knowledge of common crate-lock patterns is a quick way to reject solutions to
+Sokoban puzzles that will never work.
+
+
+The principle of locking is very important in puzzle design for another
+reason.  Because squares can become crate-locked during the solution of a
+puzzle, a puzzle designer can create a pattern that forces the player to lock
+a square at a particular point in the solution.  Storage chambers are the main
+interest and difficulty in many Sokoban puzzles, so it would be reasonable to
+wonder "why not just skip the storage chamber and push the crates directly
+from feed to goal?".  Forcing the player to lock out the feed chamber before
+they can access the goal chamber is the standard way to deal with this
+problem.  In official rules, the most common pattern is a *goal lock*:
+
+         -----------
+         |8^^^^^^.8|
+        --.------.8|
+    ####..x------.--
+        |8..........####
+        ---------88|
+                ----
+
+This is just an example (there are numerous other goal lock patterns, most a
+little more subtle than this particularly blatant one).  Imagine a feed
+chamber on the left, and a storage chamber on the right.  So long as no crates
+are pushed up onto the targets, it's possible to move crates from the feed
+chamber into the storage chamber.  Even if there are crates on the targets,
+it's possible to move crates from the storage chamber onto the targets (so
+long as the targets are filled from left to right).  However, if any of the
+targets are filled with crates, the point "x" shown above effectively becomes
+corner-locked, as it is impossible to access it from above with crates
+blocking the corridor.  The end result is a pattern that *forces* the player
+to store all the crates required for the targets (in this case, six of them),
+before pushing any onto the target; this pattern could well be imagined to be
+part of a "work out how store 6 crates in such and such a chamber" puzzle.
+
+Goal locks are seen in both two- and three-connection form, as well as a
+one-connection chamber that's a hybrid of a goal-lock and storage chamber
+(which is the standard way to make a difficult puzzle in a small space).
+
+The presence of goal locks is the feature that really distinguishes
+official-rules Sokoban from the variants. For NetHack-rules Sokoban, if there
+are two possible targets on which a crate could be placed, the only reason why
+you would pick one over another is if it gives access to a section of the
+level that is not currently accessible to the player; and moving a crate to
+the target it will eventually fill is *never* a bad idea if it can be done
+without disturbing any other crates.  The result is that puzzle design for
+NetHack-rules Sokoban is relatively unexplored, and that puzzles tend to be
+much easier; losing the goal lock is a huge blow to a puzzle designer (or a
+puzzle design program), because there's no longer any simple and general way
+to just say "go use that storage chamber".
+
+
+Chambers with two connections
+-----------------------------
+
+So if you can't trivially goal-lock your puzzle into stages and force your
+lovingly designed and fiendishly difficult storage chambers to actually be
+used, what is a NetHack-rules Sokoban puzzle designer to do?
+
+The simplest method is to use a chamber which blocks the movement of crates
+until after a crate has already been pushed out.  Here's such a *directed
+chamber*:
+
+        ----
+        |88|
+        |0..####
+    ####...|
+        |88|
+        ----
+
+Although the player fits through here just fine, there's no way to add another
+crate to this chamber without crate-locking yourself.  This thus acts a little
+like a feed chamber that feeds one crate to the left.  However, once that
+crate has been fed, the chamber stars acting more like a corridor, allowing
+crates to pass just fine.  If we connect a storage chamber to the left, the
+player will be forced to store one crate in it.  It's a start, at least.
+
+One nice property of directed chambers is that they chain.  With the simple
+directed chamber above, for instance, we can connect three of them compactly
+like this:
+
+        ----------
+        |88|88|88|
+        |0....|0..####
+    ####...|0....|
+        |88|88|88|
+        ----------
+
+Now a player needs to store three crates in the storage chamber over the left;
+a crate over the left of the region its in can only move left, and a crate
+over the right can only move right, so if any crates are returned to the
+directed chambers before all are clear, a solution would require somehow
+swapping the chambers in which two of the crates resided, which is impossible
+given the limited space.
+
+The storage chambers that typically appear in puzzles can mostly be described
+by a single number – their capacity – but directed chambers are not so simple
+to describe.  Consider the central chamber from SokEvo's puzzle from earlier,
+after the prelude:
+
+        ----          ----          ----
+        |..--         |..--         |..--
+        |.0.|         |.0.|         |0..|
+        |.0..####     |.0..####     |.0..####
+        |0..|         |...|         |...|
+   #####...--     ####..0--     ####..0--
+        |..|          |..|          |..|
+        ----          ----          ----
+
+Considering only patterns that do not block the player (to avoid the issue of
+which side the player starts on), we have the following patterns:
+
+  * leftward 3
+  * rightward 1, either 2
+  * leftward 1, rightward 1, either 1
+
+This is not so bad as a description by itself, but care is needed.  Consider
+the following two states:
+
+        ----          ----
+        |..--         |..--
+        |.0.|         |0..|
+        |....####     |.0..####
+        |0..|         |...|
+   #####...--     ####...--
+        |..|          |..|
+        ----          ----
+
+Both of these states are describable as "leftward 1, either 1", and if the
+player can arrive at the area without taking a crate with them, they can
+convert one to the other.  The first of these states becomes leftward 3 if a
+crate is inserted from the left; the second becomes leftward 1, rightward 1,
+either 1.  Thus the effect of inserting a crate depends on what the player did
+last time they were in the area.  Trying to handle this adds extra complexity
+to the description.
+
+Worse, the description does not handle the *order* in which crates must be
+removed; in the "rightward 1, either 2" pattern above, the first crate removed
+must be a rightward one.  (This matters if, for instance, whatever is
+connected to the right needs to have crates removed from it before it allows
+inserting crates from the left; that would make the puzzle unsolvable in that
+particular case, even though nothing indicates it in the descriptions.)
+
+There is, however, something of a shortcut that can help a lot when designing
+puzzles.  So long as we're dealing with a tree structure for our chambers,
+with no chambers connecting round in a loop, we can start at the branches of
+the tree and work inwards.  The original chamber above has a very simple
+description if we know it's connected to a storage chamber on the left:
+
+  * Connecting to an storage chamber on the left with remaining capacity 2 or
+    more produces a storage chamber with capacity 2 more than that chamber,
+    currently storing 3 crates plus the number of crates in that chamber;
+    
+  * Connecting to a storage chamber on the left with capacity 1 or less
+    produces an impossible chamber (one that it's impossible to extract all
+    the crates from).
+
+        ----          ----     
+        |..--         |..--    
+        |.0.|         |0..|    
+        |.0..####     |.0..####
+        |0..|         |...|    
+   #####...--     ####...--    
+        |..|          |..|     
+        ----          ----     
+
+There are basically just two interesting parts of this description.  The
+original chamber, shown at the left, has two leftwards crates that must both
+be removed before it transmits crates, and so needs to be connected to a
+chamber with capacity 2 or more.  If it is connected to such a chamber, it is
+then possible to push two crates into it, and rearrange crates to produce the
+second diagram; this stores two crates, and allows releasing of crates from
+the storage chamber (you push the central crate out the exit, then retrieve
+one from the storage chamber and put it back where the central crate was),
+from itself when the storage chamber is empty (push a crate into the central
+chamber and back out again), and the corresponding insertions (the reverse
+operations, in this case).
+
+[1][http://fruise.googlepages.com/sokevo.html]
