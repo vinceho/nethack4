@@ -1,0 +1,857 @@
+# Last modified by Alex Smith, 2014-04-13
+# Copyright (C) 2014 Alex Smith.
+# NetHack may be freely redistributed.  See license for details.
+
+# This file defines typedefs used throughout NetHack; in particular, it gives
+# the minimum and maximum sensible values for each type.
+
+# Most .sd files are defined in terms of this file.
+
+# TODO: These maximum values are used for compatbility with 3.4.3, for now.  We
+# should strongly consider more sensible maximums/minimums, though (especially,
+# ones that are further away from int_min/int_max to make arithmetic more likely
+# to work correctly in code that's unaware of the maximum/minimum).
+$int_max = 2147483647;
+$int_min = -2147483648;
+
+{
+    # Max/min definitions
+    COLNO   => 79,
+    ROWNO   => 21,
+    MAXULEV => 30,
+
+    # Hardcoded buffer sizes. TODO: Get rid of these.
+    BUFSZ    => 256,
+    QBUFSZ   => 128,
+    PL_NSIZ  => 32,
+    PLRBUFSZ => 16,
+
+    AUTOPICKUP_PATTERNSZ => 40,
+
+    # Sanity checks.
+    AUTOPICKUP_MAX_RULES => 1000,
+
+    # A "boolean" is at least a char wide, and might be signed or unsigned.
+    # A "bit" could share a char with other variables, and is always unsigned.
+    # Ideally, there wouldn't be a difference between these; but .sd files
+    # contain the representation of the value because converting the code to
+    # use a consistent representation is awkward, and ensuring we have a
+    # consistent representation is useful.
+    boolean => {
+        type => 'enum',
+        values => {FALSE => 0, TRUE => 1},
+    },
+    bit => {
+        type => [0, 1],
+        pack => 1,
+    },
+
+    string => {
+        type => 'terminated_list',
+        element_type => 'char',
+        terminator => 0,
+        abstract => 1,                    # generate char*/char[], not string
+    },
+
+    x_coord => [0, 'COLNO-1'],
+    y_coord => [0, 'ROWNO-1'],
+    'struct coord' => {
+        x => 'x_coord',
+        y => 'y_coord',
+    },
+    z_coord => [0, 99],
+
+    # A radius measures hypotenuse distance, and is the square of the actual
+    # distance.
+    radius => [0, '(COLNO-1)*(COLNO-1)+(ROWNO-1)*(ROWNO-1)'],
+
+    xlevel  => [1, 'MAXULEV'],
+
+    roomno   => [0, 63],           # 0 = normal room, 1+ = special room
+    rooms_in => {                  # set of rooms
+        type => 'terminated_list', # TODO: why is the order used?
+        element_type => 'roomno',
+        relative_to => '-ROOMOFFSET',
+        terminator => '-ROOMOFFSET', # i.e. NUL
+        maxlen => '5',             # TODO: this looks rather hardcoded
+    },
+
+    nutrition => [-701, $int_max], # all values -701 and below are identical
+
+    # Monster species are stored in two ways: as a pointer into mons, or as an
+    # index into mons.
+    monster_number => {
+        type => 'permonst',
+        reference => 'array_index',
+        into => 'mons',
+        opaque => 1,
+    },
+    monster_data => {
+        type => 'permonst',
+        reference => 'into_array',
+        into => 'mons',
+        opaque => 1,
+    },
+
+    'enum object_class_filter' => {
+        values => [
+            # Object classes
+            'RANDOM_CLASS',               # random object
+            'ILLOBJ_CLASS',               # badly hiding mimic
+            'WEAPON_CLASS',
+            'ARMOR_CLASS',
+            'RING_CLASS',
+            'AMULET_CLASS',
+            'TOOL_CLASS',
+            'FOOD_CLASS',
+            'POTION_CLASS',
+            'SCROLL_CLASS',
+            'SPBOOK_CLASS',               # spellbooks
+            'WAND_CLASS',
+            'COIN_CLASS',
+            'GEM_CLASS',
+            'ROCK_CLASS',
+            'BALL_CLASS',
+            'CHAIN_CLASS',
+            'VENOM_CLASS',
+
+            'MAXOCLASSES',                # used as a value in its own right :(
+
+            # getobj-specific filters
+            'ALLOW_COUNT',
+            'ALL_CLASSES',
+            'ALLOW_NONE',
+            'NONE_ON_COMMA',
+
+            # explode() pseudo-object-classes
+            'BURNING_OIL',
+            'MON_EXPLODE',
+        ],
+    },
+
+    'object_class' => {
+        type => 'object_class_filter',
+        limit_range => ['RANDOM_CLASS', 'MAXOCLASSES-1'],
+    },
+
+    'inventory_letter' => {type => 'char'},
+    'spell_letter'     => {type => 'char'},
+
+    role_index => {
+        type => 'Role',
+        opaque => 1,
+        reference => 'array_index',
+        relative_to => 'roles',
+    },
+
+    aligntyp => {
+        type => 'enum',
+        enumprefix => 'A_',
+        values => {LAWFUL => 1, NEUTRAL => 0, CHAOTIC => -1, NONE => -128},
+        # Note: 3.4.3 also has COALIGNED == LAWFUL, OPALIGNED == CHAOTIC;
+        # these appear to be bugs
+    },
+
+    ability_score       => [3, 25],
+    percentile_strength => [1, 100],
+
+    armor_class         => [-128, 127],
+
+    version_component   => [0, 255],
+
+    # Things that should ideally be bignum
+    hitpoints    => [       0, $int_max],
+    pw_energy    => [       0, $int_max],
+    breakcount   => [       0, $int_max], # number of times a conduct was broken
+    turncount    => [       1, $int_max],
+    quantity     => [       1, $int_max], # item stack size
+    inven_size   => [       0, $int_max], # number of stacks in an inventory
+    weight       => [       0, $int_max],
+    microseconds => [$int_min, $int_max], # for dates and times
+    date_yyyymmdd=> [19700101, $int_max],
+    points       => [       0, $int_max],
+    experience   => [       0, $int_max],
+    toptenrank   => {                     # position in a highscore table
+        type => [1, $int_max],
+        nullable => -1,                   # for debug mode games
+    },
+
+    timeout => {
+        type => 'turncount',
+        relative_to => 'turns',
+        usually => '0',
+    },
+
+    # Colors. These are almost the same as in libuncursed, but we don't rely
+    # on that; instead, the conversions are done via lookup table. They were
+    # originally designed for an IBM PC, but we no longer depend on that; we
+    # let the windowport do any sort of conversion that might be required.
+    'enum color' => {
+        values => {
+            CLR_BLACK           => 0,
+            CLR_RED             => 1,
+            CLR_GREEN           => 2,
+            CLR_BROWN           => 3,     # low-intensity yellow is brown
+            CLR_BLUE            => 4,
+            CLR_MAGENTA         => 5,
+            CLR_CYAN            => 6,
+            CLR_GRAY            => 7,     # low-intensity white
+            CLR_DARK_GRAY       => 8,
+            CLR_ORANGE          => 9,
+            CLR_BRIGHT_GREEN    => 10,
+            CLR_YELLOW          => 11,
+            CLR_BRIGHT_BLUE     => 12,
+            CLR_BRIGHT_MAGENTA  => 13,
+            CLR_BRIGHT_CYAN     => 14,
+            CLR_WHITE           => 15,
+            CLR_MAX             => 16,
+
+            HI_ULINE            => 0x20,
+            HI_HILITE           => 0x40,
+        },
+    },
+
+    # Display.
+    monster_branding => {
+        type => 'bitfield',
+        enumprefix => 'MON_',
+        values => [qw/TAME RIDDEN DETECTED WARNING PEACEFUL/],
+    },
+    gen_branding => {
+        type => 'bitfield',
+        enumprefix => 'NH_BRANDING_',
+        values => [qw/STEPPED LOCKED UNLOCKED TRAPPED UNTRAPPED
+                      SEEN LIT TEMP_LIT/],
+    },
+    'enum level_display_mode' => {
+        enumprefix => 'LDM_',
+        values => [qw/DEFAULT HELL QUEST MINE SOKOBAN ROGUE KNOX/],
+    },
+    'enum effect_types' => {
+        enumprefix => 'E_',
+        values => [qw/EXPLOSION SWALLOW ZAP MISC/],
+    },
+
+    'struct symdef' => {
+        ch      => 'char',                # default character
+        symname => {type => 'string', reference => 'into_array'},
+        color   => 'color',
+    },
+    'into_drawing' => {                   # dbuf entries reference symdefs
+        type        => 'symdef',
+        reference   => 'array_index',
+        nullable    => -1,
+        relative_to => -1,
+    },
+    'struct dbuf_entry' => {              # display for one position
+        effect   => [0, 4294967295],      # TODO: split into _type, _id
+        bg       => 'into_drawing',       # background
+        trap     => 'into_drawing',       # trap
+        obj      => 'into_drawing',       # object
+        obj_mn   => 'into_drawing',       # species of statue / corpse
+        mon      => 'into_drawing',       # monster
+        monflags => 'monster_branding',
+        branding => 'gen_branding',
+        invis    => 'boolean',            # is there an 'I' here?
+        visible  => 'boolean',            # in view
+    },
+
+    NUMEXPCHARS => 9,                     # explosions are 3x3
+    NUMZAPCHARS => 4,                     # vertical, horizontal, 2 diagonals
+    NUMSWALLOWCHARS => 8,                 # explosions with no center
+
+    'struct drawing_info' => {            # where into_drawing points into
+        _anon_1 => {                      # background layer
+            type => 'counted_list',
+            element_type => 'symdef',
+            count_name => 'num_bgelements',
+            list_name => 'bgelements',
+            reference => 'owned_or_static',
+        },
+        _anon_2 => {                      # trap layer
+            type => 'counted_list',
+            element_type => 'symdef',
+            count_name => 'num_traps',
+            list_name => 'traps',
+            reference => 'owned_or_static',
+        },
+        _anon_3 => {                      # objects layer
+            type => 'counted_list',
+            element_type => 'symdef',
+            count_name => 'num_objects',
+            list_name => 'objects',
+            reference => 'owned_or_static',
+        },
+        _anon_4 => {                      # monsters layer
+            type => 'counted_list',
+            element_type => 'symdef',
+            count_name => 'num_monsters',
+            list_name => 'monsters',
+            reference => 'owned_or_static',
+        },
+        _anon_5 => {                      # warnings
+            type => 'counted_list',
+            element_type => 'symdef',
+            count_name => 'num_warnings',
+            list_name => 'warnings',
+            reference => 'owned_or_static',
+        },
+        _anon_6 => {                      # explosion types
+            type => 'counted_list',
+            element_type => 'symdef',
+            count_name => 'num_expltypes',
+            list_name => 'expltypes',
+            reference => 'owned_or_static',
+        },
+        _anon_7 => {                      # zap types
+            type => 'counted_list',
+            element_type => 'symdef',
+            count_name => 'num_zaptypes',
+            list_name => 'zaptypes',
+            reference => 'owned_or_static',
+        },
+        _anon_8 => {                      # other effects
+            type => 'counted_list',
+            element_type => 'symdef',
+            count_name => 'num_effects',
+            list_name => 'effects',
+            reference => 'owned_or_static',
+        },
+        invis => {                        # invisible monster symbol
+            type => 'known_size_list',
+            element_type => 'symdef',
+            size => 1,
+            reference => 'owned_or_static',
+        },
+        explsyms => {                     # explosion symbols
+            type => 'known_size_list',
+            element_type => 'symdef',
+            size => 'NUMEXPCHARS',
+            reference => 'owned_or_static',
+        },
+        zapsyms => {
+            type => 'known_size_list',
+            element_type => 'symdef',
+            size => 'NUMZAPCHARS',
+            reference => 'owned_or_static',
+        },
+        swallowsyms => {
+            type => 'known_size_list',
+            element_type => 'symdef',
+            size => 'NUMSWALLOWCHARS',
+            reference => 'owned_or_static',
+        },
+
+        # Any backgrounds with an ID less than this are boring.
+        bg_feature_offset => {
+            type => 'symdef',
+            reference => 'array_index',
+            into => '.bgelements',
+        },
+    },
+
+    # Position description. TODO: Get rid of hardcoded sizes.
+    'struct desc_buf' => {
+        bgdesc     => {type => 'string', maxlen => 'BUFSZ'},
+        trapdesc   => {type => 'string', maxlen => 'BUFSZ'},
+        objdesc    => {type => 'string', maxlen => 'BUFSZ'},
+        mondesc    => {type => 'string', maxlen => 'BUFSZ'},
+        invisdesc  => {type => 'string', maxlen => 'BUFSZ'},
+        effectdesc => {type => 'string', maxlen => 'BUFSZ'},
+        objcount   => {
+            type => 'inven_size',
+            nullable => -1,               # null when out of sight
+        },
+    },
+
+    # Status line information. TODO: Get rid of hardcoded sizes.
+    ITEMLEN => 12,
+    STATUSITEMS_MAX => 24,
+    'struct player_info' => {
+        plname      => {type => 'string', maxlen => 'PL_NSIZ'},
+        rank        => {type => 'string', maxlen => 'PL_NSIZ'},
+        level_desc  => {type => 'string', maxlen => 'COLNO'},
+        
+        x           => 'x_coord',
+        y           => 'y_coord',
+        z           => 'z_coord',
+        
+        _anon_1 => {
+            type => 'counted_list',
+            element_type => {
+                type => 'string',
+                maxlen => 'ITEMLEN',
+            },
+            maxlen => 'STATUSITEMS_MAX',
+            count_name => 'nr_items',
+            list_name => 'statusitems',
+        },
+
+        score       => 'points',
+        xp          => 'experience',
+        gold        => 'quantity',
+        moves       => 'turncount',
+        max_rank_sz => [0, 'PL_NSIZ'],    # TODO: unused
+
+        st          => 'ability_score',
+        st_extra    => 'percentile_strength',
+        dx          => 'ability_score',
+        co          => 'ability_score',
+        in          => 'ability_score',
+        wi          => 'ability_score',
+        ch          => 'ability_score',
+        align       => 'aligntyp',
+                   
+        hp          => 'hitpoints',
+        hpmax       => 'hitpoints',
+        en          => 'pw_energy',
+        enmax       => 'pw_energy',
+                   
+        ac          => 'armor_class',
+        level       => 'xlevel',
+        can_enhance => 'boolean',
+                  
+        coinsym     => 'char',            # TODO: replace with LDM_ROGUE
+        monnum      => 'monster_number',
+        cur_monnum  => 'monster_number',
+    },
+
+    # Commands.
+    #
+    # A command description specifies a set of parameters that it
+    # understands. All the parameters are optional. Because the client does not
+    # usually have enough information to explain to the user what an argument
+    # means, it should normally omit arguments, in which case the engine will
+    # prompt for them if necessary.
+    #
+    # There are some exceptions to this:
+    #
+    # * CMD_ARG_LIMIT is never prompted for by the engine (omitting it means "no
+    #   limit"); a client should send it if the user specified a limit on the
+    #   command (say, using main keyboard numbers in a vikeys-based interface),
+    #   and not otherwise. If a command does not have a CMD_ARG_LIMIT tag, a
+    #   client should typically interpret what would be a limit as command
+    #   repeat instead.  (A limit is an integer that specifies some number which
+    #   should not be exceeded when running the command, e.g. the maximum number
+    #   of
+    #
+    # * CMD_ARG_OBJ should normally be omitted, but in clients that use a
+    #   menu-based interface in combination with get_obj_commands(), they have
+    #   enough information to tell the user what the argument means.
+    #
+    # * CMD_MOVE, movement commands, should always be given a direction.
+    #
+    # * Some interfaces for other roguelikes work via having an ability to
+    #   specify a default direction, which is used for all commands. At the time
+    #   of writing there are no NetHack interfaces which work on this principle,
+    #   but if any are written, they should feel free to specify CMD_ARG_DIR in
+    #   every response where it makes sense. A client should /never/ prompt the
+    #   user for a direction except in response to a getpos() call or if
+    #   CMD_MOVE is set; CMD_ARG_DIR is sometimes specified on commands (like
+    #   zap) where a direction is sometimes relevant but sometimes
+    #   irrelevant. Thus, it should only be sent if the server has asked for it,
+    #   repeating a command when the server asked for it on a previous repeat,
+    #   or as a result of an interface like the one described above.
+
+    command_property => {
+        type => 'bitfield',
+        enumprefix => 'CMD_',
+        values => [
+            'ARG_DIR',                    # param can be a direction
+            'ARG_POS',                    # param can be a position
+            'ARG_OBJ',                    # param can be an inventory letter
+            'ARG_STR',                    # param can be a string
+            'ARG_SPELL',                  # param can be a spell letter
+            'ARG_LIMIT',                  # param can be a limit
+
+            'EXT',                        # by default, is an extended command
+            'MOVE',                       # this is a movement command
+            'HELP',                       # this should be on the help menu
+            'NOTIME',                     # does not affect gamestate at all
+            'DEBUG',                      # debug mode use only
+            'INTERNAL',                   # sent automatically, not manually
+
+            # Note: care should be taken to make sure that no exploits are
+            # possible if the user nonetheless sends a CMD_INTERNAL command
+            # manually.
+
+            'UI'                          # reserved for windowport use
+        ],
+    },
+
+    command_argument => {
+        type => 'command_property',
+        limit_range => [0, 'ARG_LIMIT * 2 - 1'],
+    },
+
+    'enum command_status' => {            # return upon executing a command
+        enumprefix => 'COMMAND_',
+        values => [qw/DEBUG_ONLY UNKNOWN BAD_ARG OK ZERO_TIME/],
+    },
+
+    'struct cmd_desc' => {                # command descriptions
+        name   => {type => 'string', maxlen => 20}, # ugh
+        desc   => {type => 'string', maxlen => 80}, # more ugh
+        defkey => 'char',
+        altkey => 'char',
+        flags  => 'command_property',
+    },
+
+    'struct cmd_arg' => {
+        argtype  => 'command_argument',
+
+        dir      => { type         => 'direction',
+                      defined_when => '.argtype & CMD_ARG_DIR'},
+        pos      => { type         => 'coord',
+                      defined_when => '.argtype & CMD_ARG_POS'},
+        invlet   => { type         => 'inventory_letter',
+                      defined_when => '.argtype & CMD_ARG_OBJ'},
+        str      => { type         => 'string',
+                      reference    => 'owned_or_static',
+                      defined_when => '.argtype & CMD_ARG_STR'},
+        spelllet => { type         => 'spell_letter',
+                      defined_when => '.argtype & CMD_ARG_SPELL'},
+        limit    => { type         => [0, $int_max], # quantity or turncount
+                      defined_when => '.argtype & CMD_ARG_LIMIT'},
+    },
+
+    'struct cmd_and_arg' => {
+        cmd => {type => 'string', reference => 'owned_or_static'},
+        arg => 'cmd_arg',
+    },
+
+    # Directions.
+    'enum direction' => {
+        enumprefix => 'DIR_',
+        values => [qw/W NW N NE E SE S SW UP DOWN SELF/],
+    },
+    'nullable_direction' => {
+        type => 'direction',
+        nullable => -1,
+    },
+
+    # Types of menu...
+    'enum pick_type' => {
+        enumprefix => 'PICK_',
+        values => [qw/NONE ONE LETTER ANY/],
+    },
+    'enum placement_hint' => {
+        enumprefix => 'PLHINT_',
+        values => [qw/ANYWHERE LEFT RIGHT URGENT INFO
+                      ONELINER CONTAINER INVENTORY/],
+    },
+    # ...and of menu items.
+    'enum menuitem_role' => {
+        enumprefix => 'MI_',
+        values => [qw/TEXT NORMAL HEADING/],
+    },
+
+    'struct menuitem' => {
+        id => [$int_min, $int_max],
+        role => 'menuitem_role',
+        caption => {
+            type => 'string',
+            maxlen => 'BUFSZ', # ugh
+        },
+        accel => 'char',
+        group_accel => 'char',
+
+        selected => 'boolean',
+    },
+    'struct objitem' => {
+        id => [$int_min, $int_max],
+        role => 'menuitem_role',
+        caption => {
+            type => 'string',
+            maxlen => 'BUFSZ',
+        },
+        accel => 'char',
+        group_accel => 'char',
+
+        count => 'quantity',
+        otype => 'otyp',
+        oclass => 'object_class',
+        weight => {
+            type => 'weight',
+            nullable => -1,               # null when unknown
+        },
+        buc => 'bucstatus',
+        worn => 'boolean',
+    },
+
+    # Memory allocation for menulists.
+    'menulist' => {
+        type => 'counted_list',
+        element_type => 'menuitem',
+        count_name => 'icount',
+        list_name => 'items',
+
+        # For automatic memory management, we have items = NULL and size = 0,
+        # or items != NULL and size != 0; we can also manage memory manually,
+        # in which case items != NULL but size == 0.
+        reference => 'owned_or_static_realloc',
+        reference_alloclen_name => 'size',
+        reference_alloclen_units => 'data',
+    },
+    'objlist' => {
+        type => 'counted_list',
+        element_type => 'objitem',
+        count_name => 'icount',
+        list_name => 'items',
+        reference => 'owned_or_static_realloc',
+        reference_alloclen_name => 'size',
+        reference_alloclen_units => 'data',
+    },
+
+    # Return values of menulists.
+    'struct objresult' => {
+        id => [$int_min, $int_max],
+        count => 'quantity',
+    },
+
+    # Paths.
+    'enum path_prefix' => {
+        enumsuffix => 'PREFIX',
+        values => [qw/BONES DATA SCORE LOCK TROUBLE DUMP/],
+    },
+
+    # Game modes.
+    'enum game_modes' => {
+        enumprefix => 'MODE_',
+        values => [qw/NORMAL EXPLORE WIZARD/],
+    },
+
+    # Ensuring the user has seen information
+    'enum pause_reason' => {
+        enumprefix => 'P_',
+        values => [qw/MESSAGE MAP/],
+    },
+
+    # TODO: Options
+    'enum opttype' => {
+        enumprefix => 'OPTTYPE_',
+        values => [qw/BOOL INT ENUM STRING AUTOPICKUP_RULES/],
+    },
+    'struct listitem' => {
+        id => [$minint, $maxint],
+        caption => 'string',
+    },
+    'struct int_option' => {
+        min => [$minint, $maxint],
+        max => [$minint, $maxint],
+    },
+    'enum_option' => {
+        type => 'counted_list',
+        element_type => 'listitem',
+        count_name => 'numchoices',
+        element_name => 'choices',
+        reference => 'into_array', # but we don't know which one
+    },
+    'struct string_option' => {
+        maxlen => [0, 'BUFSZ'],
+    },
+    'struct autopickup_rule' => {
+        pattern => {
+            type => "string",
+            maxlen => 'AUTOPICKUP_PATTERNSZ',
+        },
+        oclass => 'object_class',
+        buc => 'bucstatus',
+        action => 'autopickup_action',
+    },
+    'autopickup_rules' => {
+        type => 'counted_list',
+        element_type => 'autopickup_rules',
+        count_name => 'num_rules',
+        list_name => 'rules',
+    },
+
+    'union optvalue' => {
+        s => "string",
+        b => "boolean",
+        i => [$int_min, $int_max],
+        e => [$int_min, $int_max],
+        ar => 'autopickup_rules',
+    },
+
+    'struct option_desc' => {
+        name => 'string',
+        helptxt => 'string',
+        birth_option => 'boolean',
+        type => 'opttype',
+        value => 'optvalue',
+        'union _anon_1' => {
+            i => 'int_option',
+            e => 'enum_option',
+            s => 'string_option',
+            a => 'autopick_option',
+        },
+    },
+
+    # Autopickup matching (and also menucolors, in some cases)
+    'enum bucstatus' => {
+        enumprefix => 'B_',
+        values => [qw/UNKNOWN BLESSED UNCURSED CURSED DONT_CARE/],
+    },
+    'enum autopickup_action' => {
+        enumprefix => 'AP_',
+        values => [qw/GRAB LEAVE/],
+    },
+
+    # win_query_key return values
+    'struct query_key_result' => {
+        key => 'char',
+        count => 'quantity',
+    },
+
+    # win_getpos return values
+    'enum client_response' => {
+        enumprefix => 'NHCR_',
+        values => [qw/ACCEPTED CLIENT_CANCEL
+                      CONTINUE MOREINFO MOREINFO_CONTINUE/],
+    },
+    'struct getpos_result' => {
+        howclosed => 'client_response',
+        x => 'x_coord',
+        y => 'y_coord',
+    },
+
+    # nh_exit_game arguments
+    'enum exit_type' => {
+        enumprefix => 'EXIT_',
+        values => [qw/REQUEST_SAVE FORCE_SAVE REQUEST_QUIT FORCE_QUIT PANIC/],
+    },
+
+    # nh_play_game return values
+    'enum play_status' => {
+        values => [
+            # The game loaded, and:
+            'GAME_DETACHED',              # it was saved, and still exists
+            'GAME_OVER',                  # it ended; that needs handling
+            'GAME_ALREADY_OVER',          # it ended, that doesn't need handling
+
+            'RESTART_PLAY',               # it hit an exception, try again
+
+            # The game didn't load, or was force-unloaded, because:
+            'ERR_BAD_ARGS',               # it never existed
+            'ERR_BAD_FILE',               # it's not a NetHack game
+            'ERR_IN_PROGRESS',            # it had locking issues
+            'ERR_RESTORE_FAILED',         # it needs manual recovery
+            'ERR_RECOVER_REFUSED',        # automatic recovery was refused
+
+            # Other statuses
+            'ERR_NETWORK_ERROR',          # lost connection, fate unknown
+            'ERR_CREATE_FAILED',          # the game couldn't be created
+            'GAME_CREATED',               # end of the newgame sequence
+        ],
+    },
+
+    # nh_create_game return values
+    'enum create_response' => {
+        enumprefix => 'NHCREATE_',
+        values => {OK => 0, INVALID => -1, FAIL => -2},
+        and_above => 'OK',
+    },
+
+    # Save file information
+    'enum log_status' => {
+        enumprefix => 'LS_',
+        values => {
+            CRASHED     => -2,            # needs recovery
+            INVALID     => -1,            # not a NetHack game
+            SAVED       =>  0,            # everything is fine
+            DONE        =>  1,            # game over
+            IN_PROGRESS =>  2,            # locking issues, status unknown
+        },
+    },
+
+    # TODO: remove hardcoded buffers
+    'struct game_info' => {
+        playmode   => 'game_modes',
+
+        name       => {type => 'string', maxlen => 'PL_NSIZ'},
+        plrole     => {type => 'string', maxlen => 'PLRBUFSIZ'},
+        plrace     => {type => 'string', maxlen => 'PLRBUFSIZ'},
+        plgend     => {type => 'string', maxlen => 'PLRBUFSIZ'},
+        plalign    => {type => 'string', maxlen => 'PLRBUFSIZ'},
+
+        game_state => {type => 'string', maxlen => 'COLNO'},
+    },
+
+    # Death reasons; used by the high score table, and the game over code
+    # The arrays in end.c and topten.c rely on the order; don't change it
+    # without also changing those files. PANICKED separates deaths from
+    # non-deaths.
+    'enum deathtype' => {
+        values => [qw/DIED CHOKING POISONING STARVING DROWNING BURNING
+                      DISSOLVED CRUSHING STONING TURNED_SLIME GENOCIDED
+                      PANICKED TRICKED QUIT ESCAPED ASCENDED/],
+    },
+
+    # High score table entries
+    'struct topten_entry' => {
+        rank       => 'toptenrank',
+        points     => 'points',
+        maxlvl     => 'z_coord',          # maximum dlevel reached
+        hp         => 'hitpoints',
+        maxhp      => 'hitpoints',
+        deaths     => 'breakcount',
+        moves      => 'turncount',
+        end_how    => 'deathtype',
+
+        deathdate  => 'date_yyyymmdd',
+        birthdate  => 'date_yyyymmdd',
+
+        ver_major  => 'version_component',
+        ver_minor  => 'version_component',
+        patchlevel => 'version_component',
+
+        name       => {type => 'string', maxlen => 'PL_NSIZ'},
+        plrole     => {type => 'string', maxlen => 'PLRBUFSIZ'},
+        plrace     => {type => 'string', maxlen => 'PLRBUFSIZ'},
+        plgend     => {type => 'string', maxlen => 'PLRBUFSIZ'},
+        plalign    => {type => 'string', maxlen => 'PLRBUFSIZ'},
+
+        death      => {type => 'string', maxlen => 'BUFSZ'},
+        entrytxt   => {type => 'string', maxlen => 'BUFSZ'},
+
+        highlight  => 'boolean',          # highlight this entry?
+    },
+
+    'struct roles_info' => {
+        _anon_1 => {
+            type => "counted_list",
+            element_type => {type => 'string', reference => 'owned'},
+            count_name => 'num_roles',
+            list_name => 'rolenames_m',
+        },
+        rolenames_f => {
+            type => "known_size_list",
+            element_type => {type => 'string', reference => 'owned'},
+            size => '.num_roles',
+        },
+        _anon_3 => {
+            type => "counted_list",
+            element_type => {type => 'string', reference => 'owned'},
+            count_name => 'num_races',
+            list_name => 'racenames',
+        },
+        _anon_4 => {
+            type => "counted_list",
+            element_type => {type => 'string', reference => 'owned'},
+            count_name => 'num_genders',
+            list_name => 'gendnames',
+        },
+        _anon_5 => {
+            type => "counted_list",
+            element_type => {type => 'string', reference => 'owned'},
+            count_name => 'num_aligns',
+            list_name => 'alignnames',
+        },
+        matrix => {
+            type => "known_size_list",
+            element_type => "boolean",
+            size => '.num_roles * .num_races * .num_genders * .num_aligns',
+        },
+    },
+}
