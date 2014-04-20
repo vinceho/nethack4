@@ -1,0 +1,319 @@
+# structdesc.sd: structdesc format, expressed in structdesc format
+# Copyright © 2014 Alex Smith.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# A copy of version 3 of the GNU General Public License can be viewed
+# online at <http://www.gnu.org/licenses/>. If you obtained
+# structdesc as part of NetHack 4, you can also view this license
+# as the file libnethack/dat/gpl3.
+#
+# Alternatively, at your option, you can redistribute and/or modify this
+# program under the terms of the NetHack General Public License; see
+# libnethack/dat/license for the details. Regardless of which license you
+# choose, this program is distributed WITHOUT ANY WARRANTY.
+
+# Originally, I was going to put off doing this until later (it seemed like an
+# amusing side project rather than something necessary for structdesc to work),
+# but I needed some way to verify .sd files for correctness, and realised I was
+# working on a structure format verifier already...
+#
+# This doesn't capture all the nuances of the source format (e.g. 'struct ' tags
+# are something that doesn't describe well in structdesc format).  Instead, it
+# describes the "compiled" format that's produced from desugaring a structdesc
+# file.  Type refinements work the same way as in the original format, but the
+# fields of the outmost dictionary are split into 'typedefs', 'includes', and
+# 'constants', and all tags are removed.  Additionally, constant expressions are
+# all desugared into the appropriate constant, and thus are now bignums rather
+# than strings.
+
+{
+    # Shorthand for commonly nullable fields
+    nre  => {type => 'runtime_expression', nullable => 0},
+    flag => {type => [1,1], nullable => 0},
+
+    # Various constant expressions (e.g. 'nullable') are nullable, and need to
+    # be nullable with an illegal value; but all integers are legal values for
+    # 'nullable'.  The solution is to make it a reference type, so that we can
+    # null it out using a null /reference/.  Except that it can be a value type
+    # if we have separate null values in the language.
+    nce  => {
+        type => 'constant_expression',
+        reference => 'owned',
+        nullable => 0,
+    },
+
+    # These are limited to ASCII because they are made of identifiers, which in
+    # many language implementations can't contain non-ASCII characters, and
+    # C-style mathematical operators, which are all ASCII.
+    runtime_expression  => {type => 'string', reference => 'owned_or_value'},
+    identifier          => {type => 'string', reference => 'owned_or_value'},
+
+    constant_expression             => ['-inf', '+inf'],
+    nonnegative_constant_expression => [0, '+inf'],
+    range                           => {
+        type => 'numeric_dictionary',
+        element_type => 'constant_expression',
+        key_type => {
+            type => 'enum',
+            enumprefix => 'structdesc_range_bound_',
+            values => {min => 0, max => 1},
+        },
+    },
+
+    # By the time a structdesc file is compiled, all our types are refinements
+    # of builtin types, structs (including opaque structs), or unions. ('float'
+    # should be here but is not yet supported.)  The order is: numbers;
+    # structures; lists; dictionaries.  Some definitions later on rely on this
+    # order.
+    'enum builtin_type' => {
+        enumprefix => 'structdesc_builtin_',
+        values => [qw/enum bitfield
+                      int char wchar_t
+                      struct union opaque
+                      string wstring_t
+                      counted_list terminated_list known_size_list
+                      numeric_dictionary counted_association_list
+                      terminated_association_list known_size_association_list/],
+    },
+    structdesc_last_builtin_number => 'structdesc_builtin_wchar_t',
+    structdesc_first_builtin_list  => 'structdesc_builtin_string',
+    structdesc_first_builtin_dictionary =>
+        'structdesc_builtin_numeric_dictionary',
+    structdesc_first_builtin_association_list =>
+        'structdesc_builtin_counted_association_list',
+
+    'enum reference_alloclen_unit' => {
+        enumprefix => 'structdesc_alloclen_units_',
+        values => [qw/bytes data/],
+    },
+
+    # We can't define a structure in terms of itself.  But we can define it in
+    # terms of references to itself.
+    opaque_refinement => {
+        type => 'refinement',
+        reference => 'owned',
+        opaque => 1,
+    },
+
+    # All types are eventually compiled down into refinements.
+    'struct refinement' => {
+
+        type => 'builtin_type',
+
+        defined_when  => 'nre',
+        bounded_above => 'nre',
+        bounded_below => 'nre',
+        approximates  => 'nre',
+        ranges        => {
+            type         => 'runtime_expression',
+            defined_when => '.approximates',
+        },
+        lags          => 'flag',
+
+        abstract      => 'flag',
+
+        reference => {
+            type         => 'enum',
+            nullable     => -1,
+            enumprefix   => 'structdesc_reference_',
+            values       => [qw/array_index into_array weak backref
+                                owned owned_realloc owned_or_value
+                                owned_or_static owned_or_static_realloc/],
+        },
+        opaque => {
+            type         => 'flag',
+            defined_when => '.reference != -1',
+        },
+        into => {
+            type         => 'runtime_expression',
+            defined_when => '.reference == structdesc_reference_array_index ||'.
+                            '.reference == structdesc_reference_into_array',
+        },
+        mutable => {
+            type         => 'flag',
+            defined_when => '.reference != -1 && '.
+                            '.reference < structdesc_reference_owned',
+        },
+        levels => {
+            type         => [0, '+inf'],
+            nullable     => -1,
+            defined_when => '.reference == structdesc_reference_backref',
+        },
+        reference_alloclen_name => {
+            type         => 'identifier',
+            defined_when =>
+                '.reference == structdesc_reference_owned_realloc || '.
+                '.reference == structdesc_reference_owned_or_static_realloc',
+        },
+        reference_alloclen_units => {
+            type         => 'reference_alloclen_unit',
+            defined_when =>
+                '.reference == structdesc_reference_owned_realloc || '.
+                '.reference == structdesc_reference_owned_or_static_realloc', 
+        },
+        mutable_reference_name => {
+            type         => 'identifier',
+            nullable     => 0,
+            defined_when =>
+                '.reference == structdesc_reference_owned_or_static || '.
+                '.reference == structdesc_reference_owned_or_static_realloc',
+        },
+
+        nullable => 'nce',
+        usually  => 'nce',
+
+        pack => {
+            type         => 'flag',
+            defined_when => '.type == structdesc_builtin_int',
+        },
+        relative_to => {
+            type         => 'constant_expression',
+            usually      => 0,
+            defined_when => '.type <= structdesc_last_builtin_number',
+        },
+        limit_range => {
+            type => 'range',
+            defined_when => '.type <= structdesc_last_builtin_number',
+        },
+
+        # These are always desugared into a dictionary.
+        values => {
+            type => 'counted_association_list',
+            key_type     => 'identifier',
+            element_type => 'constant_expression',
+            
+            list_name    => 'possibilities',
+            key_name     => 'name',
+            element_name => 'value',
+
+            reference    => 'owned',
+
+            defined_when => '.type == structdesc_builtin_enum || '.
+                            '.type == structdesc_builtin_bitfield',
+        },
+
+        enumprefix => {
+            type         => 'identifier',
+            defined_when => '.type == structdesc_builtin_enum || '.
+                            '.type == structdesc_builtin_bitfield',
+        },
+        enumsuffix => {
+            type         => 'identifier',
+            defined_when => '.type == structdesc_builtin_enum || '.
+                            '.type == structdesc_builtin_bitfield',
+        },
+
+        # Strings and wide strings don't have an explicit element type.
+        element_type => {
+            type         => 'opaque_refinement',
+            defined_when => '.type >= structdesc_builtin_counted_list',
+        },
+        key_type => {
+            type         => 'opaque_refinement',
+            defined_when => '.type >= structdesc_first_builtin_dictionary',
+        },
+        list_name => {
+            type         => 'identifier',
+            nullable     => 0,
+            defined_when => '.type >= structdesc_first_builtin_list && '.
+                            '.type != structdesc_builtin_numeric_dictionary',
+            nonnull_when => '.mutable_reference_name || '.
+                            '.reference_alloclen_name || '.
+                            '.count_name',
+        },
+        count_name => {
+            type => 'identifier',
+            defined_when =>
+                '.type == structdesc_builtin_counted_list || '.
+                '.type == structdesc_builtin_counted_association_list',
+        },
+        terminator => {
+            type => 'constant_expression',
+            defined_when =>
+                '.type == structdesc_builtin_terminated_list || '.
+                '.type == structdesc_builtin_terminated_association_list',
+        },
+        size => {
+            type => 'runtime_expression',
+            defined_when =>
+                '.type == structdesc_builtin_known_size_list || '.
+                '.type == structdesc_builtin_known_size_association_list',
+        },
+        key_name => {
+            type => 'identifier',
+            defined_when =>
+                '.type >= structdesc_first_builtin_association_list',
+        },
+        element_name => {
+            type => 'identifier',
+            defined_when =>
+                '.type >= structdesc_first_builtin_association_list',
+        },
+        maxlen => {
+            type         => 'nonnegative_constant_expression',
+            nullable     => -1,
+            defined_when => '.type >= structdesc_first_builtin_list && '.
+                            '.type != structdesc_builtin_numeric_dictionary',
+            nonnull_when => '.reference == -1',
+        },
+        minlen => {
+            type         => 'nonnegative_constant_expression',
+            nullable     => -1,
+            defined_when => '.type >= structdesc_first_builtin_list && '.
+                            '.type != structdesc_builtin_numeric_dictionary',
+        },
+
+        members => {
+            type         => 'terminated_association_list',
+            key_type     => 'identifier',
+            element_type => 'opaque_refinement',
+            terminator   => 0,
+            defined_when => '.type == structdesc_builtin_struct || '.
+                            '.type == structdesc_builtin_union',
+            reference    => 'owned',
+        },
+
+        # Some fields used internally to implement 'opaque', '_include',
+        # type refinement
+        _generate => [0, 1],
+        _typename => {
+            type => 'identifier',
+            nullable => 0,
+            nonnull_when => '.type == structdesc_builtin_opaque',
+        },
+    },
+
+    # Are filenames ASCII or Unicode? Well, they /could/ be Unicode on some
+    # platforms, thus we accept structdesc files that _include Unicode strings.
+    filename => {type => 'wstring_t', reference => 'owned_or_value'},
+
+    'struct structdesc' => {
+        includes => {
+            type         => 'terminated_list',
+            element_type => 'filename',
+            terminator   => 0,
+            reference    => 'owned',
+        },
+        constants => {
+            type         => 'terminated_association_list',
+            key_type     => 'identifier',
+            element_type => 'constant_expression',
+            terminator   => 0,
+            reference    => 'owned',
+        },
+        typedefs => {
+            type         => 'terminated_association_list',
+            key_type     => 'identifier',
+            
+        },
+    },
+},

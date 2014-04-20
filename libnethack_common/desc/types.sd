@@ -1,4 +1,4 @@
-# Last modified by Alex Smith, 2014-04-13
+# Last modified by Alex Smith, 2014-04-20
 # Copyright (C) 2014 Alex Smith.
 # NetHack may be freely redistributed.  See license for details.
 
@@ -44,13 +44,6 @@ $int_min = -2147483648;
     bit => {
         type => [0, 1],
         pack => 1,
-    },
-
-    string => {
-        type => 'terminated_list',
-        element_type => 'char',
-        terminator => 0,
-        abstract => 1,                    # generate char*/char[], not string
     },
 
     x_coord => [0, 'COLNO-1'],
@@ -204,7 +197,7 @@ $int_min = -2147483648;
             CLR_BRIGHT_MAGENTA  => 13,
             CLR_BRIGHT_CYAN     => 14,
             CLR_WHITE           => 15,
-            CLR_MAX             => 16,
+            CLR_MAX             => 'CLR_WHITE + 1',
 
             HI_ULINE            => 0x20,
             HI_HILITE           => 0x40,

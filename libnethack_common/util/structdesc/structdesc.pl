@@ -33,7 +33,7 @@ use 5.8.3;
 
 structdesc - structure description language compiler
 
-=head1 SYNOPSYS
+=head1 SYNOPSIS
 
 B<perl> F<structdesc.pl> I<options> F<file.sd>
 
@@ -62,7 +62,7 @@ there are two (or more) different ways to represent a data type in C, there
 are as many ways to represent it in an F<.sd> file; thus (for instance) if you
 want your strings in fixed-size buffers, it'll look different from if you want
 them in heap memory.  This means that you can convert an existing header to
-structdesc format, and the code that uses it should need few or no changes.
+F<structdesc> format, and the code that uses it should need few or no changes.
 
 The F<.sd> format also allows specifying some simple invariants.  These will
 be taken into account when generating code (for instance, if a struct field is
@@ -277,6 +277,8 @@ The syntax of an F<.sd> file is Perl object notation:
     $var = 4;               # define a variable for later use
     4                       # a number
     'abcde'                 # a literal string
+    'this long string is'.
+    'broken over lines'     # strings can be broken over lines using '.'
     $var                    # reference to a variable defined earlier
     [1, 2, 3, 4,]           # a list, trailing comma optional
     [qw/foo bar baz/]       # abbreviated syntax for ['foo', 'bar', 'baz']
@@ -291,9 +293,9 @@ introduce bugs due to omitting a comma.
 An F<.sd> file consists of variable definitions, if necessary (mostly, they
 aren't; these definitions are substituted in via copying, sort-of like
 preprocessor macros in C, and are only available within the F<.sd> file
-itself, as opposed to structdesc definitions that serve the same purpose, but
-are available to programs that use the files that F<structdesc> outputs and
-won't be repeated in the output); then the rest of the file is a single
+itself, as opposed to F<structdesc> definitions that serve the same purpose,
+but are available to programs that use the files that F<structdesc> outputs
+and won't be repeated in the output); then the rest of the file is a single
 dictionary.  Each key of the dictionary defines one type or one constant (with
 the exception of the special case C<_include>).
 
@@ -303,7 +305,7 @@ Here's what sort of keys are available:
 
     _include => ['bar.sd', 'baz.sd'],
 
-Just as C header files can include each other, structdesc files can also
+Just as C header files can include each other, F<structdesc> files can also
 include each other.  This is more intelligent than simple copying; instead,
 the output files will reference each other.  For instance, if F<foo.sd>
 includes F<bar.sd> and F<baz.sd>, then any output generated from F<bar.sd> and
@@ -373,6 +375,8 @@ helps avoid bugs due to unexpected conversions between signed and unsigned.
 
 TODO: Bignums and floating-point types are not yet supported.  (Especially
 because bignums need thought with respect to allocation behaviour in C.)
+F<structdesc> currently silently replaces them with the bounds of a 64-bit
+integer.
 
 =head2 Structure and union types
 
@@ -382,17 +386,26 @@ because bignums need thought with respect to allocation behaviour in C.)
         quux => {type => [-1, 1], usually => 1},
     },
 
+    # The first example here is sugar for:
+    'foo' => {
+        type => 'union',
+        members => {bar => [0, 4], baz => [0, 8]},
+    },
+
 Much of the purpose of F<structdesc> is to define structures.  These use a tag
 on the name; you write the name as, e.g., C<struct foo> in the dictionary key
-to indicate that the dictionary should be interpreted as a structure.
-However, the type will be known as just, e.g., C<foo> in the rest of the
-C<.sd> file, to save you worrying about the implementation details of other
-types.  The dictionary lists the field names, and their types; the order is
-arbitrary and will be chosen by F<structdesc> to attempt to produce a
-structure that can be stored efficiently in memory.  The type itself can be
-any numerical type, any built in type, anything that would be legal as the
-right hand side of a type definition, or a string, that names a type that is
-defined elsewhere.
+to indicate that the dictionary should be interpreted as a structure.  (This
+is internally implemented as sugar for refining the built-in C<struct> type
+with a C<members> refinment, as shown in the last example above, but the
+C<members> refinement should not really be used explicitly.)  However, the
+type will be known as just, e.g., C<foo> in the rest of the C<.sd> file, to
+save you worrying about the implementation details of other types.  The
+dictionary lists the field names, and their types; the order in the C<.sd>
+file is arbitrary and in F<structdesc>'s output will be chosen by
+F<structdesc> to attempt to produce a structure that can be stored efficiently
+in memory.  The type itself can be any numerical type, any built in type,
+anything that would be legal as the right hand side of a type definition, or a
+string, that names a type that is defined elsewhere.
 
 It is possible for structure fields to have no name, using a name
 C<_anon_>I<number> (the numbers must be distinct for different anonymous
@@ -421,14 +434,14 @@ Types can be defined as the same as another type, except with certain changes
 made (or, as the first example above shows, no changes made, making one type
 an alias for another type).  This mechanism is how pretty much all complex
 type definitions are created.  (Type refinements can be used directly as
-structure fields, or given names, as in the above examples.)  C<structdesc>
+structure fields, or given names, as in the above examples.)  F<structdesc>
 will aim to use the same language-level type for the refinement as for the
 original type, where possible; often, this isn't possible (the above example
 C<character_or_null> clearly can't be stored in a C<char>, because C<-300> is
-not a valid vaue for a character; in fact, if it were, the C<nullable>
-refinement would error out).  Refinements can specify a great many properties
-of a type, ranging from refining generic types into concrete instances of that
-type, to simply making minor recommendations about serialization.
+not a valid vaue for a character in most languages).  Refinements can specify
+a great many properties of a type, ranging from refining generic types into
+concrete instances of that type, to simply making minor recommendations about
+serialization.
 
 The syntax for a type refinement is a dictionary with a C<type> key that
 specifies the type to refine, and perhaps other keys that specify refinements
@@ -443,19 +456,20 @@ definitions.  (They will not be output as definitions in their own right as
 part of F<structdesc>'s output; typically, they need heavy refinement to even
 make sense as types.)
 
-=head2 Characters
+=head2 Characters and strings
 
     # Effectively defined like this, but see text
     char     => [1, 127],
     wchar_t  => [1, 1114111],
     
-    # And an example: this is how strings work in C
-    c_string => {
+    # This is how strings work in C; but other languages use different
+    # definitions
+    string => {
         type => 'terminated_list',
         element_type => 'char',
         terminator => 0,
 
-        abstract => 1,       # needed because we didn't specify allocation rules
+        abstract => 1,       # because we didn't specify allocation rules
     },
 
 The C<char> and C<wchar_t> types represent language-level ASCII and Unicode
@@ -470,6 +484,16 @@ serialization format, rather than the normal representation used for lists).
 
 These are the only built-in types that can be used without refinement.
 
+There is also the C<string> type, which adapts to whatever the most common
+format for a string is in the language (many languages have a special-case
+type for a string; otherwise, it defaults to a counted list of characters if
+the language has a special-case type for a counted list, or otherwise, a
+0-terminated list of characters).  Being a L<list type|/"List types">, it
+requires a C<reference> or C<maxlen> refinement to describe its memory
+management properties.  C<string> can only handle ASCII characters, because
+some languages do not have Unicode strings; use C<wstring_t> for an
+appropriate format for Unicode strings.
+
 =head2 Enums and bitfields
 
     # Some examples
@@ -482,9 +506,17 @@ These are the only built-in types that can be used without refinement.
                    RGRP => 0040, WGRP => 0020, XGRP => 0010,
                    ROTH => 0004, WOTH => 0002, XOTH => 0001,},
     },
+    fruits => {
+        type => 'enum',
+        enumprefix => 'fruit_',
+        values => {apple => 1,
+                   banana => 2,
+                   cherry => 3,
+                   last_fruit => 'fruit_cherry',},
+    },
     
     # This sugar is equivalent to the 'boolean' definition above
-    'enum boolean' => {values => [FALSE, TRUE]}
+    'enum boolean' => {values => [FALSE, TRUE]},
 
 Enums and bitfields are very similar; they're types specified by giving an
 explicit list of values.  The values have two representations: a name, and a
@@ -494,16 +526,19 @@ memory and in serialization formats intended for computers.
 
 Thus, to use these types, they must be refined using a C<values> refinement;
 this can either specify a list of names that will be auto-numbered, or else
-specify a dictionary that givesnumbers explicitly.  An auto-numbered enum uses
-numbers 0, 1, 2, 3, etc., and an auto-numbered bitfield uses 1, 2, 4, 8, 16,
-etc..  When auto-numbering, the list order is significant; re-ordering the
+specify a dictionary that gives numbers explicitly.  An auto-numbered enum
+uses numbers 0, 1, 2, 3, etc., and an auto-numbered bitfield uses 1, 2, 4, 8,
+16, etc..  When auto-numbering, the list order is significant; re-ordering the
 list will change which numbers correspond to which elements and thus break
 serialization compatibility.  If you give the numbers explicitly, they are not
 constrained to such simple patterns; you could use negative or very large
 numbers for enums, or repeat numbers (to give aliases for a field), or even
 use numbers that aren't a power of 2 for a bitfield (although only if each
 individual bit in those numbers has a name, otherwise they wouldn't be legal
-values for the bitfield).
+values for the bitfield).  You can also use constant expressions for the
+numbers, as shown in the C<fruits> example above; enum and bitfield constants
+are constants too (although you must use their C<enumprefix>/C<enumsuffix>, if
+any, to avoid ambiguity).
 
 The main difference between an enum and a bitfield is that an enum can only
 take one of its values at a time (numerically, that is); a bitfield can take
@@ -587,12 +622,22 @@ directly.
     digit_names => {
         type => 'numeric_dictionary',
         element_type => {
-            type => 'terminated_list',
-            element_type => 'char',
-            terminator => 0,
+            type => 'string',
             reference => 'into_array',
         },
         key_type => [0, 9],
+    },
+    digits_from_names => {
+        type => 'known_size_association_list',
+        element_type => [0, 9],
+        key_type => {
+            type => 'string',
+            reference => 'into_array',
+        },
+        reference => 'into_array',
+        element_name => 'digit',
+        key_name     => 'digit_name',
+        size         => 10,
     },
 
 A dictionary is a data structure that associates keys with values.  The most
@@ -613,10 +658,21 @@ In C, a numeric dictionary is implemented using a fixed-size array, using the
 values of the keys directly as array indexes.  This means that negative keys
 cannot be used, and the memory usage depends on the largest number used as a
 key, rather than the number of keys used.  Both these problems can be worked
-around to some extent using the C<relative_to> refinement on the key type
-(although don't do this blindly; this changes the semantics of your program,
-and the refinement is to notify F<structdesc> that you're using an offset on
-the keys).
+around to some extent using the C<relative_to> refinement on the key type.
+Don't do this blindly, though; this changes the semantics of your program, and
+the refinement is to notify F<structdesc> that you're using an offset on the
+keys.  F<structdesc> will not magically change the rest of your program to
+work with the offset.
+
+If you want to use dictionaries with keys that aren't small, mostly
+consecutive numbers, F<structdesc> does not support hash tables, but it does
+support I<association lists> (basically, just a list of key/value pairs with
+no duplicated keys).  This is basically just sugar for a list of structures;
+the fields of the structure are given by C<key_name> and C<element_name>
+refinements.  The association lists types themselves are
+C<counted_association_list>, C<terminated_association_list> (which is
+terminated using a specific, otherwise illegal, key), and
+C<known_size_association_list>; these work the same way as regular lists.
 
 =head1 REFINEMENTS
 
@@ -626,6 +682,7 @@ various ways.  Here's what you can do with them:
 =head2 Invariants
 
     defined_when  => '.type == TYPE_NUMERICAL',
+    nonnull_when  => '.type == TYPE_NUMERICAL',
     bounded_above => '.capacity',
     bounded_below => '.current',
     approximates  => '.revision',
@@ -636,22 +693,26 @@ These refinements specify run-time restrictions on the values that data can
 have.  C<bounded_above> and C<bounded_below> specify that this value cannot go
 higher or lower (respectively) than the given value; C<defined_when> specifies
 that this value is meaningless when the given expression is nonzero;
-C<approximates> specifies that the value of this value determines the
-C<ranges> in which another value can lie (where C<ranges> specifies a
-dictionary mapping values of this value, to C<[min, max]> pairs of that
-value).
+C<nonnull_when> specifies that this value is never null when the given
+expression is nonzero (and is meaningful at other times, too; just it can
+potentially be null at those times) C<approximates> specifies that the value
+of this value determines the C<ranges> in which another value can lie (where
+C<ranges> specifies a dictionary mapping values of this value, to C<[min,
+max]> pairs of that value).
 
 The intended semantics are that mutator functions that change I<other> values
 also change I<this> value to fix the invariants, if they would be given a
 value that breaks the invariant; and mutator functions that change I<this>
 value error out if changing it would break the invariants.  (All the legal
 invariants are invariants for which mutator functions could implement the
-desired behaviour.)  F<structdesc> does not yet have support for actually
-generating such mutator functions.  In preparation for a time when it does,
-though, or just to document your code's behaviour you can set a C<lags>
-refinement to specify that a mutator function should not automatically try to
-enforce the invariant (which is typically useful for programs which want the
-act of enforcing the invariant to have a side effect).
+desired behaviour, except C<nonnull_when>, for which this behaviour is
+impossible no matter which field the invariant is placed on.)  F<structdesc>
+does not yet have support for actually generating such mutator functions.  In
+preparation for a time when it does, though, or just to document your code's
+behaviour, you can set a C<lags> refinement to specify that a mutator function
+should not automatically try to enforce the invariant (which is typically
+useful for programs which want the act of enforcing the invariant to have a
+side effect).
 
 The argument to C<defined_when>, C<bounded_above>, C<bounded_below>, and
 C<approximates> is a I<runtime expression>, which is evaluated by the code
@@ -660,11 +721,15 @@ allowed to do arithmetic, mention constants, access global variables (and
 their structure fields, including recursively), and access other fields of the
 structure which has the invariant (with syntax like C<2+2>, C<PI>,
 C<global.field>, and C<.field> respectively).  The arithmetic syntax is that
-of C or Perl, just like for constants.  It is probably unwise to rely on the
-exact details of the way arithmetic works in the target language, because
-F<.sd> files should theoretically be portable to multiple languages.
-Likewise, you need to make your own arrangements to ensure that global
-variables actually exist in your target programs.
+of C or Perl, just like for constants.  Reference fields can also be accessed,
+but not dereferenced; all accessing them can do is to check for null.
+Although the null value of a reference is written as C<0> in a C<nullable>
+refinement, the actual null value used is uncertain, although it will evaluate
+as false when used like a boolean (and non-null values will evaluate as true).
+It is probably unwise to rely on the exact details of the way arithmetic works
+in the target language, because F<.sd> files should theoretically be portable
+to multiple languages.  Likewise, you need to make your own arrangements to
+ensure that global variables actually exist in your target programs.
 
 C<defined_when> deserves some further explanation, because it can have quite a
 major effect on cloning and serialization; if a field is not defined as a
@@ -701,6 +766,12 @@ stay the same; the classic example would be defining a string type in C, where
 the definition "NUL-terminated list of characters" is always correct, but
 cannot be used on its own due to missing memory allocation details.
 
+An C<abstract> refinement cannot be used to postpone giving C<values> for an
+enum or bitfield.  (The reason is that enums and bitfield values can be used
+in constant expressions, so the F<structdesc> parser needs to be able to find
+them early in the compilation process; and it cannot do this if they're
+separated from the actual enum or bitfield they apply to.)
+
 =head2 Reference types
 
     # For example:
@@ -708,6 +779,7 @@ cannot be used on its own due to missing memory allocation details.
     reference => 'owned',
     reference => 'owned_realloc', reference_alloclen_name => 'alloclen',
     reference => 'owned_or_static', mutable_reference_name => 'ownedbuf',
+    reference => 'backref', levels => 2,
 
 There are two basic methods of storing data in programming languages.  A
 I<value type> stores its data directly; copying the value copies the data.
@@ -729,7 +801,12 @@ This is handled using an C<opaque> refinement.  Sadly, knowing the name of the
 type in the F<.sd> file (but not its definition) is not necessarily enough to
 know the language-level name of the type; F<structdesc> will assume that the
 type in question is an unrefined structure.  (If F<structdesc> needs to be
-able to allocate or clone the type, it will need the full definition.)
+able to allocate, clone, serialize, deserialize or verify invariants on the
+type, it will need the full definition at some point, although it will be able
+to reference code that does the allocation or cloning without having a copy of
+that code available.  This means that C<opaque> is still useful in such cases:
+it allows the structure to be defined in terms of itself, which would not
+normally be possible.)
 
 Reference types have one major issue that does not affect value types: the
 lifetime of the data referred to is not obvious from the reference itself.
@@ -783,6 +860,11 @@ will be declared as one (if the array in question or its length is unknown,
 the integer will be large enough to hold any index for any theoretical array
 that might be used).
 
+Finally, an C<array_index> can always be serialized (F<structdesc> can copy a
+number into the serialized output even without knowing what it means); an
+C<into_array> cannot be serialized without an C<into> specified (in which
+case, it will be serialized via conversion to and from C<array_index>).
+
 =item weak
 
 A rare situation, but another one which is simple for F<structdesc> to handle:
@@ -795,14 +877,46 @@ considers the combination an error.)  Some languages make this easier by
 providing language-level support for weak references, but if the visibility
 issues can be worked around, a program can do it by hand.  F<structdesc>
 cannot check that a reference behaves like this, but it knows how to
-manipulate it.
+manipulate a reference that does.
 
 Objects containing weak references cannot be cloned, because that would break
-the weakness.  (An exception is in languages with language-level support for
-weak references, in which case F<structdesc> can weaken the reference itself.)
+the weakness.  They I<can> be serialized, but the reference itself will be
+omitted from the serialized form, and become uninitialized upon
+deserialization; and the user of F<structdesc>'s code is thus responsible for
+reconstructing the reference.
 
-For backreferences from objects to their owners, the semantics of both
-C<into_array> and C<weak> fit; use C<into_array>, because it is more general.
+=item backref
+
+Sometimes, an object will have a "backreference", from the object itself to
+its owner (or its owner's owner, etc.).  In this case, the object being
+referenced is necessarily going to outlive the reference itself.  Both
+C<into_array> and C<weak> can correctly be used to describe this situation,
+but neither is particularly self-documenting, and neither behaves correctly if
+the object's owner is cloned (C<into_array> would leave the backreference
+pointing to the original owner, because C<into> cannot be set correctly; with
+C<weak>, F<structdesc> couldn't figure out how to clone the object at all).
+
+Thus, a separate reference strategy, C<backref>, is provided to describe the
+situation.  When F<structdesc> clones a structure that has backreferences
+somewhere inside it, it will adjust the backreferences appropriately.  The
+references will also be marked as backreferences in languages (such as Perl)
+that use reference counting without cycle detection as a memory allocation
+strategy; if they were not marked as such, then the object would require
+explicit deallocation, rather than implicit deallocation when the last
+reference to it goes stale.
+
+A backreference can have a C<levels> refinement that specifies what the
+reference is referencing; 0 indicates a reference from the object to itself, 1
+indicates a reference from the object to its owner, and so on.  If it is not
+specified, F<structdesc> will try to work it out at runtime, and serialize a
+backreference as the value that a hypothetical C<levels> refinement would have
+for the object in question.  It is not possible to serialize or deserialize an
+object with a backreference by itself; but it is possible to deserialize the
+object that the backreference is to, which will serialize or deserialize the
+object itself in the process.  (If C<levels> is present, it will be treated
+like C<usually> for serialization purposes; because F<structdesc> knows how
+many levels back the backreference goes, it will not need to actually place
+the field in the serializtion.)
 
 =item owned
 
@@ -812,15 +926,61 @@ reference is cloned, so is the object it references.  This effectively makes
 reference types behave like value types.  (This is also the reason why the C
 API of the functions that F<structdesc> generates is so complex; there are a
 lot of different ways an object can potentially be allocated.  The basic API
-used by structdesc is that when it generates an object that owns references,
-it owns those references, and will call a callback function and then
-deallocate them again (even on abnormal termination); the exception is
+used by F<structdesc> is that when it generates an object that owns
+references, it owns those references, and will call a callback function and
+then deallocate them again (even on abnormal termination); the exception is
 cloning, where it will use a provided allocator.)
 
 For this memory allocation scheme, C<< mutable => 1 >> is given by default,
 and cannot be disabled even explicitly.  This is safe (because the reference
 type acts like a value type), and also necessary (because the ability to
 affect the reference target is needed to be able to deallocate it).
+
+=item owned_or_value
+
+Using C<owned> effectively makes reference types act like value types;
+therefore, it can be seen as a way to implement variable-sized value types in
+languages like C that do not provide first-class support for them.  However,
+in some languages, variable-sized value types work just fine, either in
+general (e.g. Haskell, from the point of view of the programmer), or in
+special cases (e.g. strings in Perl).
+
+Thus, you can specify C<owned_or_value>; the type will be a value type if it
+is possible in the language, and an C<owned> reference if it is impossible in
+the language.
+
+Here's an example:
+
+    # Type definitions
+    string1    => {type => 'terminated_list', element_type => 'char',
+                   reference => 'owned', terminator => 0},
+    string2    => {type => 'terminated_list', element_type => 'char',
+                   reference => 'owned_or_value', terminator => 0},
+    string3    => {type => 'terminated_list', element_type => 'char',
+                   reference => 'into_array', terminator => 0},
+    'struct a' => {s1 => 'string1', s2 => 'string2', s3 => 'string3'},
+
+    # A 'struct a' in C
+    struct a foo = {.s1 = strdup("Hello, "),
+                    .s2 = strdup("world!"),
+                    .s3 = "\n"};
+
+    # An identical 'struct a' in Perl
+    our @string_literals = ("\n\0");
+    my $foo = {s1 => \ "Hello\0",
+               s2 => "world!\0",
+               s3 => weaken \ $string_literals[0]};
+
+In C, variable-length strings cannot be a value type, so a reference is used
+in both cases.  In Perl, variable-length strings can be; thus,
+C<< $foo->{s2} >>, being C<owned_or_value>, is just a plain string.
+C<< $foo->{s1} >> is just C<owned>, and thus is a reference to a string,
+because F<structdesc> has been told that it should be a reference.  An
+C<into_array> is shown as a comparison; this is very easy to represent in C,
+which effectively has all its string literals as part of an array in the
+data segment, but in Perl, we needed to construct a separate array to point
+into.  (It should thus not be surprising that C<into_array> cannot be
+deserialized without an C<into>.)
 
 =item owned_realloc
 
@@ -847,9 +1007,14 @@ length itself can be measured in two ways:
     reference_alloclen_units => 'data',      # measure in list elements
 
 F<structdesc> requires this to be specified explicitly, because both
-measurement method are reasonable, and mixing them up is thus a very easy
+measurement methods are reasonable, and mixing them up is thus a very easy
 mistake that can lead to subtle bugs; it's important for making the F<.sd>
 file self-documenting, in addition to necessary to generate correct code.
+
+Several languages do this reallocation strategy transparently to the user, in
+which case there is no point in doing it by hand.  F<structdesc> will omit the
+allocation length field in this case.  For similar reasons, it is omitted from
+serializations.
 
 =item owned_or_static, owned_or_static_realloc
 
@@ -893,8 +1058,8 @@ don't actually need to know the name of the mutable reference; the immutable
 reference is the one you should be using (if you care about the mutable one
 outside memory management, you're doing things wrong).  However, you can use
 the C<mutable_reference_name> refinement to specify a name for it, in case
-your code is crazy enoug to want to allocate, reallocate, clone, or free these
-references manually.
+your code is crazy enough to want to allocate, reallocate, clone, or free
+these references manually.
 
 Finally, all this only works on list types that have been made into a structure
 type using the C<list_name> refinement, because F<structdesc> needs somewhere
@@ -1000,9 +1165,13 @@ which are optional) specify a name transformation to use for programmatic use
     element_type => [0, 1] # type name, type refinement, or numerical type
     key_type =>     [0, 1] # ditto, for dictionaries only
     list_name => 'entries' # makes the list a structure type
-    count_name => 'length' # for counted lists
-    terminator => 'MAXE+1' # for terminated lists
-    size => '.otherlength' # for known-size lists
+    count_name => 'length' # for counted (association) lists
+    terminator => 'MAXE+1' # for terminated (association) lists
+    size => '.otherlength' # for known-size (association) lists
+    key_name => 'key'      # for association lists
+    element_name => 'elem' # for association lists
+    maxlen => 5            # for any sort of list
+    minlen => 5            # for any sort of list
 
 Lists and dictionaries are defined in terms of an C<element_type>, and for
 dictionaries, a C<key_type>; these are anything that could appear on the right
@@ -1024,11 +1193,31 @@ expression.  Known-size lists have a C<size>, which is a runtime expression;
 see L<the description of invariants|/"Invariants"> for more information on the
 syntax.
 
+Association lists work like regular lists in most respects; being both
+dictionary and list types, they require a C<key_type>, but also a length
+management refinement (C<count_name>, C<terminator> which applies to the key,
+or C<size>).  They also need a C<key_name> and C<element_name> for the
+structure that makes up the body of the list.
+
+Finally, invariants can also be given on list lengths.  Having a C<maxlen>
+invariant on a list length, specifying a maximum length, allows the list to be
+implemented as a fixed-size buffer; this tends to be a bad idea unless the
+length in question is very small, but is there to describe the behaviour of
+programs that do that.  Of course, you can avoid that problem using
+C<reference> and yet still use C<maxlen> to document the behaviour of your
+program.  C<minlen> has no particular memory management behaviour, but
+specifying a minimum length can also help to reject invalid input.
+
+If you find yourself wanting to use C<maxlen> and C<minlen>, it might be more
+appropriate to use a C<numeric_dictionary> rather than a C<list>.
+
 =cut
 
 use lib 'lib';
 use StructDesc::Parse qw/parse_structdesc/;
 
 use Data::Dumper;
+
+$Data::Dumper::Sortkeys = 1;
 
 print Dumper(StructDesc::Parse::parse_structdesc_from_path $ARGV[0], []);
