@@ -615,7 +615,8 @@ C<reference>|/"Reference types"> for more details.
 In C, lists are always implemented as contiguous blocks of memory (or pointers
 to such blocks when a C<reference> refinement is used).  Most higher-level
 languages and serialization formats have a list type that can be used
-directly.
+directly.  When it is, the language's support for storing lengths will be
+used, rather than an explicit count or terminator.
 
 =head2 Dictionaries
 
@@ -725,10 +726,12 @@ of C or Perl, just like for constants.  Reference fields can also be accessed,
 but not dereferenced; all accessing them can do is to check for null.
 Although the null value of a reference is written as C<0> in a C<nullable>
 refinement, the actual null value used is uncertain, although it will evaluate
-as false when used like a boolean (and non-null values will evaluate as true).
-It is probably unwise to rely on the exact details of the way arithmetic works
-in the target language, because F<.sd> files should theoretically be portable
-to multiple languages.  Likewise, you need to make your own arrangements to
+as false when used like a boolean (and, except in the case of
+C<owned_or_value>, where it's hard to get any guarantees on how value types
+will act in any given language, non-null values will evaluate as true).  It is
+probably unwise to rely on the exact details of the way arithmetic works in
+the target language, because F<.sd> files should theoretically be portable to
+multiple languages.  Likewise, you need to make your own arrangements to
 ensure that global variables actually exist in your target programs.
 
 C<defined_when> deserves some further explanation, because it can have quite a
@@ -747,7 +750,7 @@ data it produces; but it is unwise to rely on this.
 F<structdesc> is aware of the debugger program Memcheck (part of Valgrind); if
 you include Valgrind's and Memcheck's headers while compiling its output, it
 will tell Memcheck that the fields in question are undefined (thus producing
-an error from Memcheck if you try to use it).
+an error from Memcheck if you try to use them).
 
 =head2 Partially defined types
 
@@ -1128,7 +1131,7 @@ to an offset of C<-3>", or in C<.sd> format,
     {type => [-2, 250], relative_to => -3},
 
 F<structdesc> will then understand that if it sees a particular number in the
-field, it should increase it by 3 to get at its true value.  This currently
+field, it should decrease it by 3 to get at its true value.  This currently
 affects the C<key_type>, C<nullable>, and C<usually> refinements.  It does
 I<not> affect runtime expressions in invariants, basically because those have
 to work even if they refer to globals that F<structdesc> is unaware of, and
@@ -1181,17 +1184,19 @@ refinement; if present, the list becomes a structure type, with the list
 values itself stored in a field of the given name.  This is mostly useful for
 C<counted_list>, which needs to be a structure type anyway, because it always
 has at least two fields (the list itself, and the count, stored in a field
-named using the refinement C<count_name>).  It can also be used to allow for
-memory management techniques that require extra fields, such as
-C<< reference => 'owned_realloc' >>.
+named using the refinement C<count_name>, except in languages that store list
+lengths implicitly anyway).  It can also be used to allow for memory
+management techniques that require extra fields, such as C<< reference =>
+'owned_realloc' >>.
 
 The other sorts of list also need refinements to give their lengths.
 Terminated lists have a C<terminator>, a value that's illegal as an element;
 this will be stored at the end of the list to allow a loop to know that the
-end of the list has been reached.  This value must be a constant, or constant
-expression.  Known-size lists have a C<size>, which is a runtime expression;
-see L<the description of invariants|/"Invariants"> for more information on the
-syntax.
+end of the list has been reached (unless there is language-level support for
+counted lists, in which case that will be used instead of an explicit
+terminator).  This value must be a constant, or constant expression.
+Known-size lists have a C<size>, which is a runtime expression; see L<the
+description of invariants|/"Invariants"> for more information on the syntax.
 
 Association lists work like regular lists in most respects; being both
 dictionary and list types, they require a C<key_type>, but also a length
@@ -1213,11 +1218,13 @@ appropriate to use a C<numeric_dictionary> rather than a C<list>.
 
 =cut
 
-use lib 'lib';
+use lib 'lib', 'desc';
 use StructDesc::Parse qw/parse_structdesc/;
 
 use Data::Dumper;
 
 $Data::Dumper::Sortkeys = 1;
+$Data::Dumper::Indent = 1;
+$Data::Dumper::Deepcopy = 1;
 
 print Dumper(StructDesc::Parse::parse_structdesc_from_path $ARGV[0], []);

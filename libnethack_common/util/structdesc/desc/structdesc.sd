@@ -47,7 +47,7 @@
     # if we have separate null values in the language.
     nce  => {
         type => 'constant_expression',
-        reference => 'owned',
+        reference => 'owned_or_value',
         nullable => 0,
     },
 
@@ -74,6 +74,11 @@
     # should be here but is not yet supported.)  The order is: numbers;
     # structures; lists; dictionaries.  Some definitions later on rely on this
     # order.
+    #
+    # This list needs to be used by the structdesc parser itself, which means
+    # that we use something simpler than the "real" parser to do the initial
+    # reading of it. As such, it's accessed directly by the name of the hash
+    # key, and thus the 'enum' sugar is required.
     'enum builtin_type' => {
         enumprefix => 'structdesc_builtin_',
         values => [qw/enum bitfield
@@ -86,6 +91,8 @@
     },
     structdesc_last_builtin_number => 'structdesc_builtin_wchar_t',
     structdesc_first_builtin_list  => 'structdesc_builtin_string',
+    structdesc_first_builtin_generic_list =>
+        'structdesc_builtin_counted_list',
     structdesc_first_builtin_dictionary =>
         'structdesc_builtin_numeric_dictionary',
     structdesc_first_builtin_association_list =>
@@ -97,14 +104,21 @@
     },
 
     # We can't define a structure in terms of itself.  But we can define it in
-    # terms of references to itself.
+    # terms of references to itself.  (The _or_value is for languages where
+    # structures are implemented as 'owned' by default anyway, to avoid a
+    # second layer of indirection in that case.)
     opaque_refinement => {
         type => 'refinement',
-        reference => 'owned',
+        reference => 'owned_or_value',
         opaque => 1,
+        abstract => 1,   # we want "struct refinement *" not "opaque_refinement"
     },
 
     # All types are eventually compiled down into refinements.
+    # The name of this structure ('struct refinement'), and 'nce',
+    # '.*constant_expression', type => 'nce', type => '.*constant_expression'
+    # are used to locate constant expressions before this is fully parsed, and
+    # thus must have literally those names.
     'struct refinement' => {
 
         type => 'builtin_type',
@@ -128,10 +142,7 @@
             values       => [qw/array_index into_array weak backref
                                 owned owned_realloc owned_or_value
                                 owned_or_static owned_or_static_realloc/],
-        },
-        opaque => {
-            type         => 'flag',
-            defined_when => '.reference != -1',
+            nonnull_when => '.type == structdesc_builtin_opaque',
         },
         into => {
             type         => 'runtime_expression',
@@ -168,8 +179,15 @@
                 '.reference == structdesc_reference_owned_or_static_realloc',
         },
 
-        nullable => 'nce',
-        usually  => 'nce',
+        nullable => {
+            type         => 'nce',
+            defined_when => '.type <= structdesc_last_builtin_number || '.
+                            '.reference != -1',
+        },
+        usually  => {
+            type         => 'nce',
+            defined_when => '.type <= structdesc_last_builtin_number'
+        },
 
         pack => {
             type         => 'flag',
@@ -195,7 +213,7 @@
             key_name     => 'name',
             element_name => 'value',
 
-            reference    => 'owned',
+            reference    => 'owned_or_value',
 
             defined_when => '.type == structdesc_builtin_enum || '.
                             '.type == structdesc_builtin_bitfield',
@@ -215,7 +233,7 @@
         # Strings and wide strings don't have an explicit element type.
         element_type => {
             type         => 'opaque_refinement',
-            defined_when => '.type >= structdesc_builtin_counted_list',
+            defined_when => '.type >= structdesc_first_builtin_generic_list',
         },
         key_type => {
             type         => 'opaque_refinement',
@@ -276,44 +294,64 @@
             type         => 'terminated_association_list',
             key_type     => 'identifier',
             element_type => 'opaque_refinement',
+            key_name     => 'field',
+            value_name   => 'type',
             terminator   => 0,
             defined_when => '.type == structdesc_builtin_struct || '.
                             '.type == structdesc_builtin_union',
-            reference    => 'owned',
+            reference    => 'owned_or_value',
         },
 
-        # Some fields used internally to implement 'opaque', '_include',
-        # type refinement
-        _generate => [0, 1],
-        _typename => {
-            type => 'identifier',
-            nullable => 0,
-            nonnull_when => '.type == structdesc_builtin_opaque',
+        # Used internally to implement 'opaque'
+        opaque_reference_to => {
+            type         => 'identifier',
+            defined_when => '.type == structdesc_builtin_opaque',
         },
+
+        # There are some fields for internal use only. These aren't part of
+        # the format, but are documented here.
+        # _generate => [0, 1],
+        # _typenamehints => {
+        #     type         => 'terminated_list',
+        #     element_type => 'identifier',
+        #     terminator   => 0,
+        #     reference    => 'owned_or_value',
+        # },
+        # _bits     => [0, '+inf'],
+        # _signed   => [0, 1],
     },
 
     # Are filenames ASCII or Unicode? Well, they /could/ be Unicode on some
     # platforms, thus we accept structdesc files that _include Unicode strings.
     filename => {type => 'wstring_t', reference => 'owned_or_value'},
 
+    'struct constant_definition' => {
+        name  => 'identifier',
+        value => 'identifier',
+        # A constant can be owned by an enum or bitfield.
+        owner => {type => 'identifier', nullable => 0},
+    },
+
     'struct structdesc' => {
         includes => {
             type         => 'terminated_list',
             element_type => 'filename',
             terminator   => 0,
-            reference    => 'owned',
+            reference    => 'owned_or_value',
         },
         constants => {
-            type         => 'terminated_association_list',
-            key_type     => 'identifier',
-            element_type => 'constant_expression',
-            terminator   => 0,
-            reference    => 'owned',
+            type         => 'counted_list',
+            element_type => 'constant_definition',
+            reference    => 'owned_or_value',
         },
         typedefs => {
             type         => 'terminated_association_list',
             key_type     => 'identifier',
-            
+            element_type => 'refinement',
+            key_name     => 'type',
+            value_name   => 'definition',
+            terminator   => 0,
+            reference    => 'owned_or_value',
         },
     },
 },

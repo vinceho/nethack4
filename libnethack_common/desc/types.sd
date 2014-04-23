@@ -1,4 +1,4 @@
-# Last modified by Alex Smith, 2014-04-20
+# Last modified by Alex Smith, 2014-04-23
 # Copyright (C) 2014 Alex Smith.
 # NetHack may be freely redistributed.  See license for details.
 
@@ -60,6 +60,7 @@ $int_min = -2147483648;
 
     xlevel  => [1, 'MAXULEV'],
 
+    ROOMOFFSET => 3,
     roomno   => [0, 63],           # 0 = normal room, 1+ = special room
     rooms_in => {                  # set of rooms
         type => 'terminated_list', # TODO: why is the order used?
@@ -83,6 +84,13 @@ $int_min = -2147483648;
         type => 'permonst',
         reference => 'into_array',
         into => 'mons',
+        opaque => 1,
+    },
+
+    otyp => {
+        type => 'objclass',
+        reference => 'array_index',
+        into => 'const_objects',
         opaque => 1,
     },
 
@@ -134,7 +142,7 @@ $int_min = -2147483648;
         type => 'Role',
         opaque => 1,
         reference => 'array_index',
-        relative_to => 'roles',
+        into => 'roles',
     },
 
     aligntyp => {
@@ -171,7 +179,7 @@ $int_min = -2147483648;
 
     timeout => {
         type => 'turncount',
-        relative_to => 'turns',
+        # relative_to the global 'turns', but that isn't a constant
         usually => '0',
     },
 
@@ -626,22 +634,29 @@ $int_min = -2147483648;
         values => [qw/BOOL INT ENUM STRING AUTOPICKUP_RULES/],
     },
     'struct listitem' => {
-        id => [$minint, $maxint],
-        caption => 'string',
+        id => [$int_min, $int_max],
+        caption => {type => 'string', reference => 'owned_or_static'},
     },
     'struct int_option' => {
-        min => [$minint, $maxint],
-        max => [$minint, $maxint],
+        min => [$int_min, $int_max],
+        max => [$int_min, $int_max],
     },
     'enum_option' => {
         type => 'counted_list',
         element_type => 'listitem',
         count_name => 'numchoices',
-        element_name => 'choices',
+        list_name => 'choices',
         reference => 'into_array', # but we don't know which one
     },
     'struct string_option' => {
         maxlen => [0, 'BUFSZ'],
+    },
+    'autopick_option' => {
+        type => 'counted_list',
+        element_type => 'listitem',
+        count_name => 'numclasses',
+        list_name => 'classes',
+        reference => 'into_array',
     },
     'struct autopickup_rule' => {
         pattern => {
@@ -654,22 +669,23 @@ $int_min = -2147483648;
     },
     'autopickup_rules' => {
         type => 'counted_list',
-        element_type => 'autopickup_rules',
+        element_type => 'autopickup_rule',
         count_name => 'num_rules',
         list_name => 'rules',
+        reference => 'owned',
     },
 
     'union optvalue' => {
-        s => "string",
-        b => "boolean",
+        s => {type => 'string', reference => 'owned'},
+        b => 'boolean',
         i => [$int_min, $int_max],
         e => [$int_min, $int_max],
         ar => 'autopickup_rules',
     },
 
     'struct option_desc' => {
-        name => 'string',
-        helptxt => 'string',
+        name => {type => 'string', reference => 'owned_or_static'},
+        helptxt => {type => 'string', reference => 'owned_or_static'},
         birth_option => 'boolean',
         type => 'opttype',
         value => 'optvalue',
@@ -763,10 +779,10 @@ $int_min = -2147483648;
         playmode   => 'game_modes',
 
         name       => {type => 'string', maxlen => 'PL_NSIZ'},
-        plrole     => {type => 'string', maxlen => 'PLRBUFSIZ'},
-        plrace     => {type => 'string', maxlen => 'PLRBUFSIZ'},
-        plgend     => {type => 'string', maxlen => 'PLRBUFSIZ'},
-        plalign    => {type => 'string', maxlen => 'PLRBUFSIZ'},
+        plrole     => {type => 'string', maxlen => 'PLRBUFSZ'},
+        plrace     => {type => 'string', maxlen => 'PLRBUFSZ'},
+        plgend     => {type => 'string', maxlen => 'PLRBUFSZ'},
+        plalign    => {type => 'string', maxlen => 'PLRBUFSZ'},
 
         game_state => {type => 'string', maxlen => 'COLNO'},
     },
@@ -800,10 +816,10 @@ $int_min = -2147483648;
         patchlevel => 'version_component',
 
         name       => {type => 'string', maxlen => 'PL_NSIZ'},
-        plrole     => {type => 'string', maxlen => 'PLRBUFSIZ'},
-        plrace     => {type => 'string', maxlen => 'PLRBUFSIZ'},
-        plgend     => {type => 'string', maxlen => 'PLRBUFSIZ'},
-        plalign    => {type => 'string', maxlen => 'PLRBUFSIZ'},
+        plrole     => {type => 'string', maxlen => 'PLRBUFSZ'},
+        plrace     => {type => 'string', maxlen => 'PLRBUFSZ'},
+        plgend     => {type => 'string', maxlen => 'PLRBUFSZ'},
+        plalign    => {type => 'string', maxlen => 'PLRBUFSZ'},
 
         death      => {type => 'string', maxlen => 'BUFSZ'},
         entrytxt   => {type => 'string', maxlen => 'BUFSZ'},
@@ -817,34 +833,40 @@ $int_min = -2147483648;
             element_type => {type => 'string', reference => 'owned'},
             count_name => 'num_roles',
             list_name => 'rolenames_m',
+            reference => 'owned_or_static',
         },
         rolenames_f => {
             type => "known_size_list",
             element_type => {type => 'string', reference => 'owned'},
             size => '.num_roles',
+            reference => 'owned_or_static',
         },
         _anon_3 => {
             type => "counted_list",
             element_type => {type => 'string', reference => 'owned'},
             count_name => 'num_races',
             list_name => 'racenames',
+            reference => 'owned_or_static',
         },
         _anon_4 => {
             type => "counted_list",
             element_type => {type => 'string', reference => 'owned'},
             count_name => 'num_genders',
             list_name => 'gendnames',
+            reference => 'owned_or_static',
         },
         _anon_5 => {
             type => "counted_list",
             element_type => {type => 'string', reference => 'owned'},
             count_name => 'num_aligns',
             list_name => 'alignnames',
+            reference => 'owned_or_static',
         },
         matrix => {
             type => "known_size_list",
             element_type => "boolean",
             size => '.num_roles * .num_races * .num_genders * .num_aligns',
+            reference => 'owned_or_static',
         },
     },
 }
