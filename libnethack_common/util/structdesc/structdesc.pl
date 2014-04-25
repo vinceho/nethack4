@@ -750,7 +750,7 @@ data it produces; but it is unwise to rely on this.
 F<structdesc> is aware of the debugger program Memcheck (part of Valgrind); if
 you include Valgrind's and Memcheck's headers while compiling its output, it
 will tell Memcheck that the fields in question are undefined (thus producing
-an error from Memcheck if you try to use them).
+an error from Memcheck if you try to read them).
 
 =head2 Partially defined types
 
