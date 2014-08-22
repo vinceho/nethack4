@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2014-03-31 */
+/* Last modified by Alex Smith, 2014-08-22 */
 /* Copyright (c) 2014 Alex Smith. */
 /* This Sokoban puzzle generator may be distributed under either of the
  * following licenses:
@@ -135,7 +135,7 @@ extern bool diagonals; /* are we in diagonals mode? */
  *
  * - GNU89: "extern" means "is available elsewhere"; inline functions differ
  *   from regular functions in that being inline, their definition needs to
- *   be avaiable, thus, the weird part is that you get "extern" on a
+ *   be available, thus, the weird part is that you get "extern" on a
  *   definition, something that doesn't exist elsewhere.
  *
  * - C99: "extern" means "is defined elsewhere" and is never accompanied by
