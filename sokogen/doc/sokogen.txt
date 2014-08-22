@@ -1,5 +1,5 @@
 About this document:
-Last modified by Alex Smith, 2014-04-02
+Last modified by Alex Smith, 2014-08-22
 
 Copyright (C) 2014 Alex Smith.
 
@@ -423,7 +423,7 @@ choose behaviours we want our chambers to have, then find appropriate chambers
 with those properties (probably from a library of chambers).  This has a large
 advantage over solving: a Sokoban solver should theoretically be fully general
 (or it isn't really a solver), meaning that it has to be able to handle
-arbitrary complex chambers (including the entire level, in the worst case),
+arbitrarily complex chambers (including the entire level, in the worst case),
 but for a Sokoban puzzle generator, it is acceptable to restrict ourselves to
 chambers simple enough for the puzzle generator to handle.
 
@@ -679,9 +679,9 @@ Crate locks
 Instead of being locked by the shape of a chamber, crates can be locked by
 other crates instead:
 
-             ----
-    ----------88|
-    |8.0..00....|
+     ------  ----
+    --8888----88|
+    |8.0-.00....|
     |800........|
     |--.........|
     |80.....00..|
@@ -785,7 +785,7 @@ like this:
         ----------
 
 Now a player needs to store three crates in the storage chamber over the left;
-a crate over the left of the region its in can only move left, and a crate
+a crate over the left of the region it's in can only move left, and a crate
 over the right can only move right, so if any crates are returned to the
 directed chambers before all are clear, a solution would require somehow
 swapping the chambers in which two of the crates resided, which is impossible
