@@ -12,7 +12,7 @@
 
 #define STARTSCUM_POINTS 20000
 
-#define DEBUG "/tmp/ircdebug.txt"
+/* #define DEBUG "/tmp/ircdebug.txt" */
 #ifdef DEBUG
 static FILE *debugfile;
 #endif
