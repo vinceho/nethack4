@@ -99,6 +99,21 @@ irc_log_game_over(const struct nh_topten_entry *tte)
         return;
     }
 
+    /* paranoia: reject control characters */
+    char *r;
+    for (r = tte->entrytxt; *r; r++)
+        if (*r < ' ' || *r > '~') {
+            log_msg("Not sending game over to IRC: "
+                    "dubious characters in death message\n");
+            return;
+        }
+    for (r = user_info.username; *r; r++)
+        if (*r < ' ' || *r > '~') {
+            log_msg("Not sending game over to IRC: "
+                    "dubious characters in username\n");
+            return;
+        }
+
     log_msg("Spawning a process to report the game over to IRC");
 
     /* Don't block on network connections. We can do this in the background
