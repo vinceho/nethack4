@@ -12,6 +12,11 @@
 
 #define STARTSCUM_POINTS 20000
 
+#define DEBUG "/tmp/ircdebug.txt"
+#ifdef DEBUG
+static FILE *debugfile;
+#endif
+
 static int
 wait_input(int fd)
 {
@@ -34,6 +39,10 @@ wait_numeric(int fd, int num)
             return FALSE;
         if (read(fd, &in, 1) != 1)
             return FALSE;
+
+#ifdef DEBUG
+        fprintf(debugfile, "<%c", in);
+#endif
 
         if (in == '\n') {
             state = wn_newline;
@@ -68,6 +77,10 @@ wait_error(int fd)
         if (read(fd, &in, 1) != 1)
             return FALSE;
 
+#ifdef DEBUG
+        fprintf(debugfile, "<%c", in);
+#endif
+
         if (in != charseq[charseq_seen])
             charseq_seen = 0;
         else if (charseq_seen < sizeof charseq - 2)
@@ -80,7 +93,9 @@ wait_error(int fd)
 static inline int
 send_c_string(int fd, const char *str)
 {
-    log_msg(str);
+#ifdef DEBUG
+    fprintf(debugfile, ">[%s]", str);
+#endif
     return write(fd, str, strlen(str));
 }
 
@@ -100,7 +115,7 @@ irc_log_game_over(const struct nh_topten_entry *tte)
     }
 
     /* paranoia: reject control characters */
-    char *r;
+    const char *r;
     for (r = tte->entrytxt; *r; r++)
         if (*r < ' ' || *r > '~') {
             log_msg("Not sending game over to IRC: "
@@ -121,13 +136,27 @@ irc_log_game_over(const struct nh_topten_entry *tte)
     if (fork() != 0)
         return; /* we're the parent or this is an error */
 
+#ifdef DEBUG
+    debugfile = fopen(DEBUG, "w");
+    if (!debugfile)
+        debugfile = stderr;
+#endif
+
     /* protect ourself from SIGHUP */
     signal(SIGHUP, SIG_IGN);
 
     char errmsg[256];
     int fd = connect_server(settings.irchost, 6667, 1, errmsg, sizeof errmsg);
-    if (fd < 0)
+    if (fd < 0) {
+#ifdef DEBUG
+        fprintf(debugfile, "Error connecting: %s\n", errmsg);
+#endif
         exit(0);
+    }
+
+#ifdef DEBUG
+    fprintf(debugfile, "Connected to IRC server\n");
+#endif
 
 #define SS(x) if (send_c_string(fd, x) < 0) exit(0)
 
