@@ -169,6 +169,7 @@ irc_log_game_over(const struct nh_topten_entry *tte)
         exit(0);
     }
 
+    SS("JOIN "); SS(settings.ircchannel); SS("\n");
     SS("PRIVMSG "); SS(settings.ircchannel); SS(" :[account ");
     SS(user_info.username); SS("] ");
 
