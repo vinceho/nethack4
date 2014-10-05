@@ -121,6 +121,9 @@ irc_log_game_over(const struct nh_topten_entry *tte)
     if (fork() != 0)
         return; /* we're the parent or this is an error */
 
+    /* protect ourself from SIGHUP */
+    signal(SIGHUP, SIG_IGN);
+
     char errmsg[256];
     int fd = connect_server(settings.irchost, 6667, 1, errmsg, sizeof errmsg);
     if (fd < 0)
