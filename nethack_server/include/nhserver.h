@@ -95,6 +95,7 @@ struct settings {
     char *pidfile;
     int client_timeout;
     char *dbhost, *dbname, *dbport, *dbuser, *dbpass;
+    char *irchost, *ircnick, *ircpass, *ircchannel;
 };
 
 
@@ -172,6 +173,9 @@ extern struct gamefile_info *db_list_games(int completed, int uid, int limit,
 extern void db_add_topten_entry(int gid, int points, int hp, int maxhp,
                                 int deaths, int end_how, const char *death,
                                 const char *entrytxt);
+
+/* irc.c */
+extern void irc_log_game_over(const struct nh_topten_entry *tte);
 
 /* log.c */
 extern void log_msg(const char *fmt, ...);

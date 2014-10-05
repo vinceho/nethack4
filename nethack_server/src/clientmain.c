@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2014-07-07 */
+/* Last modified by Alex Smith, 2014-10-05 */
 /* Copyright (c) Daniel Thaler, 2011. */
 /* The NetHack server may be freely redistributed under the terms of either:
  *  - the NetHack license
@@ -368,6 +368,10 @@ client_main(int userid, int _infd, int _outfd)
     for (i = 0; i < PREFIX_COUNT; i++)
         free(gamepaths[i]);
     free(gamepaths);
+
+    /* Don't leave behind zombies. */
+    sigaction(SIGCHLD, &(struct sigaction){
+            .sa_handler = SIG_IGN, .sa_flags = SA_NOCLDSTOP|SA_NOCLDWAIT}, 0);
 
     client_main_loop();
 

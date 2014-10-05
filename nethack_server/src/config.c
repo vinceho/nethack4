@@ -34,12 +34,16 @@ trim(char *str)
 struct { const char *const name; size_t offset; } settings_map[] = {
     SETTINGS_MAP_ENTRY(logfile),
     SETTINGS_MAP_ENTRY(workdir),
-    SETTINGS_MAP_ENTRY(dbhost),
     SETTINGS_MAP_ENTRY(pidfile),
+    SETTINGS_MAP_ENTRY(dbhost),
     SETTINGS_MAP_ENTRY(dbport),
     SETTINGS_MAP_ENTRY(dbuser),
     SETTINGS_MAP_ENTRY(dbpass),
-    SETTINGS_MAP_ENTRY(dbname)
+    SETTINGS_MAP_ENTRY(dbname),
+    SETTINGS_MAP_ENTRY(irchost),
+    SETTINGS_MAP_ENTRY(ircnick),
+    SETTINGS_MAP_ENTRY(ircpass),
+    SETTINGS_MAP_ENTRY(ircchannel)
 };
 
 static int
