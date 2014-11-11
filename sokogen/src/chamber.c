@@ -157,6 +157,7 @@ generate_chamber_line(struct xarray *chambers, int width, int squares,
         newchamber->width = width;
         newchamber->height = squares / width;
         newchamber->entrypos = entrypos;
+        newchamber->layouts = (struct xarray){0, 0, 0};
         
         struct layout *baselayout =
             NEW_IN_XARRAY(&(newchamber->layouts), struct layout);
