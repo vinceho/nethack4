@@ -68,9 +68,9 @@ memdup(void *m, size_t z)
     return rv;
 }
 
-/* Adds a new element to an extensible array, and returns its index. (Returning
+/* Adds a new element to an extensible array, and returns its index. Returning
    a pointer would be more useful, but hard to do without C++-style
-   templates.); so that's done with a macro in sokogen.h. */
+   templates; so that's done with a macro in sokogen.h. */
 size_t
 new_in_xarray(struct xarray *x, size_t elemsize)
 {

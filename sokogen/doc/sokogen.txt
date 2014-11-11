@@ -1,5 +1,5 @@
 About this document:
-Last modified by Alex Smith, 2014-08-22
+Last modified by Alex Smith, 2014-11-11
 
 Copyright (C) 2014 Alex Smith.
 
@@ -284,15 +284,16 @@ These three puzzles are all basically the same in principle, and have
 effectively the same solution.  However, in the first puzzle – the one
 favoured by SokEvo, because it has the longest solution – there is extra space
 in the leftmost chamber, sufficient to store one more crate (I get into more
-detail on crate storage later).  This is because I'm so used to human-crafted
-puzzles that I assumed that if I was being given extra space for crate
-storage, it would be because it was needed!  As the second puzzle shows, the
-space is not actually required for the puzzle to be solvable; after the
-mandatory initial moves, only two crates need to be active at any one time
-(the third crate, in the top-right, moves one space to the left during the
-initial moves and then never needs to be touched again until the other two
-crates are already in the goal area).  The third diagram shows an even smaller
-area in which effectively the same puzzle is solvable.
+detail on crate storage later).  I actually tried to store a crate there in my
+first attempt at the puzzle, because I'm so used to human-crafted puzzles that
+I assumed that if I was being given extra space for crate storage, it would be
+because it was needed!  As the second puzzle shows, the space is not actually
+required for the puzzle to be solvable; after the mandatory initial moves,
+only two crates need to be active at any one time (the third crate, in the
+top-right, moves one space to the left during the initial moves and then never
+needs to be touched again until the other two crates are already in the goal
+area).  The third diagram shows an even smaller area in which effectively the
+same puzzle is solvable.
 
 In my opinion, the third puzzle here is the best, and the second is almost as
 good; the first is substantially worse, because of the wastefulness.  However,
@@ -344,7 +345,7 @@ The most sensible way to divide up a Sokoban puzzle is into "chambers"; walled
 areas with only one-tile-wide gaps in their walls to separate them.  Although
 this does not work on all puzzles (e.g. it gives a major simplification on
 five out of the eight that come with NetHack, but is only mildly helpful on
-the other three), it does tend to greatly help on the puzzle where it works,
+the other three), it does tend to greatly help on the puzzles where it works,
 and the majority of Sokoban puzzles I've seen divide into at least two
 chambers (for small puzzles, normally they'll have one for the targets and one
 or more that hold the crates initially; it should thus be no surprise that
@@ -482,10 +483,10 @@ under NetHack rules.  Here's a (relatively easy) goal chamber design as an
 example:
 
         -----
-        |^..|
-    ####....|
-        --.^|
-         ----
+        |^..--
+    ####.....|
+        --.^.|
+         -----
 
 Under orthogonal NetHack rules, there is only one place to place the first
 crate (in the bottom-right corner), and then the second crate can be placed in
@@ -500,22 +501,22 @@ arrangement would not work with the current game engine.)
 Under official rules, this chamber is more interesting; the first crate can be
 placed on either target, but if it is placed on the bottom-right target (the
 more obvious one to reach), the top-left target becomes inaccessible (because
-any further crates can only slide along the bottom wall, a "wall lock"; a
-one-square-wide dead end does not allow a player into it while a crate covers
-the entrance).
+without moving the crate that has already been placed (which would leave it
+stuck in a corner), any further crates can only slide along the bottom wall, a
+"wall lock"; a one-square-wide dead end does not allow a player into it while
+a crate covers the entrance).
 
 
 For storage chambers, the most important value is their *capacity*: the number
 of crates that can be placed into them, and then removed again.  It is unclear
 whether this sort of simple description is enough to describe the storage
-behaviour of all possible 1-connection chambers.  At the least, a storage
-chamber has a well-defined capacity if it's always possible to insert crates
-while it's below capacity (assuming that they were inserted "correctly" in the
-first place), and always possible to remove correctly inserted crates while
-there are any there. A storage chamber can be drawn at maximum capacity to
-give a strong spoiler on how it functions; removing any subset of the crates
-gives a correct arrangement for some lower capacity.
-
+behaviour of all possible 1-connection chambers that start empty.  At the
+least, a storage chamber has a well-defined capacity if it's always possible
+to insert crates while it's below capacity (assuming that they were inserted
+"correctly" in the first place), and always possible to remove correctly
+inserted crates while there are any there. A storage chamber can be drawn at
+maximum capacity to give a strong spoiler on how it functions; removing any
+subset of the crates gives a correct arrangement for some lower capacity.
 
 Here's a simple example of a storage chamber with capacity 2 (i.e. that can
 store two crates):
@@ -554,22 +555,25 @@ crates in unreachable positions, starting the player in a position they
 couldn't get to with the current crate arangement, and the like.  Here's an
 example:
 
-    -------    -------    -------
-    |@....|    |.....|    |.....|
-    |.000.|    |.00..|    |.^.^.|
-    |.0.0.|    |...0.|    |.....|
-    ---.---    ---.---    ---.---
-       #          #          #
-       #          #          #
-       #          #          #
+    -------    -------    -------   -------
+    |@....|    |.....|    |.....|   |.....|
+    |.000.|    |.00..|    |.^.^.|   |.^^..|
+    |.0.0.|    |.0.0.|    |.....|   |.^.^.|
+    ---.---    ---.---    ---.---   ---.---
+       #          #          #         #
+       #          #          #         #
+       #          #          #         #
 
 When used as a feed chamber, this simple 3x5 chamber fits five crates, using
 the patern shown on the left (four if the player starts outside the chamber).
 As a storage chamber, it fits only three (the simplest such pattern is shown
 in the middle); the reason is that under official rules, the goal chamber
-shown on the right is unsolvable, and there are only three other spaces
-available for crates plus the space at the entrance (which blocks the player
-from entering), so the capacity of the chamber is 3.
+shown in the third diagram is unsolvable, and there are only three other
+spaces available for crates plus the space at the entrance (which blocks the
+player from entering).  The only remaining arrangement is shown in the fourth
+diagram; this goal chamber *is* solvable (and quite difficult!), but does not
+work as a storage arrangement because there's no way to get the marble to the
+other side of the crates without trapping one.
 
 
 The difficulty of a Sokoban puzzle normally comes mostly from the storage part
@@ -584,7 +588,7 @@ you normally know a chamber can store three crates because you're given three
 crates to store in it.  Such spoilers can be avoided by using multiple storage
 chambers, thus giving the player an idea only of the total number of crates to
 be stored, but this technique is rare.  More commonly, a puzzle will be
-designed so that it looks like a crate must be stored, but it isn't.)
+designed so that it looks like a crate must be stored, but it doesn't.)
 
 
 Locked squares
@@ -623,7 +627,7 @@ in a corner.  Not all walls lock their adjacent squares; the right part of the
 top wall in this example does not because it has a backwards corner (allowing
 crates to be pushed to the left and then downwards away from the wall), and
 the bottom wall does not because crates being pushed along it can nonetheless
-be pushed out of the entrance (which likely has an backwards corner somewhere
+be pushed out of the entrance (which likely has a backwards corner somewhere
 in the next chamber).
 
 A corner lock can be generalized a different way into a *chokepoint lock*:
@@ -694,9 +698,9 @@ movement, *crate locked*.  The crates at the bottom can all potentially be
 moved at some point in the future, but although none is in an inherently
 locked position, it will be impossible to rescue the entirety of either of the
 two groups, because the only way to rescue any of the crates is by pushing
-another to a position that will corner-lock or crate-lock another's movement.
-Knowledge of common crate-lock patterns is a quick way to reject solutions to
-Sokoban puzzles that will never work.
+another to a position that is corner-locked or crate-locked.  Knowledge of
+common crate-lock patterns is a quick way to reject solutions to Sokoban
+puzzles that will never work.
 
 
 The principle of locking is very important in puzzle design for another
@@ -744,8 +748,8 @@ the target it will eventually fill is *never* a bad idea if it can be done
 without disturbing any other crates.  The result is that puzzle design for
 NetHack-rules Sokoban is relatively unexplored, and that puzzles tend to be
 much easier; losing the goal lock is a huge blow to a puzzle designer (or a
-puzzle design program), because there's no longer any simple and general way
-to just say "go use that storage chamber".
+puzzle design program), because it removes one of the main methods of just
+saying "go use that storage chamber".
 
 
 Chambers with two connections
@@ -796,14 +800,14 @@ by a single number – their capacity – but directed chambers are not so simpl
 to describe.  Consider the central chamber from SokEvo's puzzle from earlier,
 after the prelude:
 
-        ----          ----          ----
-        |..--         |..--         |..--
-        |.0.|         |.0.|         |0..|
-        |.0..####     |.0..####     |.0..####
-        |0..|         |...|         |...|
-   #####...--     ####..0--     ####..0--
-        |..|          |..|          |..|
-        ----          ----          ----
+         ----          ----          ----
+         |..--         |..--         |..--
+         |.0.|         |.0.|         |0..|
+         |.0..####     |.0..####     |.0..####
+         |0..|         |...|         |...|
+    #####...--     ####..0--     ####..0--
+         |..|          |..|          |..|
+         ----          ----          ----
 
 Considering only patterns that do not block the player (to avoid the issue of
 which side the player starts on), we have the following patterns:
@@ -815,14 +819,14 @@ which side the player starts on), we have the following patterns:
 This is not so bad as a description by itself, but care is needed.  Consider
 the following two states:
 
-        ----          ----
-        |..--         |..--
-        |.0.|         |0..|
-        |....####     |.0..####
-        |0..|         |...|
-   #####...--     ####...--
-        |..|          |..|
-        ----          ----
+         ----          ----
+         |..--         |..--
+         |.0.|         |0..|
+         |....####     |.0..####
+         |0..|         |...|
+    #####...--     ####...--
+         |..|          |..|
+         ----          ----
 
 Both of these states are describable as "leftward 1, either 1", and if the
 player can arrive at the area without taking a crate with them, they can
@@ -843,35 +847,45 @@ There is, however, something of a shortcut that can help a lot when designing
 puzzles.  So long as we're dealing with a tree structure for our chambers,
 with no chambers connecting round in a loop, we can start at the branches of
 the tree and work inwards.  The original chamber above has a very simple
-description if we know it's connected to a storage chamber on the left:
+description if we know it's connected to a storage chamber on the left (that
+currently has crates in a valid storage pattern):
 
   * Connecting to an storage chamber on the left with remaining capacity 2 or
     more produces a storage chamber with capacity 2 more than that chamber,
     currently storing 3 crates plus the number of crates in that chamber;
-    
+
   * Connecting to a storage chamber on the left with capacity 1 or less
     produces an impossible chamber (one that it's impossible to extract all
     the crates from).
 
-        ----          ----     
-        |..--         |..--    
-        |.0.|         |0..|    
-        |.0..####     |.0..####
-        |0..|         |...|    
-   #####...--     ####...--    
-        |..|          |..|     
-        ----          ----     
+We can understand this description with the aid of a diagram:
 
-There are basically just two interesting parts of this description.  The
+         ----          ----
+         |..--         |..--
+         |.0.|         |0..|
+         |.0..####     |.0..####
+         |0..|         |...|
+    #####...--     ####...--
+         |..|          |..|
+         ----          ----
+
+There are basically just two interesting parts of the description.  The
 original chamber, shown at the left, has two leftwards crates that must both
 be removed before it transmits crates, and so needs to be connected to a
-chamber with capacity 2 or more.  If it is connected to such a chamber, it is
-then possible to push two crates into it, and rearrange crates to produce the
-second diagram; this stores two crates, and allows releasing of crates from
-the storage chamber (you push the central crate out the exit, then retrieve
-one from the storage chamber and put it back where the central crate was),
-from itself when the storage chamber is empty (push a crate into the central
-chamber and back out again), and the corresponding insertions (the reverse
-operations, in this case).
+chamber with remaining capacity 2 or more.  If it is connected to such a
+chamber, it is then possible to push two crates into it, and rearrange crates
+to produce the second diagram; this stores two crates, and allows releasing of
+crates from the storage chamber (you push the central crate out the exit, then
+retrieve one from the storage chamber and put it back where the central crate
+was), from itself when the storage chamber is empty (push a crate into the
+storage chamber and back out again), and the corresponding insertions (the
+reverse operations, in this case).
 
-[1][http://fruise.googlepages.com/sokevo.html]
+This means that, for example, if we need a 3-crate feed chamber when
+designing a puzzle, we can replace it with an empty 2-crate storage chamber,
+and this directed chamber.  (This is how this design method could come up with
+the harder versions of the puzzle that SokEvo created; it would start with the
+trivial description "feed 3, goal 3", convert to "store 0/2, (this chamber),
+goal 3", and then pick appropriate storage and goal chambers.)
+
+[1]: http://fruise.googlepages.com/sokevo.html
