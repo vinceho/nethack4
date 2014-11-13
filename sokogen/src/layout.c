@@ -87,7 +87,7 @@ init_layout(struct layout *layout, int w, int h, int entrypos, bool adjust_lpos)
         lpos curlpos = INTERIOR;
         for (y = 0; y < h; y++)
             for (x = 0; x < w; x++)
-                if ((layout->locations[y * h + w] & ~LOCKED) == SENTINEL)
+                if ((layout->locations[y * w + x] & ~LOCKED) == SENTINEL)
                     floodfill(layout->locations, w, h, x, y, SENTINEL,
                               curlpos++, true);
         layout->maxlpos = curlpos - 1;
@@ -355,4 +355,29 @@ find_layouts_from(struct chamber *chamber, int layoutindex)
         layout->solution->difficulty =
             follow_loopgroup_pointer(layout->solution)->difficulty;
     }
+}
+
+/* Out of all valid storage layouts with the player outside, return the index of
+   the one with the highest capacity. */
+int
+max_capacity_layout(const struct chamber *chamber)
+{
+    struct layout_solution *solvable =
+        follow_loopgroup_pointer(nth_layout(chamber, 0)->solution);
+    int maxcap = 0;
+    int maxcap_index = 0;
+    int i = 0;
+
+    for (i = 1; i < chamber->layouts.length_in_use; i++) {
+        struct layout *layout = nth_layout(chamber, i);
+        if (layout->playerpos != OUTSIDE)
+            continue;
+        if (follow_loopgroup_pointer(layout->solution) != solvable)
+            continue;
+        if (layout->cratecount > maxcap) {
+            maxcap = layout->cratecount;
+            maxcap_index = i;
+        }
+    }
+    return maxcap_index;
 }

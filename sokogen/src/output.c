@@ -100,8 +100,7 @@ output_layout_list(const struct layout *const *layouts, int width, int height,
 }
 
 /* Draws chambers to the screen or a file. They will be drawn at max capacity,
-   with the player outside them. TODO: Actually, it's currently drawn at min
-   capacity. */
+   with the player outside them. */
 void
 output_chambers(const struct chamber *chambers, size_t n_across,
                 bool show_regions, bool show_locked, FILE *fp)
@@ -110,7 +109,7 @@ output_chambers(const struct chamber *chambers, size_t n_across,
     size_t n;
 
     for (n = 0; n < n_across; n++)
-        layouts[n] = chambers[n].layouts.contents;
+        layouts[n] = nth_layout(chambers + n, max_capacity_layout(chambers + n));
 
     struct layout_solution unique_address;
 

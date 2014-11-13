@@ -229,6 +229,7 @@ extern void generate_chambers(struct xarray *, int, int, int);
 extern layouthash hash_layout(const lpos *, int, int);
 extern void init_layout(struct layout *, int, int, int, bool);
 extern void find_layouts_from(struct chamber *, int);
+extern int max_capacity_layout(const struct chamber *);
 
 /* output.c */
 
