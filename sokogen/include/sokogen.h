@@ -36,8 +36,9 @@ typedef uint16_t lpos; /* one map square */
 #define OUTSIDE ((lpos)3)
 #define INTERIOR ((lpos)4)
 
-#define SENTINEL ((lpos)32767) /* used as a temporary in some algorithms */
+#define SENTINEL ((lpos)16383) /* used as a temporary in some algorithms */
 
+#define ANNEX  ((lpos)16384)   /* representation of connected storage */
 #define LOCKED ((lpos)32768)
 
 typedef uint32_t layouthash;
@@ -132,6 +133,9 @@ struct chamber {
        duplication of effort due to symmetry. The entrance is at x = entrypos, y
        = 0; entrypos has to be no more than half the width (rounded up). */
     int entrypos;
+
+    /* The capacity of this chamber's annex. For directed chambers. */
+    int annexcap;
 
     /* For speeding up sorting lists of chambers. */
     int unlocked_squares;
@@ -235,11 +239,13 @@ extern void free_chamber_internals(struct chamber *);
 extern struct chamber *generate_difficult_chamber(
     long long, int (*)(int), int *);
 extern struct chamber *generate_directed_chamber(int, int (*)(int), int *);
+extern struct chamber *generate_remcap_chamber(
+    long long, int, int (*)(int), int *);
 
 /* layout.c */
 
 extern layouthash hash_layout(const lpos *, int, int);
-extern void init_layout(struct layout *, int, int, int, bool);
+extern void init_layout(struct layout *, int, int, int, int, bool);
 extern int find_layout_in_chamber(const struct chamber *, const lpos *,
                                   int, int);
 extern void find_layouts_from(struct chamber *, int);

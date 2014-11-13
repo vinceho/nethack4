@@ -184,6 +184,7 @@ generate_chamber_line(struct xarray *chambers, int width, int squares,
         newchamber->width = width;
         newchamber->height = squares / width;
         newchamber->entrypos = entrypos;
+        newchamber->annexcap = 0;
         newchamber->layouts = (struct xarray){0, 0, 0};
         memset(newchamber->layout_index, 0, sizeof newchamber->layout_index);
 
@@ -197,7 +198,7 @@ generate_chamber_line(struct xarray *chambers, int width, int squares,
 
         baselayout->playerpos = OUTSIDE;
         baselayout->locations = locations;
-        init_layout(baselayout, width, squares / width, entrypos, false);
+        init_layout(baselayout, width, squares / width, entrypos, 0, false);
 
         return;
     }
@@ -429,7 +430,6 @@ generate_directed_chamber(int capacity, int (*rng)(int), int *layoutindex)
     int width = 4;
     int height = 3;
     int entrypos = 1;
-    int annexsize = capacity * 2 + 1;
 
     struct chamber *rv = NULL;
 
@@ -475,13 +475,14 @@ generate_directed_chamber(int capacity, int (*rng)(int), int *layoutindex)
         for (i = 0; i < chambers.length_in_use; i++) {
             struct chamber *chamber = ((struct chamber *)chambers.contents) + i;
             struct layout *layout = nth_layout(chamber, 0);
-            const int oldheight = chamber->height;
 
-            chamber->height += annexsize + 1;
+            chamber->annexcap = capacity;
+            chamber->height++;
             const lpos wall = WALL;
             lpos *locations = padrealloc(layout->locations, sizeof (lpos),
                                          chamber->height * chamber->width,
-                                         oldheight * chamber->width, &wall);
+                                         (chamber->height - 1) * chamber->width,
+                                         &wall);
             layout->locations = locations;
 
             /* Pick a random place to place the annex. */
@@ -489,47 +490,40 @@ generate_directed_chamber(int capacity, int (*rng)(int), int *layoutindex)
             int chosen = -1;
             int x;
             for (x = 1; x < chamber->width - 1; x++) {
-                if (locations[(oldheight - 2) * chamber->width + x] == OUTSIDE)
-                    if (!rng(odds++))
-                        chosen = x;
+                if (locations[(chamber->height - 3) * chamber->width + x] ==
+                    OUTSIDE && !rng(odds++))
+                    chosen = x;
             }
             if (chosen == -1)
                 continue; /* nowhere to place the annex */
 
-            /* Build a corridor between the chamber and annex. */
-            locations[(oldheight - 1) * chamber->width + chosen] = OUTSIDE;
-            locations[(oldheight - 0) * chamber->width + chosen] = OUTSIDE;
-
-            /* Build the annex itself. */
-            int y;
-            for (y = oldheight + 1; y < chamber->height; y++) {
-                locations[y * chamber->width + chosen] = OUTSIDE;
-                locations[y * chamber->width + chosen + 1] = OUTSIDE;
-            }
+            /* Build the annex. */
+            locations[(chamber->height - 2) * chamber->width + chosen] =
+                OUTSIDE;
+            locations[(chamber->height - 1) * chamber->width + chosen] =
+                (ANNEX | capacity);
 
             /* We changed the layout, so recalculate the locks. */
             init_wall_locks(locations, chamber->width, chamber->height,
                             chamber->entrypos, false);
 
-            /* Block the end of the annex (so that it can't store as many
-               crates), then generate feed chambers for the blocked annex. */
-
-            locations[(chamber->height - 1) * chamber->width + chosen] =
-                CRATE | LOCKED;
-            layout->cratecount = 1;
-            (void) furthest_layout(chamber, INT_MAX, 1);
-            layout = nth_layout(chamber, 0); /* may have been realloced */
-
-            /* Generate feed chambers with an unblocked annex. */
-            locations[(chamber->height - 1) * chamber->width + chosen] =
-                OUTSIDE | LOCKED;
-            layout->cratecount = 0;
+            /* Generate feed chambers with a reduced capacity annex. */
+            chamber->annexcap--;
+            locations[(chamber->height - 1) * chamber->width + chosen]--;
             (void) furthest_layout(chamber, INT_MAX, 0);
             layout = nth_layout(chamber, 0); /* may have been realloced */
 
-            /* Look for layouts with an unblocked, empty, OUTSIDE annex and with
-               the player outside, that have no corresponding layout with a
-               blocked annex. Tiebreak by most pushes. */
+            int n_reduced_capacity = chamber->layouts.length_in_use;
+
+            /* Generate feed chambers with a full capacity annex. */
+            chamber->annexcap++;
+            locations[(chamber->height - 1) * chamber->width + chosen]++;
+            (void) furthest_layout(chamber, INT_MAX, 0);
+            layout = nth_layout(chamber, 0); /* may have been realloced */
+
+            /* Look for layouts with a full-capacity, empty, OUTSIDE annex and
+               with the player outside, that have no corresponding layout with a
+               reduced-capacity annex. Tiebreak by most pushes. */
             int pushcount = 0;
             *layoutindex = 0;
             for (x = 0; x < chamber->layouts.length_in_use; x++) {
@@ -540,22 +534,23 @@ generate_directed_chamber(int capacity, int (*rng)(int), int *layoutindex)
                     l2->playerpos != OUTSIDE)
                     continue;
 
-                /* Check that the annex is empty. */
-                for (y = oldheight + 1; y < chamber->height - 1; y++) {
-                    if (l2->locations[y * chamber->width + chosen] != OUTSIDE)
-                        break;
-                }
-                if (y != chamber->height - 1)
+                /* Check that the annex is empty and OUTSIDE. */
+                if (l2->locations[(chamber->height - 1) *
+                                  chamber->width + chosen] !=
+                    (ANNEX | capacity) ||
+                    l2->locations[(chamber->height - 2) *
+                                  chamber->width + chosen] != OUTSIDE)
                     continue;
 
                 /* Check that the corresponding layout with a blocked annex
                    is unsolvable. */
                 lpos blocked[chamber->height * chamber->width];
                 memcpy(blocked, l2->locations, sizeof blocked);
-                blocked[(chamber->height - 1) * chamber->width + chosen] =
-                    CRATE | LOCKED;
-                if (find_layout_in_chamber(chamber, blocked, chosen, oldheight)
-                    != -1)
+                blocked[(chamber->height - 1) * chamber->width + chosen]--;
+                int otherlayout = find_layout_in_chamber(
+                    chamber, blocked, chosen, chamber->height - 2);
+
+                if (otherlayout != -1 && otherlayout < n_reduced_capacity)
                     continue;
 
                 pushcount = l2->solution->pushes;
@@ -666,4 +661,38 @@ generate_difficult_chamber(long long difficulty, int (*rng)(int),
     }
 
     return rv;
+}
+
+/* Generates a storage chamber, and finds a layout for it that can store an
+   extra 'remcap' crates.
+
+   WARNING: The solution found might involve pushing a crate into the chamber,
+   then a crate out, then a crate back in again. So the directed chamber this is
+   connected to may need to provide a quickturn space. */
+struct chamber *
+generate_remcap_chamber(long long difficulty, int remcap,
+                        int (*rng)(int), int *layoutindex)
+{
+    bool found = false;
+    struct chamber *chamber;
+    while (!found) {
+        chamber = generate_difficult_chamber(difficulty, rng, NULL);
+
+        int maxcap = nth_layout(chamber, max_capacity_layout(
+                                    chamber))->cratecount;
+
+        found = maxcap >= remcap;
+
+        if (found) {
+            *layoutindex = furthest_layout(chamber, maxcap - remcap, maxcap);
+            assert(*layoutindex > -1);
+        } else {
+            /* If we need a high capacity and have a low difficulty, we
+               might not be able to find a pattern with enough capacity.
+               So, we allow the difficulty to steadily increase. */
+            difficulty += (difficulty / 5) + 1;
+        }
+    }
+
+    return chamber;
 }

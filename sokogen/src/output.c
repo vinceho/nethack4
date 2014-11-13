@@ -58,6 +58,8 @@ output_layout_list(const struct layout *const *layouts, int width, int height,
                     putc('0', fp);
                 else if (l == TARGET)
                     putc('^', fp);
+                else if (l & ANNEX)
+                    putc('1' + (l & ~ANNEX), fp);
                 else if ((l == playerpos[n] ||
                           l == (playerpos[n] | LOCKED)) &&
                          playerpos[n] != OUTSIDE) {

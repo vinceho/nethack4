@@ -71,37 +71,12 @@ main(int argc, char **argv)
         } else if (!strcmp(argv[1], "remcap") && capacity > 0 &&
                    capacity < LONG_MAX) {
 
-            bool found = false;
-            while (!found) {
-                struct chamber *chamber =
-                    generate_difficult_chamber(difficulty, rng, NULL);
-
-                int maxcap = nth_layout(chamber, max_capacity_layout(
-                                            chamber))->cratecount;
-
-                found = maxcap >= capacity;
-
-                if (found) {
-
-                    int layoutindex = furthest_layout(
-                        chamber, maxcap - capacity, maxcap);
-                    assert(layoutindex > -1);
-
-                    output_one_layout(chamber, layoutindex,
-                                      false, true, stdout);
-
-                } else {
-
-                    /* If we need a high capacity and have a low difficulty, we
-                       might not be able to find a pattern with enough capacity.
-                       So, we allow the difficulty to steadily increase. */
-                    difficulty += (difficulty / 5) + 1;
-
-                }
-
-                free_chamber_internals(chamber);
-                free(chamber);
-            }
+            int layoutindex;
+            struct chamber *chamber = generate_remcap_chamber(
+                difficulty, capacity, rng, &layoutindex);
+            output_one_layout(chamber, layoutindex, false, true, stdout);
+            free_chamber_internals(chamber);
+            free(chamber);
 
         } else {
             argc = 0;

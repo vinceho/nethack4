@@ -53,6 +53,7 @@ floodfill(lpos *locations, int width, int height, int entrypos, int x, int y,
             floodfill(locations, width, height, entrypos, x + dx, y + dy,
                       from, to, ignore_locks, pull_only, storage);
     }
+#undef IS_WALL
 }
 
 
@@ -108,7 +109,8 @@ init_wall_locks(lpos *locations, int width, int height, int entrypos,
        locks. */
     int x, y;
     for (x = 0; x < width * height; x++)
-        locations[x] = locations[x] == WALL ? WALL : (INTERIOR | LOCKED);
+        locations[x] = locations[x] == WALL ? WALL :
+            (locations[x] & ANNEX) ? locations[x] : (INTERIOR | LOCKED);
 
     /* Corner and edge locks */
     /* We find the corner and edge locks by running the connectivity lock
@@ -147,6 +149,7 @@ init_wall_locks(lpos *locations, int width, int height, int entrypos,
                     const int dx = xyoffsets[d][0];
                     const int dy = xyoffsets[d][1];
                     if ((LOCATION_AT(-dx, -dy) == OUTSIDE ||
+                         LOCATION_AT(-dx, -dy) & ANNEX ||
                          LOCATION_AT(-dx, -dy) == (OUTSIDE | LOCKED)) &&
                         (LOCATION_AT(+dx, +dy) == OUTSIDE ||
                          LOCATION_AT(+dx, +dy) == INTERIOR))
@@ -180,7 +183,8 @@ init_wall_locks(lpos *locations, int width, int height, int entrypos,
         for (x = 0; x < width; x++) {
             if (locations[y * width + x] == OUTSIDE)
                 outside_squares_seen++;
-            else if (locations[y * width + x] != WALL)
+            else if (locations[y * width + x] != WALL &&
+                     !(locations[y * width + x] & ANNEX))
                 locations[y * width + x] = OUTSIDE | LOCKED;
         }
     }

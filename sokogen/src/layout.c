@@ -40,7 +40,10 @@ hash_layout(const lpos *locations, int w, int h)
 
         hash <<= 1;
 
-        if ((locations[i] & ~LOCKED) == CRATE) {
+        /* Note: chambers.c sometimes changes ANNEX values in memory directly;
+           make sure we keep a stable hash when this happens. */
+
+        if ((locations[i] & ~LOCKED) == CRATE || locations[i] & ANNEX) {
             hash ^= 1;
             crates++;
         }
@@ -58,7 +61,8 @@ hash_layout(const lpos *locations, int w, int h)
    not mark new squares as locked, but will redo the OUTSIDE/INTERIOR if
    adjust_lpos is set. */
 void
-init_layout(struct layout *layout, int w, int h, int entrypos, bool adjust_lpos)
+init_layout(struct layout *layout, int w, int h, int entrypos, int annexcap,
+            bool adjust_lpos)
 {
     layout->cratecount = 0;
     layout->maxlpos = OUTSIDE;
@@ -69,6 +73,8 @@ init_layout(struct layout *layout, int w, int h, int entrypos, bool adjust_lpos)
             layout->cratecount++;
         else if ((layout->locations[i] & ~LOCKED) == WALL)
             layout->locations[i] = WALL; /* make sure we have no locked walls */
+        else if (layout->locations[i] & ANNEX)
+            layout->cratecount += annexcap - (layout->locations[i] & ~ANNEX);
         else if (adjust_lpos)
             layout->locations[i] = /* clear regions */
                 (layout->locations[i] & LOCKED) | SENTINEL;
@@ -94,14 +100,16 @@ init_layout(struct layout *layout, int w, int h, int entrypos, bool adjust_lpos)
     }
 }
 
-/* Checks to see if two sets of locations have the same crates. */
+/* Checks to see if two sets of locations have the same crates. (An annex
+   counts as a group of crates.) */
 static bool
 same_crates(const lpos *l1, const lpos *l2, int width, int height)
 {
     int i;
     for (i = 0; i < width * height; i++) {
-        if (((l1[i] & ~LOCKED) == CRATE) !=
-            ((l2[i] & ~LOCKED) == CRATE))
+        if (((l1[i] & ~LOCKED) == CRATE) != ((l2[i] & ~LOCKED) == CRATE))
+            return false;
+        if ((l1[i] & ANNEX) && l1[i] != l2[i])
             return false;
     }
     return true;
@@ -172,7 +180,17 @@ loop_over_next_moves(struct chamber *chamber, int layoutindex, bool backwards,
                 lpos from;
                 lpos to;
 
-                if (backwards) {
+                /* When "pushing" from an annex, the destination square is
+                   behind the player, rather than behind the annex. */
+                if (AT(layout, x + dx, y + dy) & ANNEX) {
+                    if (backwards) {
+                        to = AT(layout, x + dx, y + dy);
+                        from = AT(layout, x - dx, y - dy);
+                    } else {
+                        from = AT(layout, x + dx, y + dy);
+                        to = AT(layout, x - dx, y - dy);
+                    }
+                } else if (backwards) {
                     to = AT(layout, x + dx, y + dy);
                     from = AT(layout, x + dx * 2, y + dy * 2);
                 } else {
@@ -182,14 +200,16 @@ loop_over_next_moves(struct chamber *chamber, int layoutindex, bool backwards,
 
                 /* Crates can't get onto locked squares, and shouldn't be pushed
                    onto a locked square, and can't be pushed onto another
-                   crate or a wall. */
-                if ((from & LOCKED) || (to & LOCKED) || to <= CRATE)
+                   crate, a wall, or an annex with no remaining capacity. */
+                if ((from & LOCKED) || (to & LOCKED) || to <= CRATE ||
+                    to == (ANNEX | 0))
                     continue;
 
-                /* The simplest case: pushing/pulling a crate onto a blank
-                   space. */
+                /* The simplest case: pushing/pulling a crate or nonempty annex
+                   onto a blank space or annex. */
                 bool legalpush = false;
-                if (from == CRATE)
+                if (from == CRATE || ((from & ANNEX) &&
+                                      (from != (ANNEX | chamber->annexcap))))
                     legalpush = true;
 
                 /* When pushing/pulling from outside (y == -1), we can
@@ -212,17 +232,31 @@ loop_over_next_moves(struct chamber *chamber, int layoutindex, bool backwards,
 
                     if (backwards) {
 
-                        if (y + dy * 2 >= 0)
+                        if (from & ANNEX)
+                            working[(y + dy * 2) * width + x + dx * 2]++;
+                        else if (to & ANNEX)
+                            working[(y - dy) * width + x - dx] = OUTSIDE;
+                        else if (y + dy * 2 >= 0)
                             working[(y + dy * 2) * width + x + dx * 2] =
                                 OUTSIDE;
-                        if (y != -1)
+
+                        if (to & ANNEX)
+                            working[(y + dy) * width + x + dx]--;
+                        else if (y != -1)
                             working[(y + dy) * width + x + dx] = CRATE;
 
                     } else {
 
-                        if (y != -1)
+                        if (from & ANNEX)
+                            working[(y + dy) * width + x + dx]++;
+                        else if (y != -1)
                             working[(y + dy) * width + x + dx] = OUTSIDE;
-                        if (y + dy * 2 >= 0)
+
+                        if (from & ANNEX)
+                            working[(y - dy) * width + x - dx] = CRATE;
+                        else if (to & ANNEX)
+                            working[(y + dy * 2) * width + x + dx * 2]--;
+                        else if (y + dy * 2 >= 0)
                             working[(y + dy * 2) * width + x + dx * 2] = CRATE;
 
                     }
@@ -236,7 +270,7 @@ loop_over_next_moves(struct chamber *chamber, int layoutindex, bool backwards,
                             NEW_IN_XARRAY(&(chamber->layouts), struct layout);
                         newlayout->locations = working;
                         init_layout(newlayout, chamber->width, chamber->height,
-                                    chamber->entrypos, true);
+                                    chamber->entrypos, chamber->annexcap, true);
                         newlayout->playerpos = AT(newlayout, x, y) & ~LOCKED;
 
                         layouthash hash = hash_layout(newlayout->locations,
@@ -246,15 +280,14 @@ loop_over_next_moves(struct chamber *chamber, int layoutindex, bool backwards,
                                         hash % HASHSIZE, int)) =
                             chamber->layouts.length_in_use - 1;
 
-                        callback(chamber, chamber->layouts.length_in_use - 1,
-                                 callbackarg);
+                        layoutindex2 = chamber->layouts.length_in_use - 1;
 
                     } else {
 
                         free(working);
-                        callback(chamber, layoutindex2, callbackarg);
-
                     }
+
+                    callback(chamber, layoutindex2, callbackarg);
 
                     /* we might have reallocated chamber->layouts, or the
                        callback might have done */
