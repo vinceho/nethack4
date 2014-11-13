@@ -250,15 +250,22 @@ follow_loopgroup_pointer(struct layout_solution *ls)
 }
 
 /* The rules for updating the "difficulty" fields of a layout. */
+struct set_difficulty_working {
+    struct layout_solution *psol;
+    int cratecount;
+};
 static void
 set_difficulties(struct chamber *chamber, int layoutindex, void *parent)
 {
     /* The basic idea: every move that goes from one loopgroup to another
        (i.e. is irreversible) increases the difficulty of the 'from' loopgroup
-       by the difficulty of the 'to' loopgroup. */
+       by the difficulty of the 'to' loopgroup. Exception: We don't count moves
+       that insert crates for this purpose (thus possible "beyond capacity"
+       moves won't add to difficulty). */
 
     struct layout_solution *insol = nth_layout(chamber, layoutindex)->solution;
-    struct layout_solution *psol  = parent;
+    struct set_difficulty_working *psdw = parent;
+    struct layout_solution *psol = psdw ? psdw->psol : NULL;
 
     /* Avoid infinite recursion. */
     if (insol->known)
@@ -268,11 +275,15 @@ set_difficulties(struct chamber *chamber, int layoutindex, void *parent)
     /* Set the difficulties of all positions reachable from here, and update
        the difficulty of this loopgroup for all loopgroups reachable from it. */
     insol = follow_loopgroup_pointer(insol);
+    struct set_difficulty_working sdw = {
+        .psol = insol,
+        .cratecount = nth_layout(chamber, layoutindex)->cratecount
+    };
     loop_over_next_moves(chamber, layoutindex, set_difficulties, &sdw);
 
     /* This will ensure that by the time the recursion ends, all loopgroups
        will have been appropriately updated. */
-    if (psol && insol != psol)
+    if (psol && insol != psol && sdw.cratecount <= psdw->cratecount)
         psol->difficulty += insol->difficulty;
 }
 
