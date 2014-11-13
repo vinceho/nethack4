@@ -14,10 +14,12 @@
 /* Replaces a given lpos with a different given lpos in a connected region.
    'ignore_locks' will flood even through locked areas. 'pull_only' will only
    flood from a position A to a position B if it's possible to push a crate from
-   position B to position A. */
+   position B to position A. If 'storage' is set, then flooding from a position
+   A to a position B will only happen if it's possible to push a crate from
+   position A to position B. */
 void
-floodfill(lpos *locations, int width, int height, int x, int y,
-          lpos from, lpos to, bool ignore_locks, bool pull_only)
+floodfill(lpos *locations, int width, int height, int entrypos, int x, int y,
+          lpos from, lpos to, bool ignore_locks, bool pull_only, bool storage)
 {
     assert(from != to);
     if (x < 0 || y < 0 || x >= width || y >= height)
@@ -32,21 +34,21 @@ floodfill(lpos *locations, int width, int height, int x, int y,
     else
         locations[y * width + x] = to;
 
-#define IS_WALL(x2, y2) ((locations[(y2) * width + (x2)] | LOCKED) ==  \
-                         (WALL | LOCKED))
+#define IS_WALL(x2, y2) (                                               \
+        (location_bounds_check(                                         \
+            locations, (x2), (y2), width, height, entrypos) | LOCKED) == \
+        (WALL | LOCKED))
 
-    if (!pull_only || (x < width - 2 && !IS_WALL(x + 2, y)))
-        floodfill(locations, width, height, x + 1, y, from, to,
-                  ignore_locks, pull_only);
-    if (!pull_only || (x > 1 && !IS_WALL(x - 2, y)))
-        floodfill(locations, width, height, x - 1, y, from, to,
-                  ignore_locks, pull_only);
-    if (!pull_only || (y < height - 2 && !IS_WALL(x, y + 2)))
-        floodfill(locations, width, height, x, y + 1, from, to,
-                  ignore_locks, pull_only);
-    if (!pull_only || (y > 1 && !IS_WALL(x, y - 2)))
-        floodfill(locations, width, height, x, y - 1, from, to,
-                  ignore_locks, pull_only);
+    volatile int d;
+    for (d = 0; d < (diagonals ? 8 : 4); d++) {
+        const int dx = xyoffsets[d][0];
+        const int dy = xyoffsets[d][1];
+
+        if ((!pull_only || !IS_WALL(x + dx * 2, y + dy * 2)) &&
+            (!storage   || !IS_WALL(x - dx,     y - dy)))
+            floodfill(locations, width, height, entrypos, x + dx, y + dy,
+                      from, to, ignore_locks, pull_only, storage);
+    }
 }
 
 
@@ -61,7 +63,8 @@ floodfill(lpos *locations, int width, int height, int x, int y,
    that it should not be allowed to be used (because it has structures which are
    never useful for moving crates around). */
 bool
-init_wall_locks(lpos *locations, int width, int height, int entrypos)
+init_wall_locks(lpos *locations, int width, int height, int entrypos,
+                bool storage)
 {
     /*
      * A square can be wall-locked for any of the following reasons:
@@ -92,9 +95,9 @@ init_wall_locks(lpos *locations, int width, int height, int entrypos)
      * that, and will clear any crate locks in the array.
      */
 
-#define LOCATION_AT(dx, dy)                                     \
-            location_bounds_check(locations, (x)+dx, (y)+dy,    \
-                                  width, height, entrypos)
+#define LOCATION_AT(dx2, dy2)                            \
+    location_bounds_check(locations, (x)+dx2, (y)+dy2,   \
+                          width, height, entrypos)
 
     /* We mark squares as initially locked. Then we mark all squares that are
        not connectivity-locked as unlocked; then we look for chokepoint
@@ -108,8 +111,8 @@ init_wall_locks(lpos *locations, int width, int height, int entrypos)
        algorithm.  This will also find some connectivity locks, but perhaps not
        all of them; if it finds some, we use that information to optimize
        chokepoint lock calculation, but it's not vital that they're found. */
-    floodfill(locations, width, height, entrypos, 0,
-              INTERIOR | LOCKED, INTERIOR, false, true);
+    floodfill(locations, width, height, entrypos, entrypos, 0,
+              INTERIOR | LOCKED, INTERIOR, false, true, storage);
 
     /* Chokepoint locks */
     /* These are done before finalizing connectivity locks; a chokepoint can
@@ -130,58 +133,25 @@ init_wall_locks(lpos *locations, int width, int height, int entrypos)
                 /* Discover which areas are blocked by a hypothetical crate
                    here. */
                 locations[y * width + x] = CRATE;
-                floodfill(locations, width, height, entrypos, 0,
-                          INTERIOR, OUTSIDE, true, false);
+                floodfill(locations, width, height, entrypos, entrypos, 0,
+                          INTERIOR, OUTSIDE, true, false, false);
 
                 /* Do we have any pushes into unlocked areas from any direction
                    we could reach with the crate blocking our way? */
-                if ((LOCATION_AT(-1, 0) == OUTSIDE ||
-                     LOCATION_AT(-1, 0) == (OUTSIDE | LOCKED)) &&
-                    (LOCATION_AT(+1, 0) == OUTSIDE ||
-                     LOCATION_AT(+1, 0) == INTERIOR))
-                    is_locked = false;
-                if ((LOCATION_AT(+1, 0) == OUTSIDE ||
-                     LOCATION_AT(+1, 0) == (OUTSIDE | LOCKED)) &&
-                    (LOCATION_AT(-1, 0) == OUTSIDE ||
-                     LOCATION_AT(-1, 0) == INTERIOR))
-                    is_locked = false;
-                if ((LOCATION_AT(0, -1) == OUTSIDE || 
-                     LOCATION_AT(0, -1) == (OUTSIDE | LOCKED)) &&
-                    (LOCATION_AT(0, +1) == OUTSIDE ||
-                     LOCATION_AT(0, +1) == INTERIOR))
-                    is_locked = false;
-                if ((LOCATION_AT(0, +1) == OUTSIDE ||
-                     LOCATION_AT(0, +1) == (OUTSIDE | LOCKED)) &&
-                    (LOCATION_AT(0, -1) == OUTSIDE ||
-                     LOCATION_AT(0, -1) == INTERIOR))
-                    is_locked = false;
-
-                if (diagonals) {
-                    if ((LOCATION_AT(-1, -1) == OUTSIDE ||
-                         LOCATION_AT(-1, -1) == (OUTSIDE | LOCKED)) &&
-                        (LOCATION_AT(+1, +1) == OUTSIDE ||
-                         LOCATION_AT(+1, +1) == INTERIOR))
-                        is_locked = false;
-                    if ((LOCATION_AT(+1, +1) == OUTSIDE ||
-                         LOCATION_AT(+1, +1) == (OUTSIDE | LOCKED)) &&
-                        (LOCATION_AT(-1, -1) == OUTSIDE ||
-                         LOCATION_AT(-1, -1) == INTERIOR))
-                        is_locked = false;
-                    if ((LOCATION_AT(+1, -1) == OUTSIDE ||
-                         LOCATION_AT(+1, -1) == (OUTSIDE | LOCKED)) &&
-                        (LOCATION_AT(-1, +1) == OUTSIDE ||
-                         LOCATION_AT(-1, +1) == INTERIOR))
-                        is_locked = false;
-                    if ((LOCATION_AT(-1, +1) == OUTSIDE ||
-                         LOCATION_AT(-1, +1) == (OUTSIDE | LOCKED)) &&
-                        (LOCATION_AT(+1, -1) == OUTSIDE ||
-                         LOCATION_AT(+1, -1) == INTERIOR))
+                int d;
+                for (d = 0; d < (diagonals ? 8 : 4); d++) {
+                    const int dx = xyoffsets[d][0];
+                    const int dy = xyoffsets[d][1];
+                    if ((LOCATION_AT(-dx, -dy) == OUTSIDE ||
+                         LOCATION_AT(-dx, -dy) == (OUTSIDE | LOCKED)) &&
+                        (LOCATION_AT(+dx, +dy) == OUTSIDE ||
+                         LOCATION_AT(+dx, +dy) == INTERIOR))
                         is_locked = false;
                 }
 
                 /* Undo our changes. */
-                floodfill(locations, width, height, entrypos, 0,
-                          OUTSIDE, INTERIOR, true, false);
+                floodfill(locations, width, height, entrypos, entrypos, 0,
+                          OUTSIDE, INTERIOR, true, false, false);
                 locations[y * width + x] =
                     is_locked ? (OUTSIDE | LOCKED) : INTERIOR;
                 any_locks_found |= is_locked;
@@ -193,8 +163,8 @@ init_wall_locks(lpos *locations, int width, int height, int entrypos)
     /* Now that we know where the chokepoint locks are, we can find locations
        accessible from the entrance via crate pulls (that don't go through
        chokepoint-locked areas). */
-    floodfill(locations, width, height, entrypos, 0,
-              INTERIOR, OUTSIDE, false, true);
+    floodfill(locations, width, height, entrypos, entrypos, 0,
+              INTERIOR, OUTSIDE, false, true, storage);
 
     /* Now change all locked squares to OUTSIDE | LOCKED.  */
     int outside_squares_seen = 0;

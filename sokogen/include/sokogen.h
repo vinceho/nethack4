@@ -46,6 +46,8 @@ typedef uint32_t layouthash;
 /************ Constants ************/
 
 #define HASHSIZE 523
+static const int xyoffsets[8][2] =
+    {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
 
 /************ Macros ************/
 
@@ -130,6 +132,9 @@ struct chamber {
        = 0; entrypos has to be no more than half the width (rounded up). */
     int entrypos;
 
+    /* For speeding up sorting lists of chambers. */
+    int unlocked_squares;
+
     /* A list of layouts we've found for the chamber. Index 0 is always the base
        layout (which has no crates). */
     struct xarray layouts;
@@ -141,8 +146,7 @@ struct chamber {
 
 /************ Globals ************/
 
-extern bool diagonals; /* are we in diagonals mode? */
-
+extern bool diagonals;      /* are we in diagonals mode? */
 
 /************ Inlines ************/
 
@@ -217,13 +221,16 @@ extern void *memdup(void *, size_t);
 
 /* locks.c */
 
-extern void floodfill(lpos *, int, int, int, int, lpos, lpos, bool, bool);
-extern bool init_wall_locks(lpos *, int, int, int);
+extern void floodfill(lpos *, int, int, int, int, int,
+                      lpos, lpos, bool, bool, bool);
+extern bool init_wall_locks(lpos *, int, int, int, bool);
 
 /* chamber.c */
 
-extern void generate_chambers(struct xarray *, int, int, int);
+extern void generate_chambers(struct xarray *, int, int, int, bool,
+                              int (*)(int));
 extern void free_chamber_internals(struct chamber *);
+extern struct chamber *generate_storage_chamber(long long, int (*)(int));
 
 /* layout.c */
 

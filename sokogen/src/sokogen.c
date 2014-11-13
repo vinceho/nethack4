@@ -10,40 +10,66 @@
  */
 
 #include "sokogen.h"
+#include <time.h>
 
-bool diagonals = false; /* are we in diagonals mode? */
+bool diagonals = false;    /* are we in diagonals mode? */
+
+static int
+rng(int max)
+{
+    return rand() % max;
+}
 
 int
 main(int argc, char **argv)
 {
-    size_t i;
-    struct xarray chambers = {0, 0, 0};
+    long long difficulty = 0;
 
-    printf("Generating chambers...\r");
-    fflush(stdout);
-    generate_chambers(&chambers, 8, 3, 2);
+    srand(time(NULL));
 
-    for (i = 0; i < chambers.length_in_use; i++) {
-        printf("Generating layouts... %zd/%zd\r", i, chambers.length_in_use);
-        fflush(stdout);
-        struct chamber *chamber = ((struct chamber *)chambers.contents) + i;
-        find_layouts_from(chamber, 0);
+    if (argc >= 2 && !strcmp(argv[1], "--diagonals")) {
+        argv[1] = argv[0];
+        argv++;
+        argc--;
+        diagonals = true;
     }
 
-    const size_t n_across = 18;
+    if (argc == 3)
+        difficulty = strtoll(argv[2], NULL, 10);
 
-    for (i = 0; i < chambers.length_in_use; i += n_across) {
-        output_chambers(((struct chamber *)chambers.contents) + i,
-                        (i + n_across > chambers.length_in_use ?
-                         chambers.length_in_use - i : n_across),
-                        false, true, stdout);
+    if (difficulty > 0 && difficulty < LLONG_MAX) {
+        if (!strcmp(argv[1], "storage")) {
+
+            struct chamber *chamber = generate_storage_chamber(difficulty, rng);
+            output_chambers(chamber, 1, false, true, stdout);
+            free_chamber_internals(chamber);
+            free(chamber);
+
+        } else {
+            argc = 0;
+        }
+    } else {
+        argc = 0;
     }
-    printf("%zu chambers generated.\n\n", chambers.length_in_use);
 
-    for (i = 0; i < chambers.length_in_use; i++)
-        free_chamber_internals(((struct chamber *)chambers.contents) + i);
-    if (chambers.allocsize)
-        free(chambers.contents);
+    if (argc == 2 && !strcmp(argv[1], "--version")) {
+        puts("Sokoban puzzle generator. Copyright (C) 2014 Alex Smith.");
+        return EXIT_SUCCESS;
+    }
+
+    if (argc != 3) {
+        printf("Usage: %s command difficulty\n\n", argv[0]);
+        puts("difficulty is a number that is approximately "
+             "the number of ways to");
+        puts("screw up the puzzle; don't use values above "
+             "1000 or so if you want");
+        puts("the program to run in a reasonable time. "
+             "Commands are as follows:\n");
+        puts("storage     Generate a storage chamber");
+
+        return (argc == 2 && !strcmp(argv[1], "--help")) ?
+            EXIT_SUCCESS : EXIT_FAILURE;
+    }
 
     return EXIT_SUCCESS;
 }

@@ -81,15 +81,15 @@ init_layout(struct layout *layout, int w, int h, int entrypos, bool adjust_lpos)
         sizeof (struct layout_solution));
 
     if (adjust_lpos) {
-        floodfill(layout->locations, w, h, entrypos, 0,
-                  SENTINEL, OUTSIDE, true, false);
+        floodfill(layout->locations, w, h, entrypos, entrypos, 0,
+                  SENTINEL, OUTSIDE, true, false, false);
         int y, x;
         lpos curlpos = INTERIOR;
         for (y = 0; y < h; y++)
             for (x = 0; x < w; x++)
                 if ((layout->locations[y * w + x] & ~LOCKED) == SENTINEL)
-                    floodfill(layout->locations, w, h, x, y, SENTINEL,
-                              curlpos++, true, false);
+                    floodfill(layout->locations, w, h, entrypos, x, y, SENTINEL,
+                              curlpos++, true, false, false);
         layout->maxlpos = curlpos - 1;
     }
 }
@@ -164,11 +164,8 @@ loop_over_next_moves(struct chamber *chamber, int layoutindex,
             if ((AT(layout, x, y) & ~LOCKED) != (layout->playerpos & ~LOCKED))
                 continue;
 
-            static const int xyoffsets[4][2] =
-                {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
-
             int d;
-            for (d = 0; d < 4; d++) {
+            for (d = 0; d < (diagonals ? 8 : 4); d++) {
                 int dx = xyoffsets[d][0];
                 int dy = xyoffsets[d][1];
 

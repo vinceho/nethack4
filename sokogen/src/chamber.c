@@ -48,16 +48,38 @@ cannot_generate_wall(lpos *locations, int squares_generated,
 }
 
 static void generate_chamber_line(
-    struct xarray *, int, int, int, lpos *, int, lpos);
+    struct xarray *, int, int, int, lpos *, int, lpos, bool, int(*)(int));
+
+static int
+compare_unlocked_squares(const void *chamber1, const void *chamber2)
+{
+    return ((struct chamber *)chamber2)->unlocked_squares -
+        ((struct chamber *)chamber1)->unlocked_squares;
+}
+
+static int
+all_chambers_rng(int x)
+{
+    return x - 1;
+}
 
 /* Generates all the possible chambers of particular dimensions and connection
    pattern, restricting itself to chambers that are actually useful (chambers
    will be omitted if they contain disconneted areas, and might be omitted if
    they decompose into smaller chambers or contain locked areas larger than a
    single tile wide, although both the latter cases are not checked reliably to
-   save time). A chamber is specified by its crate-less layout. */
+   save time). A chamber is specified by its crate-less layout.
+
+   If 'storage' is true, then only chambers which make sense as storage chambers
+   will be generated; otherwise, feed chambers will be generated too.
+
+   The given RNG will be used to randomly reject a subset of chambers, to reduce
+   memory usage. Biasing it towards high numbers will generate more chambers.
+   Use an RNG that always returns max value to get all chambers; you can use
+   NULL as the RNG to do this automatically.*/
 void
-generate_chambers(struct xarray *chambers, int width, int height, int entrypos)
+generate_chambers(struct xarray *chambers, int width, int height, int entrypos,
+                  bool storage, int (*rng)(int))
 {
     /*
      * We want to iterate over all chambers that are /connected/ with respect to
@@ -95,14 +117,19 @@ generate_chambers(struct xarray *chambers, int width, int height, int entrypos)
     assert((size_t)width < CHAR_BIT * sizeof (unsigned long));
 
     generate_chamber_line(chambers, width, width * height, entrypos,
-                          working + width, 0, INTERIOR);
+                          working + width, 0, INTERIOR, storage,
+                          rng ? rng : all_chambers_rng);
+
+    qsort(chambers->contents, chambers->length_in_use,
+          sizeof (struct chamber), compare_unlocked_squares);
 }
 
 /* Recursive helper function for generate_chambers. */
 static void
 generate_chamber_line(struct xarray *chambers, int width, int squares,
-                      int entrypos, lpos *working,
-                      int squares_generated, lpos highest_cnumber_used)
+                      int entrypos, lpos *working, int squares_generated,
+                      lpos highest_cnumber_used, bool storage,
+                      int (*rng)(int))
 {
     /* Have we generated a complete layout? */
     if (squares_generated == squares) {
@@ -142,7 +169,8 @@ generate_chamber_line(struct xarray *chambers, int width, int squares,
            version.) We only care about wall locks, because there are no crates
            yet. */
         lpos *locations = memdup(working, squares * sizeof (lpos));
-        if (init_wall_locks(locations, width, squares / width, entrypos))
+        if (init_wall_locks(locations, width, squares / width,
+                            entrypos, storage))
         {
             /* init_wall_locks can reject chambers for not having anywhere to
                place crates, and/or for having 2x2 wall-locked squares. */
@@ -159,7 +187,12 @@ generate_chamber_line(struct xarray *chambers, int width, int squares,
         newchamber->entrypos = entrypos;
         newchamber->layouts = (struct xarray){0, 0, 0};
         memset(newchamber->layout_index, 0, sizeof newchamber->layout_index);
-        
+
+        newchamber->unlocked_squares = 0;
+        for (x = 0; x < squares; x++)
+            if (locations[x] > WALL && !(locations[x] & LOCKED))
+                newchamber->unlocked_squares++;
+
         struct layout *baselayout =
             NEW_IN_XARRAY(&(newchamber->layouts), struct layout);
 
@@ -187,12 +220,17 @@ generate_chamber_line(struct xarray *chambers, int width, int squares,
 
        Most of these requirements are simple booleans that we can check as
        we move along the line.  The remaining requirement is more complex; we
-       check it afterwards. */
+       check it afterwards.
+
+       We generate only a random subset of lines, to save memory, favouring more
+       open areas. The size of the subset is proportional to the width. */
 
     unsigned long cpattern;
     bool near_goal = (squares - squares_generated <= width * 2);
 
-    for (cpattern = 0; cpattern < (1UL << width); cpattern++) {
+    for (cpattern = rng(1UL << (width - 1)) + (1UL << (width - 1));
+         cpattern < ULONG_MAX;
+         cpattern = rng((cpattern + 3) / 2) + cpattern / 2 - 1) {
 
         bool unlocked_connection_seen = false;
         bool blocked_dead_end = false;
@@ -360,7 +398,7 @@ generate_chamber_line(struct xarray *chambers, int width, int squares,
         /* Recursively produce the other lines. */
         generate_chamber_line(chambers, width, squares, entrypos,
                               working, squares_generated + width,
-                              current_cnumber);
+                              current_cnumber, storage, rng);
     }
 }
 
@@ -379,4 +417,79 @@ free_chamber_internals(struct chamber *chamber)
 
     if (chamber->layouts.allocsize)
         free(chamber->layouts.contents);
+}
+
+/* Generates a storage chamber of at least the given difficulty. The resulting
+   chamber will be malloc-allocated. Keep the difficulty smallish if you want
+   this to terminate in a reasonable time. */
+struct chamber *
+generate_storage_chamber(long long difficulty, int (*rng)(int))
+{
+    int width = 4;
+    int height = 3;
+    int entrypos = 1;
+
+    struct chamber *rv = NULL;
+
+    while (!rv) {
+        struct xarray chambers = {0, 0, 0};
+
+        /* Generate all chambers of this size, for us to work from. */
+        while (!chambers.length_in_use)
+            generate_chambers(&chambers, width, height, entrypos, true, rng);
+
+        int maxchambers = chambers.length_in_use;
+        int chamberindex = rng(4);
+        if (chamberindex >= maxchambers)
+            chamberindex = maxchambers - 1;
+
+        while (!rv) {
+            struct chamber *chamber = ((struct chamber *)chambers.contents) + 
+                chamberindex;
+            find_layouts_from(chamber, 0);
+
+            if (difficulty < nth_layout(chamber, 0)->solution->difficulty) {
+                rv = memdup(chamber, sizeof *chamber);
+                break;
+            } else {
+                /* Do something to find another chamber:
+                   - increase the width or height; or
+                   - try a chamber the same size with more free space
+                   Which we choose depends on chamberindex; if it's low, we're
+                   more likely to look for a new width/height pair. */
+                chamberindex += rng(4);
+                if (chamberindex >= maxchambers) {
+                    if (rng(2)) {
+                        width++;
+                        if (width < height)
+                            height = width;
+                    } else {
+                        height++;
+                        if (height < width)
+                            width = height;
+                    }
+                    entrypos = rng((width - 1) / 2) + 1;
+
+                    if (width * height > 40 || width > 10) {
+                        /* This is too large to calculate in a reasonable
+                           time / using reasonable memory. */
+                        width = 4;
+                        height = 3;
+                        entrypos = 1;
+                    }
+                    break;
+                }
+            }
+        }
+
+        /* Free the chambers (apart from rv, if that's been chosen). */
+        size_t i;
+        for (i = 0; i < chambers.length_in_use; i++)
+            if (!rv || i != chamberindex)
+                free_chamber_internals(((struct chamber *)chambers.contents) + i);
+        if (chambers.allocsize)
+            free(chambers.contents);
+    }
+
+    return rv;
 }
