@@ -25,37 +25,55 @@ output_layout_list(const struct layout *const *layouts, int width, int height,
     for (n = 0; n < n_across; n++)
         playerpos[n] = layouts[n]->playerpos;
 
-#if 0
-    /* Write the difficulty, in scientific notation.
-       If the puzzle is solvable, we use a lowercase e, otherwise a capital E. */
-    for (n = 0; n < n_across; n++) {
-        long long difficulty = layouts[n]->solution->difficulty;
-        bool is_solvable = layouts[n]->solution == solvable ||
-            layouts[n]->solution->loopgroup == solvable;
-        int exponent = 0;
-        while (difficulty >= pow(10, width - (exponent > 9 ? 3 : 2))) {
-            difficulty /= 10;
-            exponent++;
-        }
-        fprintf(fp, "%*lld%c%d  ", width - (exponent > 9 ? 3 : 2),
-                difficulty, is_solvable ? 'e' : 'E', exponent);
-    }
-    putc('\n', fp);
-#endif
-
     /* We flip the map vertically, so the entrance is at the bottom. */
-    for (y = 0; y < height; y++) {
+    for (y = -2; y <= height; y++) {
         for (n = 0; n < n_across; n++) {
-            for (x = 0; x < width; x++) {
-                lpos l = layouts[n]->locations[(height - y - 1) * width + x];
+            for (x = -1; x <= width; x++) {
+                lpos l = WALL;
+                int dx, dy;
+                bool any_adjacent_nonwall = false;
+                bool any_adjacent_nonwall_dy = false;
+                bool any_adjacent_nonwall_dy_n = false;
+                bool any_adjacent_nonwall_dy_s = false;
+
+                for (dx = -1; dx <= 1; dx++)
+                    for (dy = -2; dy <= 2; dy++) {
+                        lpos dl = location_bounds_check(
+                            layouts[n]->locations,
+                            x + dx, (height - y - dy - 2),
+                            width, height, entrypos);
+
+                        if (y + dy >= height)
+                            dl = WALL;
+
+                        if (!dx && !dy)
+                            l = dl;
+
+                        /* We draw a wall if it's adjacent to any nonwall,
+                           including diagonally. */
+                        if (dl != WALL && abs(dy) <= 1)
+                            any_adjacent_nonwall = true;
+
+                        /* We draw a wall vertically if it's adjacent to
+                           walls directly north and south, and those squares
+                           are adjacent to nonwalls. */
+                        if (dl != WALL && !dx && abs(dy) <= 1)
+                            any_adjacent_nonwall_dy = true;
+                        if (dl != WALL && dy <= 0)
+                            any_adjacent_nonwall_dy_n = true;
+                        if (dl != WALL && dy >= 0)
+                            any_adjacent_nonwall_dy_s = true;
+                    }
+
+                any_adjacent_nonwall_dy |=
+                    !(any_adjacent_nonwall_dy_n & any_adjacent_nonwall_dy_s);
 
                 if (!show_locked)
                     l &= ~LOCKED;
 
-                /* TODO: prettier output of walls as horizontal, vertical,
-                   space */
                 if (l == WALL)
-                    putc('-', fp);
+                    putc(any_adjacent_nonwall ? any_adjacent_nonwall_dy ?
+                         '-' : '|' : ' ', fp);
                 else if (l == CRATE)
                     putc('0', fp);
                 else if (l == TARGET)
@@ -64,10 +82,12 @@ output_layout_list(const struct layout *const *layouts, int width, int height,
                     putc('1' + (l & ~ANNEX), fp);
                 else if ((l == playerpos[n] ||
                           l == (playerpos[n] | LOCKED)) &&
-                         playerpos[n] != OUTSIDE) {
+                         (playerpos[n] != OUTSIDE || y == height - 1)) {
                     putc('@', fp);
                     playerpos[n] = WALL; /* don't draw the player again */
-                } else if (l == (OUTSIDE | LOCKED) ||
+                } else if (y == height - 1)
+                    putc('>', fp);
+                else if (l == (OUTSIDE | LOCKED) ||
                            (!show_regions && (l & LOCKED)))
                     putc('8', fp);
                 else if (l == OUTSIDE || (!show_regions))
@@ -82,24 +102,6 @@ output_layout_list(const struct layout *const *layouts, int width, int height,
         }
         putc('\n', fp);
     }
-
-    /* Draw the connecting corridor. */
-    for (n = 0; n < n_across; n++) {
-        for (x = 0; x < entrypos; x++)
-            putc(' ', fp);
-        putc(playerpos[n] == OUTSIDE ? '@' : '#', fp);
-        for (x = entrypos+1; x < width + 2; x++)
-            putc(' ', fp);
-    }
-    putc('\n', fp);
-    for (n = 0; n < n_across; n++) {
-        for (x = 0; x < entrypos; x++)
-            putc(' ', fp);
-        putc('#', fp);
-        for (x = entrypos+1; x < width + 2; x++)
-            putc(' ', fp);
-    }
-    putc('\n', fp);
     putc('\n', fp);
 }
 
