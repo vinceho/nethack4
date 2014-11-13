@@ -223,7 +223,7 @@ loop_over_next_moves(struct chamber *chamber, int layoutindex, bool backwards,
                     legalpush = true;
 
                 if (backwards && y == 1 && dy == -1 &&
-                    x == chamber->entrypos)
+                    (x + dx * 2) == chamber->entrypos)
                     legalpush = true;
 
                 if (legalpush) {
