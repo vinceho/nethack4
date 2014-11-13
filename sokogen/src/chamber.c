@@ -507,6 +507,11 @@ generate_directed_chamber(int capacity, int (*rng)(int), int *layoutindex)
             init_wall_locks(locations, chamber->width, chamber->height,
                             chamber->entrypos, false);
 
+            /* There's no point in continuing if the annex is locked. */
+            if (locations[(chamber->height - 2) * chamber->width + chosen] &
+                LOCKED)
+                continue;
+
             /* Generate feed chambers with an annex that already has one
                crate in it. */
             locations[(chamber->height - 1) * chamber->width + chosen]--;
