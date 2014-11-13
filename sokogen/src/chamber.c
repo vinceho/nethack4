@@ -507,8 +507,8 @@ generate_directed_chamber(int capacity, int (*rng)(int), int *layoutindex)
             init_wall_locks(locations, chamber->width, chamber->height,
                             chamber->entrypos, false);
 
-            /* Generate feed chambers with a reduced capacity annex. */
-            chamber->annexcap--;
+            /* Generate feed chambers with an annex that already has one
+               crate in it. */
             locations[(chamber->height - 1) * chamber->width + chosen]--;
             (void) furthest_layout(chamber, INT_MAX, 0);
             layout = nth_layout(chamber, 0); /* may have been realloced */
@@ -516,14 +516,13 @@ generate_directed_chamber(int capacity, int (*rng)(int), int *layoutindex)
             int n_reduced_capacity = chamber->layouts.length_in_use;
 
             /* Generate feed chambers with a full capacity annex. */
-            chamber->annexcap++;
             locations[(chamber->height - 1) * chamber->width + chosen]++;
             (void) furthest_layout(chamber, INT_MAX, 0);
             layout = nth_layout(chamber, 0); /* may have been realloced */
 
             /* Look for layouts with a full-capacity, empty, OUTSIDE annex and
                with the player outside, that have no corresponding layout with a
-               reduced-capacity annex. Tiebreak by most pushes. */
+               pre-occupied annex. Tiebreak by most pushes. */
             int pushcount = 0;
             *layoutindex = 0;
             for (x = 0; x < chamber->layouts.length_in_use; x++) {
@@ -542,7 +541,7 @@ generate_directed_chamber(int capacity, int (*rng)(int), int *layoutindex)
                                   chamber->width + chosen] != OUTSIDE)
                     continue;
 
-                /* Check that the corresponding layout with a blocked annex
+                /* Check that the corresponding layout with a pre-occupied annex
                    is unsolvable. */
                 lpos blocked[chamber->height * chamber->width];
                 memcpy(blocked, l2->locations, sizeof blocked);
