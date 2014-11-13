@@ -145,7 +145,7 @@ generate_chamber_line(struct xarray *chambers, int width, int squares,
                 return;
 
         /* Reject any layouts that do not touch all four walls.
-           
+
            The bottom wall must be touched because there's an entrance there,
            and the top wall must be touched because generating a solid row is
            not allowed. So we just check the left and right walls. */
@@ -162,7 +162,7 @@ generate_chamber_line(struct xarray *chambers, int width, int squares,
         if (!left_wall_touched || !right_wall_touched)
             return;
 
-        
+
         /* Now find the locked squares of the layout. (We have a flimsy
            approximation in the working array at the moment; we want an accurate
            version.) We only care about wall locks, because there are no crates
@@ -421,6 +421,164 @@ free_chamber_internals(struct chamber *chamber)
         free(chamber->layouts.contents);
 }
 
+/* Generates a directed chamber with the given required storage capacity, and
+   an appropriate layout for it. */
+struct chamber *
+generate_directed_chamber(int capacity, int (*rng)(int), int *layoutindex)
+{
+    int width = 4;
+    int height = 3;
+    int entrypos = 1;
+    int annexsize = capacity * 2 + 1;
+
+    struct chamber *rv = NULL;
+
+    while (!rv) {
+        struct xarray chambers = {0, 0, 0};
+
+        /* Randomly increase/reset the height and/or width. */
+        if (rng(2)) {
+            width++;
+            if (width < height)
+                height = width;
+        } else {
+            height++;
+            if (height < width)
+                width = height;
+        }
+        entrypos = rng((width - 1) / 2) + 1;
+
+        if (width * height > 24) {
+            /* This is too large to calculate in a reasonable time. */
+            width = 4;
+            height = 3;
+            entrypos = 1;
+        }
+
+        /* Add some more randomization to the sizes we choose. */
+        if (!rng(2))
+            continue;
+
+        /* Generate a random selection of chambers of this size, for us to work
+           from. We request them to be valid storage chambers, because that
+           increases the chance of the right sort of structure, even though
+           we'll be using them more like feed chambers (storage chambers are a
+           subset of feed chambers). */
+        while (!chambers.length_in_use)
+            generate_chambers(&chambers, width, height, entrypos, true, rng);
+
+        /* For each of the chambers, add an annex in the positive-y direction.
+           The idea is that if a feed chamber is solvable, but not solvable if
+           the annex is slightly blocked, it must be because the annex is needed
+           for temporary crate storage purposes. */
+        int i;
+        for (i = 0; i < chambers.length_in_use; i++) {
+            struct chamber *chamber = ((struct chamber *)chambers.contents) + i;
+            struct layout *layout = nth_layout(chamber, 0);
+            const int oldheight = chamber->height;
+
+            chamber->height += annexsize + 1;
+            const lpos wall = WALL;
+            lpos *locations = padrealloc(layout->locations, sizeof (lpos),
+                                         chamber->height * chamber->width,
+                                         oldheight * chamber->width, &wall);
+            layout->locations = locations;
+
+            /* Pick a random place to place the annex. */
+            int odds = 1;
+            int chosen = -1;
+            int x;
+            for (x = 1; x < chamber->width - 1; x++) {
+                if (locations[(oldheight - 2) * chamber->width + x] == OUTSIDE)
+                    if (!rng(odds++))
+                        chosen = x;
+            }
+            if (chosen == -1)
+                continue; /* nowhere to place the annex */
+
+            /* Build a corridor between the chamber and annex. */
+            locations[(oldheight - 1) * chamber->width + chosen] = OUTSIDE;
+            locations[(oldheight - 0) * chamber->width + chosen] = OUTSIDE;
+
+            /* Build the annex itself. */
+            int y;
+            for (y = oldheight + 1; y < chamber->height; y++) {
+                locations[y * chamber->width + chosen] = OUTSIDE;
+                locations[y * chamber->width + chosen + 1] = OUTSIDE;
+            }
+
+            /* We changed the layout, so recalculate the locks. */
+            init_wall_locks(locations, chamber->width, chamber->height,
+                            chamber->entrypos, false);
+
+            /* Block the end of the annex (so that it can't store as many
+               crates), then generate feed chambers for the blocked annex. */
+
+            locations[(chamber->height - 1) * chamber->width + chosen] =
+                CRATE | LOCKED;
+            layout->cratecount = 1;
+            (void) furthest_layout(chamber, INT_MAX, 1);
+            layout = nth_layout(chamber, 0); /* may have been realloced */
+
+            /* Generate feed chambers with an unblocked annex. */
+            locations[(chamber->height - 1) * chamber->width + chosen] =
+                OUTSIDE | LOCKED;
+            layout->cratecount = 0;
+            (void) furthest_layout(chamber, INT_MAX, 0);
+            layout = nth_layout(chamber, 0); /* may have been realloced */
+
+            /* Look for layouts with an unblocked, empty, OUTSIDE annex and with
+               the player outside, that have no corresponding layout with a
+               blocked annex. Tiebreak by most pushes. */
+            int pushcount = 0;
+            *layoutindex = 0;
+            for (x = 0; x < chamber->layouts.length_in_use; x++) {
+                struct layout *l2 = nth_layout(chamber, x);
+
+                /* Check tiebreaker, player position. */
+                if (l2->solution->pushes <= pushcount ||
+                    l2->playerpos != OUTSIDE)
+                    continue;
+
+                /* Check that the annex is empty. */
+                for (y = oldheight + 1; y < chamber->height - 1; y++) {
+                    if (l2->locations[y * chamber->width + chosen] != OUTSIDE)
+                        break;
+                }
+                if (y != chamber->height - 1)
+                    continue;
+
+                /* Check that the corresponding layout with a blocked annex
+                   is unsolvable. */
+                lpos blocked[chamber->height * chamber->width];
+                memcpy(blocked, l2->locations, sizeof blocked);
+                blocked[(chamber->height - 1) * chamber->width + chosen] =
+                    CRATE | LOCKED;
+                if (find_layout_in_chamber(chamber, blocked, chosen, oldheight)
+                    != -1)
+                    continue;
+
+                pushcount = l2->solution->pushes;
+                *layoutindex = x;
+            }
+
+            if (*layoutindex)
+                rv = memdup(chamber, sizeof *chamber);
+            break;
+        }
+
+        /* Free the chambers (apart from rv, if that's been chosen). */
+        size_t c;
+        for (c = 0; c < chambers.length_in_use; c++)
+            if (!rv || c != i)
+                free_chamber_internals(((struct chamber *)chambers.contents) + c);
+        if (chambers.allocsize)
+            free(chambers.contents);
+    }
+
+    return rv;
+}
+
 /* Generates a storage chamber (layoutindex == NULL) or feed chamber (placing
    the index of the layout whose difficulty was assessed in *layoutindex) of at
    least the given difficulty. The resulting chamber will be malloc-allocated.
@@ -440,7 +598,8 @@ generate_difficult_chamber(long long difficulty, int (*rng)(int),
     while (!rv) {
         struct xarray chambers = {0, 0, 0};
 
-        /* Generate all chambers of this size, for us to work from. */
+        /* Generate a random selection of chambers of this size, for us to work
+           from. */
         while (!chambers.length_in_use)
             generate_chambers(&chambers, width, height, entrypos,
                               !layoutindex, rng);
@@ -451,7 +610,7 @@ generate_difficult_chamber(long long difficulty, int (*rng)(int),
             chamberindex = maxchambers - 1;
 
         while (!rv) {
-            struct chamber *chamber = ((struct chamber *)chambers.contents) + 
+            struct chamber *chamber = ((struct chamber *)chambers.contents) +
                 chamberindex;
 
             /* Find all appropriate layouts for this chamber. */

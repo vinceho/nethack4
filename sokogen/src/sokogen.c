@@ -58,6 +58,16 @@ main(int argc, char **argv)
             free_chamber_internals(chamber);
             free(chamber);
 
+        } else if (!strcmp(argv[1], "directed") && argc == 3) {
+
+            /* "difficulty" is actually the amount of forced capacity */
+            int layoutindex;
+            struct chamber *chamber = generate_directed_chamber(
+                difficulty, rng, &layoutindex);
+            output_one_layout(chamber, layoutindex, false, true, stdout);
+            free_chamber_internals(chamber);
+            free(chamber);
+
         } else if (!strcmp(argv[1], "remcap") && capacity > 0 &&
                    capacity < LONG_MAX) {
 
@@ -106,17 +116,18 @@ main(int argc, char **argv)
     }
 
     if (argc < 3) {
-        printf("Usage: %s command difficulty [capacity]\n\n", argv[0]);
+        printf("Usage: %s command [difficulty] [capacity]\n\n", argv[0]);
         puts("difficulty is a number that is approximately "
              "the number of ways to");
         puts("screw up the puzzle; don't use values above "
              "1000 or so if you want");
         puts("the program to run in a reasonable time. "
              "Commands are as follows:\n");
-        puts("storage     Generate a storage chamber");
-        puts("feed        Generate a feed chamber");
+        puts("storage     Generate a storage chamber [difficulty]");
+        puts("feed        Generate a feed chamber [difficulty]");
+        puts("directed    Generate a directed chamber [capacity]");
         puts("remcap      Generate a storage chamber with the given");
-        puts("            remaining capacity");
+        puts("            remaining capacity [difficulty, capacity]");
 
         return (argc == 2 && !strcmp(argv[1], "--help")) ?
             EXIT_SUCCESS : EXIT_FAILURE;

@@ -110,7 +110,7 @@ same_crates(const lpos *l1, const lpos *l2, int width, int height)
 /* Returns the index of the given layout in the given chamber, or -1 if it
    doesn't exist. Only the crate and player positions will be compared, not
    things like walls or regions. */
-static int
+int
 find_layout_in_chamber(const struct chamber *chamber, const lpos *locations,
                        int x, int y)
 {

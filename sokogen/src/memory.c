@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2014-11-11 */
+/* Last modified by Alex Smith, 2014-11-13 */
 /* Copyright (c) 2014 Alex Smith. */
 /* This Sokoban puzzle generator may be distributed under either of the
  * following licenses:
@@ -66,6 +66,24 @@ memdup(void *m, size_t z)
 
     memcpy(rv, m, z);
     return rv;
+}
+
+/* Our "realloc" more generally. */
+void *
+padrealloc(void *m, size_t elemsize, size_t newcount, size_t oldcount,
+           const void *padding)
+{
+    m = realloc(m, elemsize * newcount);
+    if (m == NULL) {
+        perror("Allocating memory");
+        exit(EXIT_FAILURE);
+    }
+
+    size_t z;
+    for (z = oldcount; z < newcount; z++)
+        memcpy(((unsigned char (*)[elemsize])m)[z], padding, elemsize);
+
+    return m;
 }
 
 /* Adds a new element to an extensible array, and returns its index. Returning

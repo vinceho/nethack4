@@ -219,6 +219,7 @@ extern size_t new_in_xarray(struct xarray *, size_t);
 
 /* other allocation (this deallocates with free */
 extern void *memdup(void *, size_t);
+extern void *padrealloc(void *, size_t, size_t, size_t, const void *);
 
 /* locks.c */
 
@@ -233,11 +234,14 @@ extern void generate_chambers(struct xarray *, int, int, int, bool,
 extern void free_chamber_internals(struct chamber *);
 extern struct chamber *generate_difficult_chamber(
     long long, int (*)(int), int *);
+extern struct chamber *generate_directed_chamber(int, int (*)(int), int *);
 
 /* layout.c */
 
 extern layouthash hash_layout(const lpos *, int, int);
 extern void init_layout(struct layout *, int, int, int, bool);
+extern int find_layout_in_chamber(const struct chamber *, const lpos *,
+                                  int, int);
 extern void find_layouts_from(struct chamber *, int);
 extern int max_capacity_layout(const struct chamber *);
 extern int furthest_layout(struct chamber *, int, int);
