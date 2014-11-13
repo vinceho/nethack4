@@ -40,6 +40,9 @@ main(int argc, char **argv)
     }
     printf("%zu chambers generated.\n\n", chambers.length_in_use);
 
+    output_layouts(((struct chamber *)chambers.contents) + 122, n_across,
+                   true, true, stdout);
+
     /* We could clean up memory here, but there's no real need; the OS will
        do it for us. */
     return EXIT_SUCCESS;

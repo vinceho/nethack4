@@ -108,10 +108,11 @@ same_crates(const lpos *l1, const lpos *l2, int width, int height)
 }
 
 /* Returns the index of the given layout in the given chamber, or -1 if it
-   doesn't exist. Only the crate positions will be compared, not things like
-   walls or regions. */
+   doesn't exist. Only the crate and player positions will be compared, not
+   things like walls or regions. */
 static int
-find_layout_in_chamber(const struct chamber *chamber, const lpos *locations)
+find_layout_in_chamber(const struct chamber *chamber, const lpos *locations,
+                       int x, int y)
 {
     layouthash hash = hash_layout(locations, chamber->width, chamber->height);
     if (!hash)
@@ -127,7 +128,9 @@ find_layout_in_chamber(const struct chamber *chamber, const lpos *locations)
         int layoutindex = ((int *)(ix->contents))[i];
         struct layout *l = nth_layout(chamber, layoutindex);
         if (same_crates(l->locations, locations,
-                        chamber->width, chamber->height))
+                        chamber->width, chamber->height) &&
+            (l->playerpos | LOCKED) ==
+            (l->locations[y * chamber->width + x] | LOCKED))
             return layoutindex;
     }
 
@@ -197,7 +200,8 @@ loop_over_next_moves(struct chamber *chamber, int layoutindex, bool newly,
                             (beyond & LOCKED) | CRATE;
                     }
 
-                    int layoutindex2 = find_layout_in_chamber(chamber, working);
+                    int layoutindex2 = find_layout_in_chamber(
+                        chamber, working, x + dx, y + dy);
 
                     if (layoutindex2 == -1) {
 
