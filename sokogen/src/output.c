@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2014-11-11 */
+/* Last modified by Alex Smith, 2014-11-13 */
 /* Copyright (c) 2014 Alex Smith. */
 /* This Sokoban puzzle generator may be distributed under either of the
  * following licenses:
@@ -10,18 +10,36 @@
  */
 
 #include "sokogen.h"
+#include <math.h>
 
 /* Drawing layouts to the screen or a file. */
 void
 output_layouts(const struct layout *const *layouts, int width, int height,
                int entrypos, size_t n_across, bool show_regions,
-               bool show_locked, FILE *fp)
+               bool show_locked, const struct layout_solution *solvable,
+               FILE *fp)
 {
     int y, x;
     size_t n;
     lpos playerpos[n_across];
     for (n = 0; n < n_across; n++)
         playerpos[n] = layouts[n]->playerpos;
+
+    /* Write the difficulty, in scientific notation.
+       If the puzzle is solvable, we use a lowercase e, otherwise a capital E. */
+    for (n = 0; n < n_across; n++) {
+        long long difficulty = layouts[n]->solution->difficulty;
+        bool is_solvable = layouts[n]->solution == solvable ||
+            layouts[n]->solution->loopgroup == solvable;
+        int exponent = 0;
+        while (difficulty >= pow(10, width - (exponent > 9 ? 3 : 2))) {
+            difficulty /= 10;
+            exponent++;
+        }
+        fprintf(fp, "%*lld%c%d  ", width - (exponent > 9 ? 3 : 2),
+                difficulty, is_solvable ? 'e' : 'E', exponent);
+    }
+    putc('\n', fp);
 
     /* We flip the map vertically, so the entrance is at the bottom. */
     for (y = 0; y < height; y++) {
@@ -40,16 +58,18 @@ output_layouts(const struct layout *const *layouts, int width, int height,
                     putc('0', fp);
                 else if (l == TARGET)
                     putc('^', fp);
-                else if (l == (OUTSIDE | LOCKED) ||
+                else if ((l == playerpos[n] ||
+                          l == (playerpos[n] | LOCKED)) &&
+                         playerpos[n] != OUTSIDE) {
+                    putc('@', fp);
+                    playerpos[n] = WALL; /* don't draw the player again */
+                } else if (l == (OUTSIDE | LOCKED) ||
                            (!show_regions && (l & LOCKED)))
                     putc('8', fp);
                 else if (l == OUTSIDE || (!show_regions))
                     putc('.', fp);
-                else if (l == playerpos[n] || l == (playerpos[n] | LOCKED)) {
-                    putc('@', fp);
-                    playerpos[n] = WALL; /* don't draw the player again */
-                } else if (l & LOCKED)
-                    putc('A' + (l - INTERIOR), fp);
+                else if (l & LOCKED)
+                    putc('A' + (l - INTERIOR - LOCKED), fp);
                 else
                     putc('a' + (l - INTERIOR), fp);
             }
@@ -92,7 +112,9 @@ output_chambers(const struct chamber *chambers, size_t n_across,
     for (n = 0; n < n_across; n++)
         layouts[n] = chambers[n].layouts.contents;
 
+    struct layout_solution unique_address;
+
     output_layouts(layouts, chambers[0].width, chambers[0].height,
                    chambers[0].entrypos, n_across,
-                   show_regions, show_locked, fp);
+                   show_regions, show_locked, &unique_address, fp);
 }

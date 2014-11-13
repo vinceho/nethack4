@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2014-11-11 */
+/* Last modified by Alex Smith, 2014-11-13 */
 /* Copyright (c) 2014 Alex Smith. */
 /* This Sokoban puzzle generator may be distributed under either of the
  * following licenses:
@@ -158,13 +158,14 @@ generate_chamber_line(struct xarray *chambers, int width, int squares,
         newchamber->height = squares / width;
         newchamber->entrypos = entrypos;
         newchamber->layouts = (struct xarray){0, 0, 0};
+        memset(newchamber->layout_index, 0, sizeof newchamber->layout_index);
         
         struct layout *baselayout =
             NEW_IN_XARRAY(&(newchamber->layouts), struct layout);
 
         baselayout->playerpos = OUTSIDE;
-        baselayout->maxlpos = OUTSIDE; /* for now */
         baselayout->locations = locations;
+        init_layout(baselayout, width, squares / width, entrypos, false);
 
         return;
     }

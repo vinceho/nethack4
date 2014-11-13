@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2014-11-11 */
+/* Last modified by Alex Smith, 2014-11-13 */
 /* Copyright (c) 2014 Alex Smith. */
 /* This Sokoban puzzle generator may be distributed under either of the
  * following licenses:
@@ -19,7 +19,7 @@
 
 /*********** Typedefs ************/
 
-typedef unsigned short lpos; /* one map square */
+typedef uint16_t lpos; /* one map square */
 
 /* Why is there no "inline const"? These are global, never change, and are the
    same for each file, so you'd think there'd be a way to get them to work as
@@ -36,7 +36,16 @@ typedef unsigned short lpos; /* one map square */
 #define OUTSIDE ((lpos)3)
 #define INTERIOR ((lpos)4)
 
+#define SENTINEL ((lpos)32767) /* used as a temporary in some algorithms */
+
 #define LOCKED ((lpos)32768)
+
+typedef uint32_t layouthash;
+#define LAYOUTHASH_TOPBIT (((layouthash)1)<<31)
+
+/************ Constants ************/
+
+#define HASHSIZE 523
 
 /************ Macros ************/
 
@@ -65,6 +74,13 @@ struct xarray {
 
 /************ Sokoban-related types ************/
 
+/* Mutable part of a layout. */
+struct layout_solution {
+    long long difficulty;              /* number of incorrect solutions */
+    struct layout_solution *loopgroup; /* a layout this can reach to and from */
+    bool known;                        /* has 'difficulty' been calculated? */
+};
+
 /* One possible layout for a chamber.  This has walls in the same location as
    the chamber itself, but its own crate layout; and it also knows the connected
    region in which the player is (this avoids the need for a separate layout for
@@ -89,7 +105,7 @@ struct layout {
        that don't. LOCKED is bitwise-or'ed into any locations that cannot
        contain a crate; this is an optimization to save having to recalcuate it
        each time. */
-    const lpos *locations;
+    lpos *locations;
 
     /* "playerpos" stores the location where the player is (OUTSIDE or >=
        INTERIOR); OUTSIDE also includes outside the layout, thus can be used
@@ -101,6 +117,9 @@ struct layout {
        it all the time. */
     lpos maxlpos;     /* the maximum lpos used in locations */
     int cratecount;   /* the number of crates */
+
+    /* Solution information */
+    struct layout_solution *solution; /* owned pointer */
 };
 
 struct chamber {
@@ -111,9 +130,12 @@ struct chamber {
        = 0; entrypos has to be no more than half the width (rounded up). */
     int entrypos;
 
-    /* A list of interesting layouts we've found for the chamber.
-       Index 0 is always the base layout. */
+    /* A list of layouts we've found for the chamber. Index 0 is always the base
+       layout (which has no crates). */
     struct xarray layouts;
+
+    /* Makes it possible to quickly find a layout in layouts. */
+    struct xarray layout_index[HASHSIZE];
 };
 
 
@@ -173,6 +195,14 @@ location_bounds_check(lpos *locations, int x, int y,
     return locations[y * width + x];
 }
 
+/* Finding a layout from a chamber. This is done in lots of places, and a little
+   nontrivial to write, so is a good candidate for an inline function. */
+inline struct layout *nth_layout(const struct chamber *, int);
+inline struct layout *
+nth_layout(const struct chamber *chamber, int layoutindex) {
+    return ((struct layout *)chamber->layouts.contents) + layoutindex;
+}
+
 
 /************ Externs ************/
 
@@ -194,9 +224,16 @@ extern bool init_wall_locks(lpos *, int, int, int);
 
 extern void generate_chambers(struct xarray *, int, int, int);
 
+/* layout.c */
+
+extern layouthash hash_layout(const lpos *, int, int);
+extern void init_layout(struct layout *, int, int, int, bool);
+extern void find_layouts_from(struct chamber *, int);
+
 /* output.c */
 
 extern void output_layouts(const struct layout *const *,
-                           int, int, int, size_t, bool, bool, FILE *);
+                           int, int, int, size_t, bool, bool,
+                           const struct layout_solution *, FILE *);
 extern void output_chambers(const struct chamber *, size_t,
                             bool, bool, FILE *);
