@@ -16,8 +16,7 @@
 static void
 output_layout_list(const struct layout *const *layouts, int width, int height,
                    int entrypos, size_t n_across, bool show_regions,
-                   bool show_locked, const struct layout_solution *solvable,
-                   FILE *fp)
+                   bool show_locked, FILE *fp)
 {
     int y, x;
     size_t n;
@@ -117,11 +116,9 @@ output_chambers(const struct chamber *chambers, size_t n_across,
     for (n = 0; n < n_across; n++)
         layouts[n] = nth_layout(chambers + n, max_capacity_layout(chambers + n));
 
-    struct layout_solution unique_address;
-
     output_layout_list(layouts, chambers[0].width, chambers[0].height,
                        chambers[0].entrypos, n_across,
-                       show_regions, show_locked, &unique_address, fp);
+                       show_regions, show_locked, fp);
 }
 
 /* Draws the layouts of a single chamber to the screen or a file. */
@@ -139,23 +136,39 @@ output_layouts(const struct chamber *chamber, size_t n_across,
         if (n > n_across)
             n = n_across;
         output_layout_list(layouts + i, chamber->width, chamber->height,
-                           chamber->entrypos, n, show_regions, show_locked,
-                           layouts[0]->solution->loopgroup ?
-                           layouts[0]->solution->loopgroup :
-                           layouts[0]->solution, fp);
+                           chamber->entrypos, n, show_regions, show_locked, fp);
     }
 }
 
 void
 output_one_layout(const struct chamber *chamber, int layoutindex,
-                  bool show_regions, bool show_locked, FILE *fp)
+                  bool show_regions, bool show_locked, bool with_solution,
+                  int n_across, FILE *fp)
 {
-    struct layout_solution unique_address;
+    struct xarray layoutlist = {0, 0, 0};
     const struct layout *layout = nth_layout(chamber, layoutindex);
 
-    output_layout_list(&layout,
-                       chamber->width, chamber->height, chamber->entrypos,
-                       1, show_regions, show_locked, &unique_address, fp);
+    while (layout) {
+        *NEW_IN_XARRAY(&layoutlist, const struct layout *) = layout;
+
+        if (!with_solution)
+            break;
+
+        int layoutindex = layout->solution->nextindex;
+        layout = layoutindex == -1 ? NULL : nth_layout(chamber, layoutindex);
+    }
+
+    int i;
+    for (i = 0; i < layoutlist.length_in_use; i += n_across) {
+        int n = layoutlist.length_in_use - i;
+        if (n > n_across)
+            n = n_across;
+        output_layout_list((const struct layout **)layoutlist.contents + i,
+                           chamber->width, chamber->height,
+                           chamber->entrypos, n, show_regions, show_locked, fp);
+    }
+
+    free(layoutlist.contents);
 }
 
 void
@@ -163,12 +176,11 @@ output_two_layouts(const struct chamber *chamber, int layoutindex,
                    int layoutindex2, bool show_regions, bool show_locked,
                    FILE *fp)
 {
-    struct layout_solution unique_address;
     const struct layout *layout[2] =
         {nth_layout(chamber, layoutindex),
          nth_layout(chamber, layoutindex2)};
 
     output_layout_list(layout,
                        chamber->width, chamber->height, chamber->entrypos,
-                       2, show_regions, show_locked, &unique_address, fp);
+                       2, show_regions, show_locked, fp);
 }

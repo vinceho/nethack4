@@ -25,6 +25,8 @@ main(int argc, char **argv)
 {
     long long difficulty = 0;
     long capacity = 0;
+    bool with_solution = false;
+    const int n_across = 10;
 
     srand(time(NULL));
 
@@ -33,6 +35,12 @@ main(int argc, char **argv)
         argv++;
         argc--;
         diagonals = true;
+    }
+    if (argc >= 2 && !strcmp(argv[1], "--solution")) {
+        argv[1] = argv[0];
+        argv++;
+        argc--;
+        with_solution = true;
     }
 
     if (argc == 3 || argc == 4)
@@ -54,7 +62,8 @@ main(int argc, char **argv)
             int layoutindex;
             struct chamber *chamber = generate_difficult_chamber(
                 difficulty, rng, &layoutindex);
-            output_one_layout(chamber, layoutindex, false, false, stdout);
+            output_one_layout(chamber, layoutindex, false, false,
+                              with_solution, n_across, stdout);
             free_chamber_internals(chamber);
             free(chamber);
 
@@ -64,7 +73,8 @@ main(int argc, char **argv)
             int layoutindex;
             struct chamber *chamber = generate_directed_chamber(
                 difficulty, rng, &layoutindex);
-            output_one_layout(chamber, layoutindex, false, false, stdout);
+            output_one_layout(chamber, layoutindex, false, false,
+                              with_solution, n_across, stdout);
             free_chamber_internals(chamber);
             free(chamber);
 
@@ -74,7 +84,8 @@ main(int argc, char **argv)
             int layoutindex;
             struct chamber *chamber = generate_remcap_chamber(
                 difficulty, capacity, rng, &layoutindex);
-            output_one_layout(chamber, layoutindex, false, false, stdout);
+            output_one_layout(chamber, layoutindex, false, false,
+                              with_solution, n_across, stdout);
             free_chamber_internals(chamber);
             free(chamber);
 
@@ -94,7 +105,8 @@ main(int argc, char **argv)
             free_chamber_internals(chamber2);
             free(chamber2);
 
-            output_one_layout(chamber3, 1, false, false, stdout);
+            output_one_layout(chamber3, 1, false, false,
+                              with_solution, n_across, stdout);
 
             free_chamber_internals(chamber3);
             free(chamber3);

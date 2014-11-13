@@ -83,7 +83,8 @@ init_layout(struct layout *layout, int w, int h, int entrypos, int annexcap,
     }
 
     layout->solution = memdup(&(struct layout_solution){
-            .difficulty = 0, .loopgroup = NULL, .known = false, .pushes = -1},
+            .difficulty = 0, .loopgroup = NULL, .known = false,
+                .pushes = -1, .nextindex = -1},
         sizeof (struct layout_solution));
 
     if (adjust_lpos) {
@@ -468,6 +469,7 @@ struct flq_wrapper {
     int mostpushes;
     int mostpushes_index;
     int oldcrates;
+    int oldindex;
     int curcrates;
     int target;
     int craterange_l;
@@ -501,6 +503,8 @@ furthest_layout_inner(struct chamber *chamber, int layoutindex, void *qv)
     *(q->tailnext) = temp;
     q->tailnext = &(temp->next);
 
+    layout->solution->nextindex = q->oldindex;
+
     /* If we have a number of crates equal to the target, then this is a
        solvable layout with 'target' crates, just presumably one we hadn't seen
        before. Mark the number of pushes as 0 (thus causing us to perhaps
@@ -521,8 +525,8 @@ furthest_layout_inner(struct chamber *chamber, int layoutindex, void *qv)
    'curcrates' crates in them, return the index of the one that requires the
    most pushes to reach a solvable layout with 'target' crates and the player
    outside. ('curcrates' can be specified as INT_MAX, if we don't care how many
-   crates are used.) This updates 'pushes', and leaves the other solution fields
-   alone.
+   crates are used.) This updates 'pushes' and 'nextindex', and leaves the other
+   solution fields alone.
 
    If 'curcrates' is less than or equal to 'target', the solution will not
    involve removing crates from the chamber.
@@ -580,6 +584,7 @@ furthest_layout(struct chamber *chamber, int curcrates, int target)
 
         q.newpushes = nth_layout(chamber, layoutindex)->solution->pushes + 1;
         q.oldcrates = nth_layout(chamber, layoutindex)->cratecount;
+        q.oldindex = layoutindex;
 
         loop_over_next_moves(chamber, layoutindex, true,
                              furthest_layout_inner, &q);

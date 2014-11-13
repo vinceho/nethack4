@@ -82,6 +82,7 @@ struct layout_solution {
     long long difficulty;              /* number of incorrect solutions */
     struct layout_solution *loopgroup; /* a layout this can reach to and from */
     int pushes;                        /* for the last furthest_layout call */
+    int nextindex;                     /* for tracing the solution */
     bool known;                        /* has 'difficulty' been calculated? */
 };
 
@@ -260,7 +261,7 @@ extern void free_layout_internals(struct layout *);
 extern void output_layouts(const struct chamber *, size_t,
                            bool, bool, FILE *);
 extern void output_one_layout(const struct chamber *, int,
-                              bool, bool, FILE *);
+                              bool, bool, bool, int, FILE *);
 extern void output_two_layouts(const struct chamber *, int, int,
                                bool, bool, FILE *);
 extern void output_chambers(const struct chamber *, size_t,
