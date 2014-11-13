@@ -24,6 +24,7 @@ int
 main(int argc, char **argv)
 {
     long long difficulty = 0;
+    long capacity = 0;
 
     srand(time(NULL));
 
@@ -34,16 +35,53 @@ main(int argc, char **argv)
         diagonals = true;
     }
 
-    if (argc == 3)
+    if (argc == 3 || argc == 4)
         difficulty = strtoll(argv[2], NULL, 10);
+    if (argc == 4)
+        capacity = strtol(argv[3], NULL, 10);
 
     if (difficulty > 0 && difficulty < LLONG_MAX) {
-        if (!strcmp(argv[1], "storage")) {
+        if (!strcmp(argv[1], "storage") && argc == 3) {
 
             struct chamber *chamber = generate_storage_chamber(difficulty, rng);
             output_chambers(chamber, 1, false, true, stdout);
             free_chamber_internals(chamber);
             free(chamber);
+
+        } else if (!strcmp(argv[1], "remcap") && capacity > 0 &&
+                   capacity < LONG_MAX) {
+
+            bool found = false;
+            while (!found) {
+                struct chamber *chamber =
+                    generate_storage_chamber(difficulty, rng);
+
+                int maxcap = nth_layout(chamber, max_capacity_layout(
+                                            chamber))->cratecount;
+
+                found = maxcap >= capacity;
+
+                if (found) {
+
+                    int layoutindex = furthest_layout(
+                        chamber, maxcap - capacity, maxcap);
+                    assert(layoutindex > -1);
+
+                    output_one_layout(chamber, layoutindex,
+                                      false, true, stdout);
+
+                } else {
+
+                    /* If we need a high capacity and have a low difficulty, we
+                       might not be able to find a pattern with enough capacity.
+                       So, we allow the difficulty to steadily increase. */
+                    difficulty += (difficulty / 5) + 1;
+
+                }
+
+                free_chamber_internals(chamber);
+                free(chamber);
+            }
 
         } else {
             argc = 0;
@@ -57,8 +95,8 @@ main(int argc, char **argv)
         return EXIT_SUCCESS;
     }
 
-    if (argc != 3) {
-        printf("Usage: %s command difficulty\n\n", argv[0]);
+    if (argc < 3) {
+        printf("Usage: %s command difficulty [capacity]\n\n", argv[0]);
         puts("difficulty is a number that is approximately "
              "the number of ways to");
         puts("screw up the puzzle; don't use values above "
@@ -66,6 +104,8 @@ main(int argc, char **argv)
         puts("the program to run in a reasonable time. "
              "Commands are as follows:\n");
         puts("storage     Generate a storage chamber");
+        puts("remcap      Generate a storage chamber with the given");
+        puts("            remaining capacity");
 
         return (argc == 2 && !strcmp(argv[1], "--help")) ?
             EXIT_SUCCESS : EXIT_FAILURE;

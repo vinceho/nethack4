@@ -80,6 +80,7 @@ struct xarray {
 struct layout_solution {
     long long difficulty;              /* number of incorrect solutions */
     struct layout_solution *loopgroup; /* a layout this can reach to and from */
+    int pushes;                        /* for the last furthest_layout call */
     bool known;                        /* has 'difficulty' been calculated? */
 };
 
@@ -238,11 +239,16 @@ extern layouthash hash_layout(const lpos *, int, int);
 extern void init_layout(struct layout *, int, int, int, bool);
 extern void find_layouts_from(struct chamber *, int);
 extern int max_capacity_layout(const struct chamber *);
+extern int furthest_layout(struct chamber *, int, int);
 extern void free_layout_internals(struct layout *);
 
 /* output.c */
 
 extern void output_layouts(const struct chamber *, size_t,
                            bool, bool, FILE *);
+extern void output_one_layout(const struct chamber *, int,
+                              bool, bool, FILE *);
+extern void output_two_layouts(const struct chamber *, int, int,
+                               bool, bool, FILE *);
 extern void output_chambers(const struct chamber *, size_t,
                             bool, bool, FILE *);

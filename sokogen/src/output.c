@@ -49,7 +49,7 @@ output_layout_list(const struct layout *const *layouts, int width, int height,
 
                 if (!show_locked)
                     l &= ~LOCKED;
-                
+
                 /* TODO: prettier output of walls as horizontal, vertical,
                    space */
                 if (l == WALL)
@@ -121,7 +121,7 @@ output_chambers(const struct chamber *chambers, size_t n_across,
 /* Draws the layouts of a single chamber to the screen or a file. */
 void
 output_layouts(const struct chamber *chamber, size_t n_across,
-               bool show_regions, bool show_locked, FILE *fp) 
+               bool show_regions, bool show_locked, FILE *fp)
 {
     const struct layout *layouts[chamber->layouts.length_in_use];
     int i;
@@ -136,6 +136,33 @@ output_layouts(const struct chamber *chamber, size_t n_across,
                            chamber->entrypos, n, show_regions, show_locked,
                            layouts[0]->solution->loopgroup ?
                            layouts[0]->solution->loopgroup :
-                           layouts[0]->solution, stdout);
+                           layouts[0]->solution, fp);
     }
+}
+
+void
+output_one_layout(const struct chamber *chamber, int layoutindex,
+                  bool show_regions, bool show_locked, FILE *fp)
+{
+    struct layout_solution unique_address;
+    const struct layout *layout = nth_layout(chamber, layoutindex);
+
+    output_layout_list(&layout,
+                       chamber->width, chamber->height, chamber->entrypos,
+                       1, show_regions, show_locked, &unique_address, fp);
+}
+
+void
+output_two_layouts(const struct chamber *chamber, int layoutindex,
+                   int layoutindex2, bool show_regions, bool show_locked,
+                   FILE *fp)
+{
+    struct layout_solution unique_address;
+    const struct layout *layout[2] =
+        {nth_layout(chamber, layoutindex),
+         nth_layout(chamber, layoutindex2)};
+
+    output_layout_list(layout,
+                       chamber->width, chamber->height, chamber->entrypos,
+                       2, show_regions, show_locked, &unique_address, fp);
 }

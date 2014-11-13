@@ -77,7 +77,7 @@ init_layout(struct layout *layout, int w, int h, int entrypos, bool adjust_lpos)
     }
 
     layout->solution = memdup(&(struct layout_solution){
-            .difficulty = 0, .loopgroup = NULL, .known = false},
+            .difficulty = 0, .loopgroup = NULL, .known = false, .pushes = -1},
         sizeof (struct layout_solution));
 
     if (adjust_lpos) {
@@ -141,7 +141,7 @@ find_layout_in_chamber(const struct chamber *chamber, const lpos *locations,
    to the chamber (that weren't already there), and calls the given callback on
    each of the layouts.  */
 static void
-loop_over_next_moves(struct chamber *chamber, int layoutindex,
+loop_over_next_moves(struct chamber *chamber, int layoutindex, bool backwards,
                      void (*callback)(
                          struct chamber *chamber, int layoutindex, void *arg),
                      void *callbackarg)
@@ -169,31 +169,66 @@ loop_over_next_moves(struct chamber *chamber, int layoutindex,
                 int dx = xyoffsets[d][0];
                 int dy = xyoffsets[d][1];
 
-                lpos next = AT(layout, x + dx, y + dy);
-                lpos beyond = AT(layout, x + dx * 2, y + dy * 2);
+                lpos from;
+                lpos to;
 
-                if (((next & ~LOCKED) == CRATE || (y == -1 && dy == 1)) &&
-                    (beyond & ~LOCKED) > CRATE && !(beyond & LOCKED)) {
+                if (backwards) {
+                    to = AT(layout, x + dx, y + dy);
+                    from = AT(layout, x + dx * 2, y + dy * 2);
+                } else {
+                    from = AT(layout, x + dx, y + dy);
+                    to = AT(layout, x + dx * 2, y + dy * 2);
+                }
+
+                /* Crates can't get onto locked squares, and shouldn't be pushed
+                   onto a locked square, and can't be pushed onto another
+                   crate or a wall. */
+                if ((from & LOCKED) || (to & LOCKED) || to <= CRATE)
+                    continue;
+
+                /* The simplest case: pushing/pulling a crate onto a blank
+                   space. */
+                bool legalpush = false;
+                if (from == CRATE)
+                    legalpush = true;
+
+                /* When pushing/pulling from outside (y == -1), we can
+                   materialize/dematerialize a crate just inside the
+                   entrance. When pushing/pulling from inside, we must
+                   materialize/dematerialize the crate just /outside/ the
+                   entrance (because crates can be pushed along the y == 0
+                   line without the y == 1 line being accessible). */
+                if (!backwards && y == -1 && dy == 1)
+                    legalpush = true;
+
+                if (backwards && y == 1 && dy == -1 &&
+                    x == chamber->entrypos)
+                    legalpush = true;
+
+                if (legalpush) {
 
                     lpos *working = memdup(layout->locations,
                                            sizeof (lpos) * width * height);
 
-                    /* We can push a crate onto or out of the map. When pushing
-                       a crate onto the map, the position it's conceptually
-                       pushed from (just inside the entrypos) is in-bounds, so
-                       we don't need to guard it. When pushing it out, though,
-                       it's being pushed out of bounds, so we need a bounds
-                       check. */
+                    if (backwards) {
 
-                    working[(y + dy) * width + x + dx] =
-                        (next & LOCKED) | OUTSIDE;
-                    if (y + dy * 2 >= 0) {
-                        working[(y + dy * 2) * width + x + dx * 2] =
-                            (beyond & LOCKED) | CRATE;
+                        if (y + dy * 2 >= 0)
+                            working[(y + dy * 2) * width + x + dx * 2] =
+                                OUTSIDE;
+                        if (y != -1)
+                            working[(y + dy) * width + x + dx] = CRATE;
+
+                    } else {
+
+                        if (y != -1)
+                            working[(y + dy) * width + x + dx] = OUTSIDE;
+                        if (y + dy * 2 >= 0)
+                            working[(y + dy * 2) * width + x + dx * 2] = CRATE;
+
                     }
 
                     int layoutindex2 = find_layout_in_chamber(
-                        chamber, working, x + dx, y + dy);
+                        chamber, working, x, y);
 
                     if (layoutindex2 == -1) {
 
@@ -202,7 +237,7 @@ loop_over_next_moves(struct chamber *chamber, int layoutindex,
                         newlayout->locations = working;
                         init_layout(newlayout, chamber->width, chamber->height,
                                     chamber->entrypos, true);
-                        newlayout->playerpos = AT(newlayout, x + dx, y + dy);
+                        newlayout->playerpos = AT(newlayout, x, y) & ~LOCKED;
 
                         layouthash hash = hash_layout(newlayout->locations,
                                                       chamber->width,
@@ -276,7 +311,7 @@ set_difficulties(struct chamber *chamber, int layoutindex, void *parent)
         .psol = insol,
         .cratecount = nth_layout(chamber, layoutindex)->cratecount
     };
-    loop_over_next_moves(chamber, layoutindex, set_difficulties, &sdw);
+    loop_over_next_moves(chamber, layoutindex, false, set_difficulties, &sdw);
 
     /* This will ensure that by the time the recursion ends, all loopgroups
        will have been appropriately updated. */
@@ -326,7 +361,8 @@ find_layouts_inner(struct chamber *chamber, int layoutindex, void *looplist)
        it, unless it has a difficulty > 0 (in which case it's already been
        processed). */
     if (lls->difficulty == 0)
-        loop_over_next_moves(chamber, layoutindex, find_layouts_inner, &fli);
+        loop_over_next_moves(chamber, layoutindex, false,
+                             find_layouts_inner, &fli);
 
     lls->difficulty = 1;
     lls->known = false;
@@ -385,6 +421,125 @@ max_capacity_layout(const struct chamber *chamber)
         }
     }
     return maxcap_index;
+}
+
+struct furthest_layout_queue {
+    struct furthest_layout_queue *next;
+    int layoutindex;
+};
+
+struct flq_wrapper {
+    struct furthest_layout_queue *head;
+    struct furthest_layout_queue **tailnext;
+    int newpushes;
+    int mostpushes_index;
+    int curcrates;
+    int target;
+    int craterange_l;
+    int craterange_h;
+};
+
+/* Handles updating the queue for furthest_layout. */
+static void
+furthest_layout_inner(struct chamber *chamber, int layoutindex, void *qv)
+{
+    struct flq_wrapper *q = qv;
+    struct layout *layout = nth_layout(chamber, layoutindex);
+
+    /* Have we already seen it (and not via a more complex route)? */
+    if (layout->solution->pushes != -1 &&
+        layout->solution->pushes <= q->newpushes)
+        return;
+
+    /* Is the number of crates out of range? */
+    if (layout->cratecount < q->craterange_l ||
+        layout->cratecount > q->craterange_h)
+        return;
+
+    /* No, mark the number of pushes and add it to the queue. */
+    layout->solution->pushes = q->newpushes;
+    struct furthest_layout_queue *temp = memdup
+        (&(struct furthest_layout_queue){
+            .next = NULL, .layoutindex = layoutindex}, sizeof *temp);
+    *(q->tailnext) = temp;
+    q->tailnext = &(temp->next);
+
+    /* If we have a number of crates equal to the target, then this is a
+       solvable layout with 'target' crates, just presumably one we hadn't seen
+       before. Mark the number of pushes as 0 (thus causing us to perhaps
+       recheck positions that reach this one). */
+    if (layout->cratecount == q->target && layout->playerpos == OUTSIDE)
+        layout->solution->pushes = 0;
+
+    /* Because we go in order from least pushes to most pushes, then if this
+       layout has the target number of crates, it must be the most pushes we've
+       seen so far. Only record positions where the player's outside. */
+    else if (layout->cratecount == q->curcrates && layout->playerpos == OUTSIDE)
+        q->mostpushes_index = layoutindex;
+}
+
+/* Out of all valid feed layouts with the player outside, and that have
+   'curcrates' crates in them, return the index of the one that requires the
+   most pushes to reach a solvable layout with 'target' crates and the player
+   outside. This updates 'pushes', and leaves the other solution fields alone.
+
+   This function will add feed layouts to the chamber given as an argument. */
+int
+furthest_layout(struct chamber *chamber, int curcrates, int target)
+{
+    /* Mark the "pushes" field in all existing layouts, as 0 if it's solvable
+       and has 'target' crates, or as -1 otherwise. The marked fields are placed
+       into a queue. */
+    int i = 0;
+
+    struct flq_wrapper q;
+    q.head = NULL;
+    q.tailnext = &q.head;
+    q.mostpushes_index = -1;
+    q.curcrates = curcrates;
+    q.target = target;
+    q.craterange_l = (curcrates > target) ? target : curcrates;
+    q.craterange_h = (curcrates < target) ? target : curcrates;
+
+    struct layout_solution *solvable =
+        follow_loopgroup_pointer(nth_layout(chamber, 0)->solution);
+
+    for (i = 0; i < chamber->layouts.length_in_use; i++) {
+        struct layout *layout = nth_layout(chamber, i);
+
+        if (follow_loopgroup_pointer(layout->solution) != solvable ||
+            layout->cratecount != target || layout->playerpos != OUTSIDE) {
+            layout->solution->pushes = -1;
+        } else {
+            layout->solution->pushes = 0;
+            struct furthest_layout_queue *temp = memdup
+                (&(struct furthest_layout_queue){
+                    .next = NULL, .layoutindex = i}, sizeof *temp);
+            if (curcrates == target)
+                q.mostpushes_index = i;
+            *q.tailnext = temp;
+            q.tailnext = &(temp->next);
+        }
+    }
+
+    /* Repeatedly consider all pulls from the head of the queue that yield
+       layouts with pushes == -1. Update the 'pushes' field of those layouts,
+       and place them at the tail of the queue. */
+    while (q.head) {
+        struct furthest_layout_queue *temp = q.head->next;
+        int layoutindex = q.head->layoutindex;
+        free(q.head);
+        q.head = temp;
+        if (!q.head)
+            q.tailnext = &q.head;
+
+        q.newpushes = nth_layout(chamber, layoutindex)->solution->pushes + 1;
+
+        loop_over_next_moves(chamber, layoutindex, true,
+                             furthest_layout_inner, &q);
+    }
+
+    return q.mostpushes_index;
 }
 
 /* Deallocates everything pointed to by a given layout (but not the layout
