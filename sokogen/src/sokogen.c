@@ -112,10 +112,9 @@ main(int argc, char **argv)
             free(chamber3);
 
         } else {
-            argc = 0;
+            goto options_failure;
         }
-    } else {
-        argc = 0;
+        return EXIT_SUCCESS;
     }
 
     if (argc == 2 && !strcmp(argv[1], "--version")) {
@@ -123,25 +122,40 @@ main(int argc, char **argv)
         return EXIT_SUCCESS;
     }
 
-    if (argc < 3) {
-        printf("Usage: %s command [difficulty] [capacity]\n\n", argv[0]);
-        puts("difficulty is a number that is approximately "
-             "the number of ways to");
-        puts("screw up the puzzle; don't use values above "
-             "1000 or so if you want");
-        puts("the program to run in a reasonable time. "
-             "Commands are as follows:\n");
-        puts("storage     Generate a storage chamber [difficulty]");
-        puts("feed        Generate a feed chamber [difficulty]");
-        puts("directed    Generate a directed chamber [capacity]");
-        puts("remcap      Generate a storage chamber with the given");
-        puts("            remaining capacity [difficulty, capacity]");
-        puts("hardfeed    Generate a feed chamber from a directed and");
-        puts("            storage chamber [difficulty, capacity]");
+    if (argc == 2 && !strcmp(argv[1], "place")) {
+        struct chamber *chamber = parse_chamber(stdin);
+        if (!chamber)
+            return EXIT_FAILURE;
 
-        return (argc == 2 && !strcmp(argv[1], "--help")) ?
-            EXIT_SUCCESS : EXIT_FAILURE;
+        int layoutindex = furthest_layout(chamber, INT_MAX, 0);
+
+        output_one_layout(chamber, layoutindex, false, false,
+                          with_solution, n_across, stdout);
+
+        free_chamber_internals(chamber);
+        free(chamber);
+
+        return EXIT_SUCCESS;
     }
 
-    return EXIT_SUCCESS;
+options_failure:
+    printf("Usage: %s command [difficulty] [capacity]\n\n", argv[0]);
+    puts("difficulty is a number that is approximately "
+         "the number of ways to");
+    puts("screw up the puzzle; don't use values above "
+         "1000 or so if you want");
+    puts("the program to run in a reasonable time. "
+         "Commands are as follows:\n");
+    puts("storage     Generate a storage chamber [difficulty]");
+    puts("feed        Generate a feed chamber [difficulty]");
+    puts("directed    Generate a directed chamber [capacity]");
+    puts("remcap      Generate a storage chamber with the given");
+    puts("            remaining capacity [difficulty, capacity]");
+    puts("hardfeed    Generate a feed chamber from a directed and");
+    puts("            storage chamber [difficulty, capacity]");
+    puts("place       Place crates to find the best feed layout for");
+    puts("            a feed chamber read from standard input");
+
+    return (argc == 2 && !strcmp(argv[1], "--help")) ?
+        EXIT_SUCCESS : EXIT_FAILURE;
 }

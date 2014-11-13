@@ -266,3 +266,7 @@ extern void output_two_layouts(const struct chamber *, int, int,
                                bool, bool, FILE *);
 extern void output_chambers(const struct chamber *, size_t,
                             bool, bool, FILE *);
+
+/* parse.c */
+
+extern struct chamber *parse_chamber(FILE *);
