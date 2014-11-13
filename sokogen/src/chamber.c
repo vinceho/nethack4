@@ -73,10 +73,9 @@ all_chambers_rng(int x)
    If 'storage' is true, then only chambers which make sense as storage chambers
    will be generated; otherwise, feed chambers will be generated too.
 
-   The given RNG will be used to randomly reject a subset of chambers, to reduce
-   memory usage. Biasing it towards high numbers will generate more chambers.
-   Use an RNG that always returns max value to get all chambers; you can use
-   NULL as the RNG to do this automatically.*/
+   The given RNG, if present and non-NULL will be used to randomly reject a
+   subset of chambers, to reduce memory usage. In this case, at most 16 chambers
+   will be returned, biased towards floor rather than wall. */
 void
 generate_chambers(struct xarray *chambers, int width, int height, int entrypos,
                   bool storage, int (*rng)(int))
@@ -399,6 +398,9 @@ generate_chamber_line(struct xarray *chambers, int width, int squares,
         generate_chamber_line(chambers, width, squares, entrypos,
                               working, squares_generated + width,
                               current_cnumber, storage, rng);
+
+        if (rng != all_chambers_rng && chambers->length_in_use >= 16)
+            break;
     }
 }
 
@@ -454,9 +456,7 @@ generate_storage_chamber(long long difficulty, int (*rng)(int))
             } else {
                 /* Do something to find another chamber:
                    - increase the width or height; or
-                   - try a chamber the same size with more free space
-                   Which we choose depends on chamberindex; if it's low, we're
-                   more likely to look for a new width/height pair. */
+                   - try a chamber the same size with more free space */
                 chamberindex += rng(4);
                 if (chamberindex >= maxchambers) {
                     if (rng(2)) {
@@ -470,7 +470,7 @@ generate_storage_chamber(long long difficulty, int (*rng)(int))
                     }
                     entrypos = rng((width - 1) / 2) + 1;
 
-                    if (width * height > 40 || width > 10) {
+                    if (width * height > 32) {
                         /* This is too large to calculate in a reasonable
                            time / using reasonable memory. */
                         width = 4;

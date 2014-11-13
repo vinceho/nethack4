@@ -16,7 +16,11 @@
    flood from a position A to a position B if it's possible to push a crate from
    position B to position A. If 'storage' is set, then flooding from a position
    A to a position B will only happen if it's possible to push a crate from
-   position A to position B. */
+   position A to position B.
+
+   Setting 'pull_only' and 'storage' simultaneously is a Bad Idea, because it
+   will fail to fill squares for which pushing and pulling must be done from
+   different directions. */
 void
 floodfill(lpos *locations, int width, int height, int entrypos, int x, int y,
           lpos from, lpos to, bool ignore_locks, bool pull_only, bool storage)
@@ -112,7 +116,7 @@ init_wall_locks(lpos *locations, int width, int height, int entrypos,
        all of them; if it finds some, we use that information to optimize
        chokepoint lock calculation, but it's not vital that they're found. */
     floodfill(locations, width, height, entrypos, entrypos, 0,
-              INTERIOR | LOCKED, INTERIOR, false, true, storage);
+              INTERIOR | LOCKED, INTERIOR, false, true, false);
 
     /* Chokepoint locks */
     /* These are done before finalizing connectivity locks; a chokepoint can
@@ -127,9 +131,9 @@ init_wall_locks(lpos *locations, int width, int height, int entrypos,
             for (x = 0; x < width; x++) {
                 if (locations[y * width + x] != INTERIOR)
                     continue;
-                
+
                 bool is_locked = true;
-                
+
                 /* Discover which areas are blocked by a hypothetical crate
                    here. */
                 locations[y * width + x] = CRATE;
@@ -163,8 +167,12 @@ init_wall_locks(lpos *locations, int width, int height, int entrypos,
     /* Now that we know where the chokepoint locks are, we can find locations
        accessible from the entrance via crate pulls (that don't go through
        chokepoint-locked areas). */
-    floodfill(locations, width, height, entrypos, entrypos, 0,
-              INTERIOR, OUTSIDE, false, true, storage);
+    floodfill(locations, width, height, entrypos, entrypos, 0, INTERIOR,
+              storage ? OUTSIDE | LOCKED : OUTSIDE, false, true, false);
+    if (storage) {
+        floodfill(locations, width, height, entrypos, entrypos, 0,
+                  OUTSIDE | LOCKED, OUTSIDE, false, false, true);
+    }
 
     /* Now change all locked squares to OUTSIDE | LOCKED.  */
     int outside_squares_seen = 0;
