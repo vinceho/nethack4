@@ -389,3 +389,12 @@ max_capacity_layout(const struct chamber *chamber)
     }
     return maxcap_index;
 }
+
+/* Deallocates everything pointed to by a given layout (but not the layout
+   itself, because those are typically stored in xarrays). */
+void
+free_layout_internals(struct layout *layout)
+{
+    free(layout->locations);
+    free(layout->solution);
+}

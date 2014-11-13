@@ -223,6 +223,7 @@ extern bool init_wall_locks(lpos *, int, int, int);
 /* chamber.c */
 
 extern void generate_chambers(struct xarray *, int, int, int);
+extern void free_chamber_internals(struct chamber *);
 
 /* layout.c */
 
@@ -230,6 +231,7 @@ extern layouthash hash_layout(const lpos *, int, int);
 extern void init_layout(struct layout *, int, int, int, bool);
 extern void find_layouts_from(struct chamber *, int);
 extern int max_capacity_layout(const struct chamber *);
+extern void free_layout_internals(struct layout *);
 
 /* output.c */
 

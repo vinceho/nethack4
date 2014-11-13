@@ -21,7 +21,7 @@ main(int argc, char **argv)
 
     printf("Generating chambers...\r");
     fflush(stdout);
-    generate_chambers(&chambers, 5, 4, 2);
+    generate_chambers(&chambers, 8, 3, 2);
 
     for (i = 0; i < chambers.length_in_use; i++) {
         printf("Generating layouts... %zd/%zd\r", i, chambers.length_in_use);
@@ -36,14 +36,14 @@ main(int argc, char **argv)
         output_chambers(((struct chamber *)chambers.contents) + i,
                         (i + n_across > chambers.length_in_use ?
                          chambers.length_in_use - i : n_across),
-                        true, true, stdout);
+                        false, true, stdout);
     }
     printf("%zu chambers generated.\n\n", chambers.length_in_use);
 
-    output_layouts(((struct chamber *)chambers.contents) + 122, n_across,
-                   true, true, stdout);
+    for (i = 0; i < chambers.length_in_use; i++)
+        free_chamber_internals(((struct chamber *)chambers.contents) + i);
+    if (chambers.allocsize)
+        free(chambers.contents);
 
-    /* We could clean up memory here, but there's no real need; the OS will
-       do it for us. */
     return EXIT_SUCCESS;
 }

@@ -363,3 +363,20 @@ generate_chamber_line(struct xarray *chambers, int width, int squares,
                               current_cnumber);
     }
 }
+
+/* Frees everything pointed to by a chamber (but not the chamber itself, because
+   it might be part of an xarray). The chamber is left uninitialized. */
+void
+free_chamber_internals(struct chamber *chamber)
+{
+    int i;
+    for (i = 0; i < HASHSIZE; i++)
+        if (chamber->layout_index[i].allocsize)
+            free(chamber->layout_index[i].contents);
+
+    for (i = 0; i < chamber->layouts.length_in_use; i++)
+        free_layout_internals(nth_layout(chamber, i));
+
+    if (chamber->layouts.allocsize)
+        free(chamber->layouts.contents);
+}
