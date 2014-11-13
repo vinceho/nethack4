@@ -159,7 +159,7 @@ loop_over_next_moves(struct chamber *chamber, int layoutindex, bool newly,
     int y, x;
     for (y = canaddcrates ? -1 : 0; y < height; y++)
         for (x = 0; x < width; x++) {
- 
+
             if (y == -1 && x != chamber->entrypos)
                 continue;
             if ((AT(layout, x, y) & ~LOCKED) != (layout->playerpos & ~LOCKED))
@@ -314,22 +314,34 @@ find_layouts_inner(struct chamber *chamber, int layoutindex, void *looplist)
 
     struct fli_element fli = {.next = looplist, .layoutindex = layoutindex};
 
-    /* This layout isn't on the looplist. Do a search for layouts reachable from
-       it. */
-    loop_over_next_moves(chamber, layoutindex, false, false, true,
-                         find_layouts_inner, &fli);
-
     struct layout_solution *lls = nth_layout(chamber, layoutindex)->solution;
+
+    /* This layout isn't on the looplist. Do a search for layouts reachable from
+       it, unless it has a difficulty > 0 (in which case it's already been
+       processed). */
+    if (lls->difficulty == 0)
+        loop_over_next_moves(chamber, layoutindex, false, false, true,
+                             find_layouts_inner, &fli);
+
     lls->difficulty = 1;
     lls->known = false;
 }
 
 /* Finds all layouts accessible from the given layout (specified as a chamber +
-   index), and adds them to the given chamber. All the layouts will have 
+   index), and adds them to the given chamber. All the layouts will have
    'difficulty' and 'loopgroup' set appropriately. */
 void
 find_layouts_from(struct chamber *chamber, int layoutindex)
 {
+    /* Set the difficulties of the existing layouts to 0. (This lets us use the
+       "difficulty" value to see if a layout has been fully processed, as an
+       optimization.) */
+    int i;
+    for (i = 0; i < chamber->layouts.length_in_use; i++) {
+        struct layout *layout = nth_layout(chamber, i);
+        layout->solution->difficulty = 0;
+    }
+
     /* Ensure that all layouts accessible from the given layout exist, reset
        their solution stats, and set their loopgroups. */
     find_layouts_inner(chamber, layoutindex, NULL);
@@ -338,7 +350,6 @@ find_layouts_from(struct chamber *chamber, int layoutindex)
     set_difficulties(chamber, layoutindex, NULL);
 
     /* Set the difficulties of the layouts to match the loopgroups. */
-    int i;
     for (i = 0; i < chamber->layouts.length_in_use; i++) {
         struct layout *layout = nth_layout(chamber, i);
         layout->solution->difficulty =

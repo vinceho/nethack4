@@ -232,8 +232,7 @@ extern void find_layouts_from(struct chamber *, int);
 
 /* output.c */
 
-extern void output_layouts(const struct layout *const *,
-                           int, int, int, size_t, bool, bool,
-                           const struct layout_solution *, FILE *);
+extern void output_layouts(const struct chamber *, size_t,
+                           bool, bool, FILE *);
 extern void output_chambers(const struct chamber *, size_t,
                             bool, bool, FILE *);
