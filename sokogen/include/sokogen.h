@@ -217,7 +217,7 @@ extern void *memdup(void *, size_t);
 
 /* locks.c */
 
-extern void floodfill(lpos *, int, int, int, int, lpos, lpos, bool);
+extern void floodfill(lpos *, int, int, int, int, lpos, lpos, bool, bool);
 extern bool init_wall_locks(lpos *, int, int, int);
 
 /* chamber.c */

@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2014-11-11 */
+/* Last modified by Alex Smith, 2014-11-13 */
 /* Copyright (c) 2014 Alex Smith. */
 /* This Sokoban puzzle generator may be distributed under either of the
  * following licenses:
@@ -11,10 +11,13 @@
 
 #include "sokogen.h"
 
-/* Replaces a given lpos with a different given lpos in a connected region. */
+/* Replaces a given lpos with a different given lpos in a connected region.
+   'ignore_locks' will flood even through locked areas. 'pull_only' will only
+   flood from a position A to a position B if it's possible to push a crate from
+   position B to position A. */
 void
 floodfill(lpos *locations, int width, int height, int x, int y,
-          lpos from, lpos to, bool ignore_locks)
+          lpos from, lpos to, bool ignore_locks, bool pull_only)
 {
     assert(from != to);
     if (x < 0 || y < 0 || x >= width || y >= height)
@@ -29,10 +32,21 @@ floodfill(lpos *locations, int width, int height, int x, int y,
     else
         locations[y * width + x] = to;
 
-    floodfill(locations, width, height, x + 1, y, from, to, ignore_locks);
-    floodfill(locations, width, height, x - 1, y, from, to, ignore_locks);
-    floodfill(locations, width, height, x, y + 1, from, to, ignore_locks);
-    floodfill(locations, width, height, x, y - 1, from, to, ignore_locks);
+#define IS_WALL(x2, y2) ((locations[(y2) * width + (x2)] | LOCKED) ==  \
+                         (WALL | LOCKED))
+
+    if (!pull_only || (x < width - 2 && !IS_WALL(x + 2, y)))
+        floodfill(locations, width, height, x + 1, y, from, to,
+                  ignore_locks, pull_only);
+    if (!pull_only || (x > 1 && !IS_WALL(x - 2, y)))
+        floodfill(locations, width, height, x - 1, y, from, to,
+                  ignore_locks, pull_only);
+    if (!pull_only || (y < height - 2 && !IS_WALL(x, y + 2)))
+        floodfill(locations, width, height, x, y + 1, from, to,
+                  ignore_locks, pull_only);
+    if (!pull_only || (y > 1 && !IS_WALL(x, y - 2)))
+        floodfill(locations, width, height, x, y - 1, from, to,
+                  ignore_locks, pull_only);
 }
 
 
@@ -60,8 +74,8 @@ init_wall_locks(lpos *locations, int width, int height, int entrypos)
      *   aren't visible on the map, which is why entrypos is required here.)
      *   This is an "edge lock".
      *
-     * - The square would have to be pushed through a wall-locked area to
-     *   navigate it to the goal. This is a "connectivity lock".
+     * - A crate on the square cannot be pushed to the goal. This is a
+     *   "connectivity lock".
      *
      * - The square disconnects the area it's in, and pushing it in any
      *   direction accessible from the entrance would push it onto a
@@ -244,7 +258,7 @@ init_wall_locks(lpos *locations, int width, int height, int entrypos)
                    here. */
                 locations[y * width + x] = CRATE;
                 floodfill(locations, width, height, entrypos, 0,
-                          INTERIOR, OUTSIDE, true);
+                          INTERIOR, OUTSIDE, true, false);
 
                 /* Do we have any pushes into unlocked areas from any direction
                    we could reach with the crate blocking our way? */
@@ -294,7 +308,7 @@ init_wall_locks(lpos *locations, int width, int height, int entrypos)
 
                 /* Undo our changes. */
                 floodfill(locations, width, height, entrypos, 0,
-                          OUTSIDE, INTERIOR, true);
+                          OUTSIDE, INTERIOR, true, false);
                 locations[y * width + x] =
                     is_locked ? (OUTSIDE | LOCKED) : INTERIOR;
                 any_locks_found |= is_locked;
@@ -303,9 +317,9 @@ init_wall_locks(lpos *locations, int width, int height, int entrypos)
     }
 
     /* Connectivity locks. */
-    /* Find locations accessible from the entrance. */
+    /* Find locations accessible from the entrance via crate pulls. */
     floodfill(locations, width, height, entrypos, 0,
-              INTERIOR, OUTSIDE, false);
+              INTERIOR, OUTSIDE, false, true);
 
     /* Now change all locked squares to OUTSIDE | LOCKED.  */
     int outside_squares_seen = 0;

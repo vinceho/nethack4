@@ -82,14 +82,14 @@ init_layout(struct layout *layout, int w, int h, int entrypos, bool adjust_lpos)
 
     if (adjust_lpos) {
         floodfill(layout->locations, w, h, entrypos, 0,
-                  SENTINEL, OUTSIDE, true);
+                  SENTINEL, OUTSIDE, true, false);
         int y, x;
         lpos curlpos = INTERIOR;
         for (y = 0; y < h; y++)
             for (x = 0; x < w; x++)
                 if ((layout->locations[y * w + x] & ~LOCKED) == SENTINEL)
                     floodfill(layout->locations, w, h, x, y, SENTINEL,
-                              curlpos++, true);
+                              curlpos++, true, false);
         layout->maxlpos = curlpos - 1;
     }
 }
