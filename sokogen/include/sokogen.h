@@ -241,6 +241,8 @@ extern struct chamber *generate_difficult_chamber(
 extern struct chamber *generate_directed_chamber(int, int (*)(int), int *);
 extern struct chamber *generate_remcap_chamber(
     long long, int, int (*)(int), int *);
+extern struct chamber *glue_chambers(const struct chamber *, int,
+                                     const struct chamber *, int);
 
 /* layout.c */
 

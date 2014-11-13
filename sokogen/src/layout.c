@@ -138,7 +138,7 @@ find_layout_in_chamber(const struct chamber *chamber, const lpos *locations,
         if (same_crates(l->locations, locations,
                         chamber->width, chamber->height) &&
             (l->playerpos | LOCKED) ==
-            (l->locations[y * chamber->width + x] | LOCKED))
+            ((y < 0 ? OUTSIDE : l->locations[y * chamber->width + x]) | LOCKED))
             return layoutindex;
     }
 
@@ -467,6 +467,7 @@ struct flq_wrapper {
     int newpushes;
     int mostpushes;
     int mostpushes_index;
+    int oldcrates;
     int curcrates;
     int target;
     int craterange_l;
@@ -488,6 +489,8 @@ furthest_layout_inner(struct chamber *chamber, int layoutindex, void *qv)
     /* Is the number of crates out of range? */
     if (layout->cratecount < q->craterange_l ||
         layout->cratecount > q->craterange_h)
+        return;
+    if (q->curcrates <= q->target && layout->cratecount > q->oldcrates)
         return;
 
     /* No, mark the number of pushes and add it to the queue. */
@@ -520,6 +523,9 @@ furthest_layout_inner(struct chamber *chamber, int layoutindex, void *qv)
    outside. ('curcrates' can be specified as INT_MAX, if we don't care how many
    crates are used.) This updates 'pushes', and leaves the other solution fields
    alone.
+
+   If 'curcrates' is less than or equal to 'target', the solution will not
+   involve removing crates from the chamber.
 
    This function will add feed layouts to the chamber given as an argument. */
 int
@@ -573,6 +579,7 @@ furthest_layout(struct chamber *chamber, int curcrates, int target)
             q.tailnext = &q.head;
 
         q.newpushes = nth_layout(chamber, layoutindex)->solution->pushes + 1;
+        q.oldcrates = nth_layout(chamber, layoutindex)->cratecount;
 
         loop_over_next_moves(chamber, layoutindex, true,
                              furthest_layout_inner, &q);

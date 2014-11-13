@@ -664,11 +664,7 @@ generate_difficult_chamber(long long difficulty, int (*rng)(int),
 }
 
 /* Generates a storage chamber, and finds a layout for it that can store an
-   extra 'remcap' crates.
-
-   WARNING: The solution found might involve pushing a crate into the chamber,
-   then a crate out, then a crate back in again. So the directed chamber this is
-   connected to may need to provide a quickturn space. */
+   extra 'remcap' crates. */
 struct chamber *
 generate_remcap_chamber(long long difficulty, int remcap,
                         int (*rng)(int), int *layoutindex)
@@ -695,4 +691,86 @@ generate_remcap_chamber(long long difficulty, int remcap,
     }
 
     return chamber;
+}
+
+
+/* Creates a new chamber from the given layouts of two other chambers. The
+   entrance to chamber1 will overwrite the annex of chamber2 (which must
+   exist). The player will be placed outside. */
+struct chamber *
+glue_chambers(const struct chamber *chamber1, int layoutindex1,
+              const struct chamber *chamber2, int layoutindex2)
+{
+    int annexpos;
+    lpos *loc1 = nth_layout(chamber1, layoutindex1)->locations;
+    lpos *loc2 = nth_layout(chamber2, layoutindex2)->locations;
+
+    /* Find the annex. */
+    for (annexpos = 0; annexpos < chamber2->width; annexpos++)
+        if (loc2[(chamber2->height - 1) * chamber2->width + annexpos] & ANNEX)
+            goto found_annex;
+    assert(!"No annex in chamber2");
+found_annex:
+    ;
+
+    /* Calculate the padding we need to use to line up the entrance of chamber1
+       with the annex of chamber2 (by adding extra wall to the left). */
+    int leftpad1 = 0;
+    int leftpad2 = 0;
+    if (annexpos < chamber1->entrypos)
+        leftpad2 = chamber1->entrypos - annexpos;
+    if (annexpos > chamber1->entrypos)
+        leftpad1 = annexpos - chamber1->entrypos;
+
+    int new_height = chamber1->height + chamber2->height;
+    int new_width = chamber1->width + leftpad1;
+    if (chamber2->width + leftpad2 > new_width)
+        new_width = chamber2->width + leftpad2;
+
+    lpos wall = WALL;
+    lpos *locations = padrealloc(NULL, sizeof (lpos),
+                                 new_height * new_width, 0, &wall);
+
+    /* Copy the chamber contents. */
+    int y, x;
+    for (y = 0; y < chamber2->height; y++)
+        for (x = 0; x < chamber2->width; x++)
+            locations[y * new_width + x + leftpad2] =
+                loc2[y * chamber2->width + x];
+
+    for (y = 0; y < chamber1->height; y++)
+        for (x = 0; x < chamber1->width; x++)
+            locations[(y + chamber2->height) * new_width + x + leftpad1] =
+                loc1[y * chamber1->width + x];
+
+    locations[(chamber2->height - 1) * new_width + annexpos + leftpad2] =
+        OUTSIDE;
+
+    /* locations holds the layout with crates, and will become layout 1. We
+       also need a layout 0; we can use init_wall_locks to clear the crates. */
+    lpos *baselocations = memdup(
+        locations, new_height * new_width * sizeof(lpos));
+    init_wall_locks(baselocations, new_width, new_height,
+                    chamber2->entrypos + leftpad2, false);
+
+    struct chamber *newchamber = memdup(&(struct chamber) {
+            .width = new_width, .height = new_height,
+                .entrypos = chamber2->entrypos + leftpad2, .annexcap = 0},
+        sizeof *newchamber);
+    memset(newchamber->layout_index, 0, sizeof newchamber->layout_index);
+
+    /* Be careful of reallocations... */
+    (void) NEW_IN_XARRAY(&(newchamber->layouts), struct layout);
+    struct layout *layout1 =
+        NEW_IN_XARRAY(&(newchamber->layouts), struct layout);
+    struct layout *layout0 = nth_layout(newchamber, 0);
+
+    layout0->playerpos = layout1->playerpos = OUTSIDE;
+    layout0->locations = baselocations;
+    layout1->locations = locations;
+
+    init_layout(layout0, new_width, new_height, newchamber->entrypos, 0, true);
+    init_layout(layout1, new_width, new_height, newchamber->entrypos, 0, true);
+
+    return newchamber;
 }

@@ -25,6 +25,7 @@ output_layout_list(const struct layout *const *layouts, int width, int height,
     for (n = 0; n < n_across; n++)
         playerpos[n] = layouts[n]->playerpos;
 
+#if 0
     /* Write the difficulty, in scientific notation.
        If the puzzle is solvable, we use a lowercase e, otherwise a capital E. */
     for (n = 0; n < n_across; n++) {
@@ -40,6 +41,7 @@ output_layout_list(const struct layout *const *layouts, int width, int height,
                 difficulty, is_solvable ? 'e' : 'E', exponent);
     }
     putc('\n', fp);
+#endif
 
     /* We flip the map vertically, so the entrance is at the bottom. */
     for (y = 0; y < height; y++) {

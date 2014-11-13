@@ -45,7 +45,7 @@ main(int argc, char **argv)
 
             struct chamber *chamber = generate_difficult_chamber(
                 difficulty, rng, NULL);
-            output_chambers(chamber, 1, false, true, stdout);
+            output_chambers(chamber, 1, false, false, stdout);
             free_chamber_internals(chamber);
             free(chamber);
 
@@ -54,7 +54,7 @@ main(int argc, char **argv)
             int layoutindex;
             struct chamber *chamber = generate_difficult_chamber(
                 difficulty, rng, &layoutindex);
-            output_one_layout(chamber, layoutindex, false, true, stdout);
+            output_one_layout(chamber, layoutindex, false, false, stdout);
             free_chamber_internals(chamber);
             free(chamber);
 
@@ -64,7 +64,7 @@ main(int argc, char **argv)
             int layoutindex;
             struct chamber *chamber = generate_directed_chamber(
                 difficulty, rng, &layoutindex);
-            output_one_layout(chamber, layoutindex, false, true, stdout);
+            output_one_layout(chamber, layoutindex, false, false, stdout);
             free_chamber_internals(chamber);
             free(chamber);
 
@@ -74,9 +74,30 @@ main(int argc, char **argv)
             int layoutindex;
             struct chamber *chamber = generate_remcap_chamber(
                 difficulty, capacity, rng, &layoutindex);
-            output_one_layout(chamber, layoutindex, false, true, stdout);
+            output_one_layout(chamber, layoutindex, false, false, stdout);
             free_chamber_internals(chamber);
             free(chamber);
+
+        } else if (!strcmp(argv[1], "hardfeed") && capacity > 0 &&
+                   capacity < LONG_MAX) {
+
+            int layoutindex1, layoutindex2;
+            struct chamber *chamber1 = generate_remcap_chamber(
+                difficulty, capacity, rng, &layoutindex1);
+            struct chamber *chamber2 = generate_directed_chamber(
+                capacity, rng, &layoutindex2);
+
+            struct chamber *chamber3 = glue_chambers(
+                chamber1, layoutindex1, chamber2, layoutindex2);
+            free_chamber_internals(chamber1);
+            free(chamber1);
+            free_chamber_internals(chamber2);
+            free(chamber2);
+
+            output_one_layout(chamber3, 1, false, false, stdout);
+
+            free_chamber_internals(chamber3);
+            free(chamber3);
 
         } else {
             argc = 0;
@@ -103,6 +124,8 @@ main(int argc, char **argv)
         puts("directed    Generate a directed chamber [capacity]");
         puts("remcap      Generate a storage chamber with the given");
         puts("            remaining capacity [difficulty, capacity]");
+        puts("hardfeed    Generate a feed chamber from a directed and");
+        puts("            storage chamber [difficulty, capacity]");
 
         return (argc == 2 && !strcmp(argv[1], "--help")) ?
             EXIT_SUCCESS : EXIT_FAILURE;
