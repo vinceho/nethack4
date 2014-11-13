@@ -421,11 +421,15 @@ free_chamber_internals(struct chamber *chamber)
         free(chamber->layouts.contents);
 }
 
-/* Generates a storage chamber of at least the given difficulty. The resulting
-   chamber will be malloc-allocated. Keep the difficulty smallish if you want
-   this to terminate in a reasonable time. */
+/* Generates a storage chamber (layoutindex == NULL) or feed chamber (placing
+   the index of the layout whose difficulty was assessed in *layoutindex) of at
+   least the given difficulty. The resulting chamber will be malloc-allocated.
+   Keep the difficulty smallish if you want this to terminate in a reasonable
+   time (or at all; after taking too long, the function restarts from the start,
+   so it'll never reach the higher difficulties). */
 struct chamber *
-generate_storage_chamber(long long difficulty, int (*rng)(int))
+generate_difficult_chamber(long long difficulty, int (*rng)(int),
+                           int *layoutindex)
 {
     int width = 4;
     int height = 3;
@@ -438,7 +442,8 @@ generate_storage_chamber(long long difficulty, int (*rng)(int))
 
         /* Generate all chambers of this size, for us to work from. */
         while (!chambers.length_in_use)
-            generate_chambers(&chambers, width, height, entrypos, true, rng);
+            generate_chambers(&chambers, width, height, entrypos,
+                              !layoutindex, rng);
 
         int maxchambers = chambers.length_in_use;
         int chamberindex = rng(4);
@@ -448,9 +453,17 @@ generate_storage_chamber(long long difficulty, int (*rng)(int))
         while (!rv) {
             struct chamber *chamber = ((struct chamber *)chambers.contents) + 
                 chamberindex;
-            find_layouts_from(chamber, 0);
 
-            long long cdiff = nth_layout(chamber, 0)->solution->difficulty;
+            /* Find all appropriate layouts for this chamber. */
+            if (!layoutindex) {
+                find_layouts_from(chamber, 0);
+            } else {
+                *layoutindex = furthest_layout(chamber, INT_MAX, 0);
+                find_layouts_from(chamber, *layoutindex);
+            }
+
+            long long cdiff = nth_layout(
+                chamber, layoutindex ? *layoutindex : 0)->solution->difficulty;
 
             if (difficulty <= cdiff && difficulty * 10 > cdiff) {
                 rv = memdup(chamber, sizeof *chamber);

@@ -43,8 +43,18 @@ main(int argc, char **argv)
     if (difficulty > 0 && difficulty < LLONG_MAX) {
         if (!strcmp(argv[1], "storage") && argc == 3) {
 
-            struct chamber *chamber = generate_storage_chamber(difficulty, rng);
+            struct chamber *chamber = generate_difficult_chamber(
+                difficulty, rng, NULL);
             output_chambers(chamber, 1, false, true, stdout);
+            free_chamber_internals(chamber);
+            free(chamber);
+
+        } else if (!strcmp(argv[1], "feed") && argc == 3) {
+
+            int layoutindex;
+            struct chamber *chamber = generate_difficult_chamber(
+                difficulty, rng, &layoutindex);
+            output_one_layout(chamber, layoutindex, false, true, stdout);
             free_chamber_internals(chamber);
             free(chamber);
 
@@ -54,7 +64,7 @@ main(int argc, char **argv)
             bool found = false;
             while (!found) {
                 struct chamber *chamber =
-                    generate_storage_chamber(difficulty, rng);
+                    generate_difficult_chamber(difficulty, rng, NULL);
 
                 int maxcap = nth_layout(chamber, max_capacity_layout(
                                             chamber))->cratecount;
@@ -104,6 +114,7 @@ main(int argc, char **argv)
         puts("the program to run in a reasonable time. "
              "Commands are as follows:\n");
         puts("storage     Generate a storage chamber");
+        puts("feed        Generate a feed chamber");
         puts("remcap      Generate a storage chamber with the given");
         puts("            remaining capacity");
 

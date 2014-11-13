@@ -231,7 +231,8 @@ extern bool init_wall_locks(lpos *, int, int, int, bool);
 extern void generate_chambers(struct xarray *, int, int, int, bool,
                               int (*)(int));
 extern void free_chamber_internals(struct chamber *);
-extern struct chamber *generate_storage_chamber(long long, int (*)(int));
+extern struct chamber *generate_difficult_chamber(
+    long long, int (*)(int), int *);
 
 /* layout.c */
 

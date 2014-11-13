@@ -432,6 +432,7 @@ struct flq_wrapper {
     struct furthest_layout_queue *head;
     struct furthest_layout_queue **tailnext;
     int newpushes;
+    int mostpushes;
     int mostpushes_index;
     int curcrates;
     int target;
@@ -471,17 +472,21 @@ furthest_layout_inner(struct chamber *chamber, int layoutindex, void *qv)
     if (layout->cratecount == q->target && layout->playerpos == OUTSIDE)
         layout->solution->pushes = 0;
 
-    /* Because we go in order from least pushes to most pushes, then if this
-       layout has the target number of crates, it must be the most pushes we've
-       seen so far. Only record positions where the player's outside. */
-    else if (layout->cratecount == q->curcrates && layout->playerpos == OUTSIDE)
+    /* Is this a new record? */
+    else if ((layout->cratecount == q->curcrates || q->curcrates == INT_MAX) &&
+             layout->playerpos == OUTSIDE &&
+             layout->solution->pushes > q->mostpushes) {
+        q->mostpushes = layout->solution->pushes;
         q->mostpushes_index = layoutindex;
+    }
 }
 
 /* Out of all valid feed layouts with the player outside, and that have
    'curcrates' crates in them, return the index of the one that requires the
    most pushes to reach a solvable layout with 'target' crates and the player
-   outside. This updates 'pushes', and leaves the other solution fields alone.
+   outside. ('curcrates' can be specified as INT_MAX, if we don't care how many
+   crates are used.) This updates 'pushes', and leaves the other solution fields
+   alone.
 
    This function will add feed layouts to the chamber given as an argument. */
 int
@@ -496,6 +501,7 @@ furthest_layout(struct chamber *chamber, int curcrates, int target)
     q.head = NULL;
     q.tailnext = &q.head;
     q.mostpushes_index = -1;
+    q.mostpushes = -1;
     q.curcrates = curcrates;
     q.target = target;
     q.craterange_l = (curcrates > target) ? target : curcrates;
