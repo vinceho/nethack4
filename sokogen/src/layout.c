@@ -139,14 +139,10 @@ find_layout_in_chamber(const struct chamber *chamber, const lpos *locations,
 
 /* Given a chamber and layout index, adds all the legal moves from that layout
    to the chamber (that weren't already there), and calls the given callback on
-   each of the layouts. Setting the argument "newly" means that the callback
-   will only be called on layouts that didn't already exist. If "intolocked" is
-   false, moves that lock a crate (either crate-locking or wall-locking) will
-   not be considered. If "canaddcrates" is false, moves that push crates in from
-   outside will not be considered. */
+   each of the layouts.  */
 static void
-loop_over_next_moves(struct chamber *chamber, int layoutindex, bool newly,
-                     bool intolocked, bool canaddcrates, void (*callback)(
+loop_over_next_moves(struct chamber *chamber, int layoutindex,
+                     void (*callback)(
                          struct chamber *chamber, int layoutindex, void *arg),
                      void *callbackarg)
 {
@@ -160,7 +156,7 @@ loop_over_next_moves(struct chamber *chamber, int layoutindex, bool newly,
     /* Loop over the various locations for the player, looking for crates that
        could be pushed. */
     int y, x;
-    for (y = canaddcrates ? -1 : 0; y < height; y++)
+    for (y = -1; y < height; y++)
         for (x = 0; x < width; x++) {
 
             if (y == -1 && x != chamber->entrypos)
@@ -180,8 +176,7 @@ loop_over_next_moves(struct chamber *chamber, int layoutindex, bool newly,
                 lpos beyond = AT(layout, x + dx * 2, y + dy * 2);
 
                 if (((next & ~LOCKED) == CRATE || (y == -1 && dy == 1)) &&
-                    (beyond & ~LOCKED) > CRATE &&
-                    (intolocked || !(beyond & LOCKED))) {
+                    (beyond & ~LOCKED) > CRATE && !(beyond & LOCKED)) {
 
                     lpos *working = memdup(layout->locations,
                                            sizeof (lpos) * width * height);
@@ -222,7 +217,7 @@ loop_over_next_moves(struct chamber *chamber, int layoutindex, bool newly,
                         callback(chamber, chamber->layouts.length_in_use - 1,
                                  callbackarg);
 
-                    } else if (!newly) {
+                    } else {
 
                         free(working);
                         callback(chamber, layoutindex2, callbackarg);
@@ -273,8 +268,7 @@ set_difficulties(struct chamber *chamber, int layoutindex, void *parent)
     /* Set the difficulties of all positions reachable from here, and update
        the difficulty of this loopgroup for all loopgroups reachable from it. */
     insol = follow_loopgroup_pointer(insol);
-    loop_over_next_moves(chamber, layoutindex, false, false, true,
-                         set_difficulties, insol);
+    loop_over_next_moves(chamber, layoutindex, set_difficulties, &sdw);
 
     /* This will ensure that by the time the recursion ends, all loopgroups
        will have been appropriately updated. */
@@ -324,8 +318,7 @@ find_layouts_inner(struct chamber *chamber, int layoutindex, void *looplist)
        it, unless it has a difficulty > 0 (in which case it's already been
        processed). */
     if (lls->difficulty == 0)
-        loop_over_next_moves(chamber, layoutindex, false, false, true,
-                             find_layouts_inner, &fli);
+        loop_over_next_moves(chamber, layoutindex, find_layouts_inner, &fli);
 
     lls->difficulty = 1;
     lls->known = false;
