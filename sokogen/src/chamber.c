@@ -450,7 +450,9 @@ generate_storage_chamber(long long difficulty, int (*rng)(int))
                 chamberindex;
             find_layouts_from(chamber, 0);
 
-            if (difficulty < nth_layout(chamber, 0)->solution->difficulty) {
+            long long cdiff = nth_layout(chamber, 0)->solution->difficulty;
+
+            if (difficulty <= cdiff && difficulty * 10 > cdiff) {
                 rv = memdup(chamber, sizeof *chamber);
                 break;
             } else {
