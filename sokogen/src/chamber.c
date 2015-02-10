@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2014-11-13 */
+/* Last modified by Alex Smith, 2015-02-10 */
 /* Copyright (c) 2014 Alex Smith. */
 /* This Sokoban puzzle generator may be distributed under either of the
  * following licenses:
@@ -617,11 +617,17 @@ generate_difficult_chamber(long long difficulty, int (*rng)(int),
                 find_layouts_from(chamber, 0);
             } else {
                 *layoutindex = furthest_layout(chamber, INT_MAX, 0);
-                find_layouts_from(chamber, *layoutindex);
+                if (*layoutindex != -1)
+                    find_layouts_from(chamber, *layoutindex);
             }
 
-            long long cdiff = nth_layout(
-                chamber, layoutindex ? *layoutindex : 0)->solution->difficulty;
+            long long cdiff;
+
+            if (layoutindex && *layoutindex == -1)
+                cdiff = -1;
+            else
+                cdiff = nth_layout(chamber, layoutindex ? *layoutindex : 0)
+                    ->solution->difficulty;
 
             if (difficulty <= cdiff && difficulty * 10 > cdiff) {
                 rv = memdup(chamber, sizeof *chamber);
@@ -678,13 +684,15 @@ generate_remcap_chamber(long long difficulty, int remcap,
     while (!found) {
         chamber = generate_difficult_chamber(difficulty, rng, NULL);
 
-        int maxcap = nth_layout(chamber, max_capacity_layout(
-                                    chamber))->cratecount;
+        int maxcap =
+            nth_layout(chamber, max_capacity_layout(chamber))->cratecount;
 
         found = maxcap >= remcap;
 
         if (found) {
             *layoutindex = furthest_layout(chamber, maxcap - remcap, maxcap);
+            /* there must be some valid layout, because we already checked
+               that the capacity is OK */
             assert(*layoutindex > -1);
         } else {
             /* If we need a high capacity and have a low difficulty, we
