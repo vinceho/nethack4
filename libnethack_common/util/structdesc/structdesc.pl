@@ -113,8 +113,8 @@ The deallocator can be specified as NULL to use C<free()>.
 Identical to B<--deallocate>, except that the generated routines only free
 dynamic memory owned by the structure they are freeing; they don't free the
 structure itself.  (Thus, C<deallocate_type> starts with a pointer to a
-structure and causes the memory it points to to become dealloated;
-<deinitialize_type> starts with a pointer to a structure and causes all the
+structure and causes the memory it points to to become deallocated;
+C<deinitialize_type> starts with a pointer to a structure and causes all the
 pointers inside that structure to become invalid, meaning that the structure
 may not respect its invariants and is thus effectively composed of
 uninitialized memory.)
@@ -124,7 +124,10 @@ uninitialized memory.)
 Generate routines to clone the given types.  (These take an allocator as a
 parameter, allowing you to use a variety of memory schemes within your
 program.)  I<types> works the same way as for B<--deallocate> (as it does in
-all these options).
+all these options).  Whether a clone is "shallow" (copying references) or
+"deep" (copying the target of references) depends on what sort of references
+are used (the various sorts of owned references are cloned deeply, most others
+are shallow).
 
 The routines will be named C<clone_>I<type>.  In C, they look like this:
 
@@ -312,7 +315,7 @@ includes F<bar.sd> and F<baz.sd>, then any output generated from F<bar.sd> and
 F<baz.sd> will not appear again in the output generated from F<foo.sd>;
 instead, it will be referenced in F<foo.sd>'s output (and thus the same sort
 of output must be generated from F<bar.sd> and F<baz.sd> for the output from
-F<foo.d> to be usable).
+F<foo.sd> to be usable).
 
 Sometimes (but not always), this referencing requires the filenames of the
 referenced files to be known.  In this case, F<structdesc> will guess that
@@ -369,9 +372,9 @@ For statically typed languages, F<structdesc> will pick a numerical type with
 an appropriate range.  Unlike in C, a numerical type in F<structdesc> does not
 carry signedness hints; it could have a range from 0 to 9 yet be signed.  In
 general, in languages where it matters, types are always generated signed
-unless C<auto_bitfield> is used to request the tightest possible packing, in
-which case all bets are off for the fields for which it is specified; this
-helps avoid bugs due to unexpected conversions between signed and unsigned.
+unless C<pack> is used to request the tightest possible packing, in which case
+all bets are off for the fields for which it is specified; this helps avoid
+bugs due to unexpected conversions between signed and unsigned.
 
 TODO: Bignums and floating-point types are not yet supported.  (Especially
 because bignums need thought with respect to allocation behaviour in C.)
@@ -542,7 +545,7 @@ any, to avoid ambiguity).
 
 The main difference between an enum and a bitfield is that an enum can only
 take one of its values at a time (numerically, that is); a bitfield can take
-multiple values, via bitwise-XORing them together.  As such, F<structdesc>
+multiple values, via bitwise-ORing them together.  As such, F<structdesc>
 considers an enum to have an invariant that the number actually stored must be
 one of the enum values, but the invariant on a bitfield is that the data
 actually stored contain no bits that don't have names.
@@ -696,10 +699,10 @@ higher or lower (respectively) than the given value; C<defined_when> specifies
 that this value is meaningless when the given expression is nonzero;
 C<nonnull_when> specifies that this value is never null when the given
 expression is nonzero (and is meaningful at other times, too; just it can
-potentially be null at those times) C<approximates> specifies that the value
-of this value determines the C<ranges> in which another value can lie (where
-C<ranges> specifies a dictionary mapping values of this value, to C<[min,
-max]> pairs of that value).
+potentially be null at those times); and C<approximates> specifies that the
+value of this value determines the C<ranges> in which another value can lie
+(where C<ranges> specifies a dictionary mapping values of this value, to
+C<[min, max]> pairs of that value).
 
 The intended semantics are that mutator functions that change I<other> values
 also change I<this> value to fix the invariants, if they would be given a
@@ -879,8 +882,9 @@ on objects that can be reallocated but not deallocated, but F<structdesc>
 considers the combination an error.)  Some languages make this easier by
 providing language-level support for weak references, but if the visibility
 issues can be worked around, a program can do it by hand.  F<structdesc>
-cannot check that a reference behaves like this, but it knows how to
-manipulate a reference that does.
+cannot check that a reference behaves like this (in particular, its
+reallocators and deallocators will not null out or mutate C<weak> references
+in other structures), but it knows how to manipulate a reference that does.
 
 Objects containing weak references cannot be cloned, because that would break
 the weakness.  They I<can> be serialized, but the reference itself will be
@@ -1115,9 +1119,9 @@ whole number of bytes long, that sort of thing.  If you are prepared to handle
 the consequences, you can specify C<pack> (with an argument of 1 for "true")
 to minimize memory usage rather than maximize clarity and portability; this
 will use unsigned types if appropriate, and bitfields if appropriate and
-possible (and it actually saves memory).  The numbers will likewise be packed
-in binary serialization format (although not in other serialization formats;
-packing in those would be too fragile).
+possible (and if it actually saves memory).  The numbers will likewise be
+packed in binary serialization format (although not in other serialization
+formats; packing in those would be too fragile).
 
 Sometimes numerical types have frustrating or weird ranges; for example,
 C<[-2, 250]>, which requires 9 bits when C<pack>ed, and is not legal as a
@@ -1136,7 +1140,7 @@ affects the C<key_type>, C<nullable>, and C<usually> refinements.  It does
 I<not> affect runtime expressions in invariants, basically because those have
 to work even if they refer to globals that F<structdesc> is unaware of, and
 instead of inconsistently applying offsets in runtime expressions, it
-consistently ignoes them.  The argument to C<relative_to> is a constant
+consistently ignores them.  The argument to C<relative_to> is a constant
 expression.
 
 One other refinement you can place on numerical types is to tighten the range;
@@ -1181,11 +1185,11 @@ dictionaries, a C<key_type>; these are anything that could appear on the right
 hand side of a type definition (type names, type refinements, or numerical
 types specified directly as a range).  Lists can also have a C<list_name>
 refinement; if present, the list becomes a structure type, with the list
-values itself stored in a field of the given name.  This is mostly useful for
-C<counted_list>, which needs to be a structure type anyway, because it always
-has at least two fields (the list itself, and the count, stored in a field
-named using the refinement C<count_name>, except in languages that store list
-lengths implicitly anyway).  It can also be used to allow for memory
+values themselves stored in a field of the given name.  This is mostly useful
+for C<counted_list>, which needs to be a structure type anyway, because it
+always has at least two fields (the list itself, and the count, stored in a
+field named using the refinement C<count_name>, except in languages that store
+list lengths implicitly anyway).  It can also be used to allow for memory
 management techniques that require extra fields, such as C<< reference =>
 'owned_realloc' >>.
 
