@@ -54,9 +54,9 @@ our $parsesafe = new Safe;
 # Technically we don't need some of these, because .sd files have a
 # smaller grammar than aimake.rules files do. But we may as well use the
 # same list to ensure things work.
-$parsesafe->permit_only(qw/null stub scalar pushmark const undef list
-                           qr negate lineseq leaveeval anonlist anonhash
-                           rv2sv sassign nextstate padany regcreset concat
+$parsesafe->permit_only(qw/null stub scalar pushmark const undef list qr
+                           negate lineseq leaveeval anonlist anonhash rv2sv
+                           sassign nextstate padany regcreset concat
                            stringify quotemeta rv2gv/);
 sub _parse_perl_from_path {
     my $path = shift;
@@ -91,7 +91,7 @@ sub _parse_perl_from_path {
 # something is wrong with the arguments.
 our $numsafe = new Safe;
 $numsafe->permit_only(qw/
-    null stub scalar pushmark const leaveeval padany lineseq
+    null stub scalar pushmark const leaveeval padany lineseq rv2gv
     multiply i_multiply divide i_divide add i_add subtract i_subtract
     left_shift right_shift bit_and bit_xor bit_or negate i_negate
     not complement lt i_lt gt i_gt ge i_ge eq i_eq ne i_ne ncmp i_ncmp/);
@@ -964,7 +964,7 @@ sub parse_structdesc_from_path {
                     [map +{name => $_, value => $refinement->{values}{$_}},
                      sort {$refinement->{values}{$a} <=>
                            $refinement->{values}{$b}}
-                     keys $refinement->{values}];
+                     keys %{$refinement->{values}}];
             }
         }
     }
