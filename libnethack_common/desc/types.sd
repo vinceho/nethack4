@@ -1,5 +1,5 @@
-# Last modified by Alex Smith, 2014-04-23
-# Copyright (C) 2014 Alex Smith.
+# Last modified by Alex Smith, 2015-07-08
+# Copyright (C) 2014, 2015 Alex Smith.
 # NetHack may be freely redistributed.  See license for details.
 
 # This file defines typedefs used throughout NetHack; in particular, it gives
@@ -434,7 +434,7 @@ $int_min = -2147483648;
     #   client should typically interpret what would be a limit as command
     #   repeat instead.  (A limit is an integer that specifies some number which
     #   should not be exceeded when running the command, e.g. the maximum number
-    #   of
+    #   of turns to run the command.)
     #
     # * CMD_ARG_OBJ should normally be omitted, but in clients that use a
     #   menu-based interface in combination with get_obj_commands(), they have
@@ -447,7 +447,7 @@ $int_min = -2147483648;
     #   of writing there are no NetHack interfaces which work on this principle,
     #   but if any are written, they should feel free to specify CMD_ARG_DIR in
     #   every response where it makes sense. A client should /never/ prompt the
-    #   user for a direction except in response to a getpos() call or if
+    #   user for a direction except in response to a getdir() call or if
     #   CMD_MOVE is set; CMD_ARG_DIR is sometimes specified on commands (like
     #   zap) where a direction is sometimes relevant but sometimes
     #   irrelevant. Thus, it should only be sent if the server has asked for it,
@@ -759,7 +759,8 @@ $int_min = -2147483648;
     'enum create_response' => {
         enumprefix => 'NHCREATE_',
         values => {OK => 0, INVALID => -1, FAIL => -2},
-        and_above => 'OK',
+        # I had an "and_above" field on here but that's meaningless;
+        # figure out what I meant
     },
 
     # Save file information

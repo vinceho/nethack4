@@ -5,7 +5,7 @@ use strict;
 use 5.8.3;
 
 # structdesc: structure description language compiler
-# Copyright © 2014 Alex Smith.
+# Copyright © 2014, 2015 Alex Smith.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -96,7 +96,7 @@ functions in any C source files that are output.
 Generate routines to deallocate memory used by the given types.  The list of
 I<types> can be specified as an explicit, comma-separated list, C<_all> for
 all types present in the file, or C<_dynamic> for all types that actually have
-dynamic data to deallocate.  These routine will be placed in each source file
+dynamic data to deallocate.  These routines will be placed in each source file
 you requested F<structdesc> to generate (currently, only C is supported,
 but if multiple languages were supported, you could give two "output a source
 file" options and get your deallocation routines in two different languages.)
@@ -204,13 +204,13 @@ module boundaries.)
 =item B<--json=>I<types>
 
 Generate routines that serialize the given type into a JSON-based format, and
-deserialize those types from that same format.  (In C, these routines will use
+-deserialize those types from that same format.  (In C, these routines will use
 the F<libjansson> library to do the JSON conversion.)  The format will be
-portable between machines, and stable with respect to additions of fields and
-changes that merely increase the range of legal values for a type (although
-take care, with auto-numbered enums, that new values are added at the end of
-the list), but not with respect to other changes to types involved in the
-serialization.
+portable between machines, and stable with respect to additions of fields that
+have a default value, and changes that merely increase the range of legal
+values for a type (although take care, with auto-numbered enums, that new
+values are added at the end of the list), but not with respect to other
+changes to types involved in the serialization.
 
 The routines will be named C<json_from_>I<type> and C<json_to_>I<type>. In C,
 they look like this:
@@ -277,12 +277,10 @@ handler can be called multiple times, if multiple problems are found.
 The syntax of an F<.sd> file is Perl object notation:
 
     # this is a comment, from the # to the end of line
-    $var = 4;               # define a variable for later use
     4                       # a number
     'abcde'                 # a literal string
     'this long string is'.
     'broken over lines'     # strings can be broken over lines using '.'
-    $var                    # reference to a variable defined earlier
     [1, 2, 3, 4,]           # a list, trailing comma optional
     [qw/foo bar baz/]       # abbreviated syntax for ['foo', 'bar', 'baz']
     {foo => 1, bar => 2,}   # a dictionary, trailing comma optional
@@ -293,14 +291,9 @@ including the trailing comma when splitting a list or dictionary over multiple
 lines; some editors get confused otherwise, and it makes it much harder to
 introduce bugs due to omitting a comma.
 
-An F<.sd> file consists of variable definitions, if necessary (mostly, they
-aren't; these definitions are substituted in via copying, sort-of like
-preprocessor macros in C, and are only available within the F<.sd> file
-itself, as opposed to F<structdesc> definitions that serve the same purpose,
-but are available to programs that use the files that F<structdesc> outputs
-and won't be repeated in the output); then the rest of the file is a single
-dictionary.  Each key of the dictionary defines one type or one constant (with
-the exception of the special case C<_include>).
+An F<.sd> file consists of a single dictionary.  Each key of the dictionary
+defines one type or one constant (with the exception of the special case
+C<_include>).
 
 Here's what sort of keys are available:
 
@@ -348,9 +341,9 @@ above example illustrates.)
 The name of a constant must be unique within a F<.sd> file and all the files
 it includes; it cannot be the same as a struct or union field, or an enum tag
 (after C<enumprefix>/C<enumsuffix> have been taken into account).  This is
-some languages use textual substitution to implement constants (and thus
-F<structdesc> also implements constants the same way, because there is no
-reason not to).
+because some languages use textual substitution to implement constants (and
+thus F<structdesc> also implements constants the same way, because there is
+no reason not to).
 
 =head2 Numerical types
 
