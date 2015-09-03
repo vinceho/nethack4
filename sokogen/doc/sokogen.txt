@@ -1,5 +1,5 @@
 About this document:
-Last modified by Alex Smith, 2014-11-11
+Last modified by Alex Smith, 2015-09-04
 
 Copyright (C) 2014 Alex Smith.
 
@@ -72,7 +72,8 @@ game.  The version in NetHack has many restrictions to attempt to force the
 player to obey the rules of Sokoban, but there is one large difference:
 
   * "player on target" and "crate on target" statuses do not exist.  Instead,
-    if a crate is pushed onto a target, the two cancel out and become floor.
+    if a crate is pushed onto a target, the two cancel out and become floor,
+    and the player cannot move onto a target (without first destroying it).
     The goal of the game is to move the player to a particular floor tile
     (which in the levels provided with NetHack, require destroying all the
     targets); this is marked with a `<` on the maps drawn.
@@ -558,7 +559,7 @@ example:
     -------    -------    -------   -------
     |@....|    |.....|    |.....|   |.....|
     |.000.|    |.00..|    |.^.^.|   |.^^..|
-    |.0.0.|    |.0.0.|    |.....|   |.^.^.|
+    |.0.0.|    |...0.|    |.....|   |.^.^.|
     ---.---    ---.---    ---.---   ---.---
        #          #          #         #
        #          #          #         #
@@ -566,8 +567,8 @@ example:
 
 When used as a feed chamber, this simple 3x5 chamber fits five crates, using
 the patern shown on the left (four if the player starts outside the chamber).
-As a storage chamber, it fits only three (the simplest such pattern is shown
-in the middle); the reason is that under official rules, the goal chamber
+As a storage chamber, it fits only three (the simplest such pattern is the
+second image above); the reason is that under official rules, the goal chamber
 shown in the third diagram is unsolvable, and there are only three other
 spaces available for crates plus the space at the entrance (which blocks the
 player from entering).  The only remaining arrangement is shown in the fourth
@@ -733,7 +734,7 @@ corner-locked, as it is impossible to access it from above with crates
 blocking the corridor.  The end result is a pattern that *forces* the player
 to store all the crates required for the targets (in this case, six of them),
 before pushing any onto the target; this pattern could well be imagined to be
-part of a "work out how store 6 crates in such and such a chamber" puzzle.
+part of a "work out how to store 6 crates in such and such a chamber" puzzle.
 
 Goal locks are seen in both two- and three-connection form, as well as a
 one-connection chamber that's a hybrid of a goal-lock and storage chamber
@@ -773,7 +774,7 @@ chamber*:
 Although the player fits through here just fine, there's no way to add another
 crate to this chamber without crate-locking yourself.  This thus acts a little
 like a feed chamber that feeds one crate to the left.  However, once that
-crate has been fed, the chamber stars acting more like a corridor, allowing
+crate has been fed, the chamber starts acting more like a corridor, allowing
 crates to pass just fine.  If we connect a storage chamber to the left, the
 player will be forced to store one crate in it.  It's a start, at least.
 
