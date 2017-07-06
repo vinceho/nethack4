@@ -493,6 +493,12 @@ generate_directed_chamber(int capacity, int (*rng)(int), int *layoutindex)
             int chosen = -1;
             int x;
             for (x = 1; x < chamber->width - 1; x++) {
+                /* To make these chambers less repetitive, disallow the most
+                   commonly chosen case. */
+                if (chamber->height <= 5 && chamber->width == 5 &&
+                    x == 2)
+                    continue;
+
                 if (locations[(chamber->height - 3) * chamber->width + x] ==
                     OUTSIDE && !rng(odds++))
                     chosen = x;
