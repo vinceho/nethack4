@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2015-02-10 */
+/* Last modified by Alex Smith, 2017-07-07 */
 /* Copyright (c) 2014 Alex Smith. */
 /* This Sokoban puzzle generator may be distributed under either of the
  * following licenses:
@@ -20,7 +20,10 @@ chamber_generation_offset(lpos *locations, int squares_generated,
                           int width, int x, int yrel)
 {
     assert(yrel <= 0);
-    if (x < 0 || x >= width || yrel * width + squares_generated < 0)
+    /* Note: not x >= width; that triggers a bug in a gcc warning (some inlined
+       versions of this function end up looking like (width - k >= width) which
+       looks like a buggy check for integer overflow) */
+    if (x < 0 || (x - width) >= 0 || yrel * width + squares_generated < 0)
         return WALL;
     return locations[yrel * width + squares_generated + x];
 }
