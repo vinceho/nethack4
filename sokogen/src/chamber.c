@@ -555,7 +555,7 @@ generate_directed_chamber(int capacity, int (*rng)(int), int *layoutindex)
                 memcpy(blocked, l2->locations, sizeof blocked);
                 blocked[(chamber->height - 1) * chamber->width + chosen]--;
                 int otherlayout = find_layout_in_chamber(
-                    chamber, blocked, chosen, chamber->height - 2);
+                    chamber, blocked, chamber->entrypos, 0);
 
                 if (otherlayout != -1 && otherlayout < n_reduced_capacity)
                     continue;
