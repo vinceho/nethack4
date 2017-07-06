@@ -451,7 +451,7 @@ generate_directed_chamber(int capacity, int (*rng)(int), int *layoutindex)
         }
         entrypos = rng((width - 1) / 2) + 1;
 
-        if (width * height > 24) {
+        if (width * height > 30) {
             /* This is too large to calculate in a reasonable time. */
             width = 4;
             height = 3;
