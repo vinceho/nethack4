@@ -1,5 +1,5 @@
 About this document:
-Last modified by Alex Smith, 2015-09-04
+Last modified by Alex Smith, 2017-07-06
 
 Copyright (C) 2014 Alex Smith.
 
@@ -134,7 +134,8 @@ mechanics, diagonal movement is possible (both for pushing boulders, and for
 moving around without pushing).  It also has several restrictions to prevent
 sequence breaking: normally walls and boulders can be destroyed (and boulders
 can be created), holes can be levitated over, and the player might be able to
-teleport, but all that is prevented while in a Sokoban puzzle.
+teleport, but all that is either prevented or penalised (depending on the
+exact rule break) while in a Sokoban puzzle.
 
 It is thus interesting to consider what a puzzle would be like if it obeyed
 the rules of NetHack's boulders and holes, rather than attempting to restrict
@@ -222,7 +223,7 @@ generate them, and then refine them to make them more difficult; the result is
 a (hopefully) maximally difficult puzzle given certain constraints, but often
 looks unlike anything a human would produce.
 
-For example, this is the puzzle produced by the Sokoban generator [SokEvo][1]
+For example, this is the puzzle produced by the Sokoban generator [SokEvo]
 when given a 7 by 7 area to work with, and a NetHack-style goal area (this
 puzzle is not actually maximally difficult given these constraints, but it's
 the hardest one it found on my first test run):
@@ -243,8 +244,8 @@ holding level".  The reason it looks different from what is expected is that
 the crates have been moved to maximally difficult locations to start with;
 there are several forced moves at the start, making for a kind of separate
 puzzle of "how do I even get to the place where the puzzle starts working?"
-After several moves, the crates end up here, which should be a little more
-familiar:
+After several forced moves, the crates end up here, which should be a little
+more familiar:
 
     -----
     |...----
@@ -422,12 +423,14 @@ when the problem collapses to separate chambers, each of which are simple.
 
 When *creating* a Sokoban problem, this process works in reverse; first we
 choose behaviours we want our chambers to have, then find appropriate chambers
-with those properties (probably from a library of chambers).  This has a large
-advantage over solving: a Sokoban solver should theoretically be fully general
-(or it isn't really a solver), meaning that it has to be able to handle
-arbitrarily complex chambers (including the entire level, in the worst case),
-but for a Sokoban puzzle generator, it is acceptable to restrict ourselves to
-chambers simple enough for the puzzle generator to handle.
+with those properties (taking them from a pregenerated library of chambers
+would be fastest, although generating them on the spot would likely lead to
+more variety).  This has a large advantage over solving: a Sokoban solver
+should theoretically be fully general (or it isn't really a solver), meaning
+that it has to be able to handle arbitrarily complex chambers (including the
+entire level, in the worst case), but for a Sokoban puzzle generator, it is
+acceptable to restrict ourselves to chambers simple enough for the puzzle
+generator to handle.
 
 
 Chambers with one connection
@@ -572,9 +575,9 @@ second image above); the reason is that under official rules, the goal chamber
 shown in the third diagram is unsolvable, and there are only three other
 spaces available for crates plus the space at the entrance (which blocks the
 player from entering).  The only remaining arrangement is shown in the fourth
-diagram; this goal chamber *is* solvable (and quite difficult!), but does not
-work as a storage arrangement because there's no way to get the marble to the
-other side of the crates without trapping one.
+diagram; this goal chamber *is* solvable under official rules (and quite
+difficult!), but does not work as a storage arrangement because there's no way
+to get the player to the other side of the crates without trapping one.
 
 
 The difficulty of a Sokoban puzzle normally comes mostly from the storage part
@@ -775,12 +778,13 @@ Although the player fits through here just fine, there's no way to add another
 crate to this chamber without crate-locking yourself.  This thus acts a little
 like a feed chamber that feeds one crate to the left.  However, once that
 crate has been fed, the chamber starts acting more like a corridor, allowing
-crates to pass just fine.  If we connect a storage chamber to the left, the
-player will be forced to store one crate in it.  It's a start, at least.
+crates to pass just as easily as the player does.  If we connect a storage
+chamber to the left, the player will be forced to store one crate in it.  It's
+a start, at least.
 
-One nice property of directed chambers is that they chain.  With the simple
-directed chamber above, for instance, we can connect three of them compactly
-like this:
+One nice property of some directed chamber designs is that they can chain.
+With the simple directed chamber above, for instance, we can connect three of
+them compactly like this:
 
         ----------
         |88|88|88|
@@ -889,4 +893,4 @@ the harder versions of the puzzle that SokEvo created; it would start with the
 trivial description "feed 3, goal 3", convert to "store 0/2, (this chamber),
 goal 3", and then pick appropriate storage and goal chambers.)
 
-[1]: http://fruise.googlepages.com/sokevo.html
+[SokEvo]: http://fruise.googlepages.com/sokevo.html
