@@ -479,13 +479,16 @@ generate_directed_chamber(int capacity, int (*rng)(int), int *layoutindex)
             struct chamber *chamber = ((struct chamber *)chambers.contents) + i;
             struct layout *layout = nth_layout(chamber, 0);
 
+            const int heightinc = diagonals ? 2 : 1;
+            const int oldheight = chamber->height;
+
             chamber->annexcap = capacity;
-            chamber->height++;
+            chamber->height += heightinc;
             const lpos wall = WALL;
-            lpos *locations = padrealloc(layout->locations, sizeof (lpos),
-                                         chamber->height * chamber->width,
-                                         (chamber->height - 1) * chamber->width,
-                                         &wall);
+            lpos *locations = padrealloc(
+                layout->locations, sizeof (lpos),
+                chamber->height * chamber->width,
+                oldheight * chamber->width, &wall);
             layout->locations = locations;
 
             /* Pick a random place to place the annex. */
@@ -499,7 +502,7 @@ generate_directed_chamber(int capacity, int (*rng)(int), int *layoutindex)
                     x == 2)
                     continue;
 
-                if (locations[(chamber->height - 3) * chamber->width + x] ==
+                if (locations[(oldheight - 2) * chamber->width + x] ==
                     OUTSIDE && !rng(odds++))
                     chosen = x;
             }
@@ -507,6 +510,9 @@ generate_directed_chamber(int capacity, int (*rng)(int), int *layoutindex)
                 continue; /* nowhere to place the annex */
 
             /* Build the annex. */
+            if (heightinc > 1)
+                locations[(chamber->height - 3) * chamber->width + chosen] =
+                    OUTSIDE;
             locations[(chamber->height - 2) * chamber->width + chosen] =
                 OUTSIDE;
             locations[(chamber->height - 1) * chamber->width + chosen] =
