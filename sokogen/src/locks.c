@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2014-11-13 */
+/* Last modified by Alex Smith, 2017-07-10 */
 /* Copyright (c) 2014 Alex Smith. */
 /* This Sokoban puzzle generator may be distributed under either of the
  * following licenses:
@@ -143,17 +143,60 @@ init_wall_locks(lpos *locations, int width, int height, int entrypos,
                           INTERIOR, OUTSIDE, true, false, false);
 
                 /* Do we have any pushes into unlocked areas from any direction
-                   we could reach with the crate blocking our way? */
+                   we could reach with the crate blocking our way?
+
+                   Note: if this is not a storage chamber, check also directions
+                   we "couldn't reach"; it's possible that we can start with a
+                   crate in one of those areas and then push it onto the
+                   chokepoint later, leaving us the other side of the ostensibly
+                   locked square, and thus meaning the square isn't actually
+                   locked after all. However, this is only relevant if there's
+                   an unlocked square on the same side of the crate that it
+                   could have arrived via. */
                 int d;
                 for (d = 0; d < (diagonals ? 8 : 4); d++) {
                     const int dx = xyoffsets[d][0];
                     const int dy = xyoffsets[d][1];
-                    if ((LOCATION_AT(-dx, -dy) == OUTSIDE ||
-                         LOCATION_AT(-dx, -dy) & ANNEX ||
-                         LOCATION_AT(-dx, -dy) == (OUTSIDE | LOCKED)) &&
-                        (LOCATION_AT(+dx, +dy) == OUTSIDE ||
-                         LOCATION_AT(+dx, +dy) == INTERIOR))
+
+                    /* Check to make sure that the crate's being pushed to an
+                       unlocked square. */
+                    if (LOCATION_AT(+dx, +dy) != OUTSIDE &&
+                        LOCATION_AT(+dx, +dy) != INTERIOR)
+                        continue;
+
+                    /* Check to make sure that the crate isn't being pushed
+                       from a wall. (This bounds-checks the feed chamber
+                       behaviour below.) */
+                    if (LOCATION_AT(-dx, -dy) == WALL ||
+                        LOCATION_AT(-dx, -dy) == (WALL | LOCKED))
+                        continue;
+
+                    /* Pushing from the entrance is a special case (as it
+                       doesn't have a real location array entry), and is
+                       also obviously always reachable as this could be
+                       a newly introduced crate. */
+                    if (y - dy < 0) {
                         is_locked = false;
+                        break;
+                    }
+
+                    /* Pushing from a square reachable from the entrance (even
+                       with this crate blocking it) is always fine, whether
+                       feed or storage. */
+                    if (LOCATION_AT(-dx, -dy) == OUTSIDE ||
+                            LOCATION_AT(-dx, -dy) == (OUTSIDE | LOCKED) ||
+                        (LOCATION_AT(-dx, -dy) & ANNEX)) {
+                        is_locked = false;
+                        break;
+                    }
+
+                    /* That's it for storage chambers. For feed chambers, we
+                       currently play safe and treat the situation as unlocked.
+                       TODO: A more accurate check here. */
+                    if (!storage) {
+                        is_locked = false;
+                        break;
+                    }
                 }
 
                 /* Undo our changes. */

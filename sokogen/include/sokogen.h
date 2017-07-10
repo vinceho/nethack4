@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2017-07-06 */
+/* Last modified by Alex Smith, 2017-07-10 */
 /* Copyright (c) 2014 Alex Smith. */
 /* This Sokoban puzzle generator may be distributed under either of the
  * following licenses:
@@ -234,11 +234,11 @@ extern bool init_wall_locks(lpos *, int, int, int, bool);
 
 /* chamber.c */
 
-extern void generate_chambers(struct xarray *, int, int, int, bool,
+extern void generate_chambers(struct xarray *, int, int, int, bool, bool,
                               int (*)(int));
 extern void free_chamber_internals(struct chamber *);
 extern struct chamber *generate_difficult_chamber(
-    long long, int (*)(int), int *);
+    long long, int (*)(int), int *, bool);
 extern struct chamber *generate_directed_chamber(int, int (*)(int), int *);
 extern struct chamber *generate_remcap_chamber(
     long long, int, int (*)(int), int *);

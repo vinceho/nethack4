@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2017-07-07 */
+/* Last modified by Alex Smith, 2017-07-10 */
 /* Copyright (c) 2014 Alex Smith. */
 /* This Sokoban puzzle generator may be distributed under either of the
  * following licenses:
@@ -51,7 +51,7 @@ cannot_generate_wall(lpos *locations, int squares_generated,
 }
 
 static void generate_chamber_line(
-    struct xarray *, int, int, int, lpos *, int, lpos, bool, int(*)(int));
+    struct xarray *, int, int, int, lpos *, int, lpos, bool, bool, int(*)(int));
 
 static int
 compare_unlocked_squares(const void *chamber1, const void *chamber2)
@@ -76,12 +76,17 @@ all_chambers_rng(int x)
    If 'storage' is true, then only chambers which make sense as storage chambers
    will be generated; otherwise, feed chambers will be generated too.
 
+   If 'smallsightline' is true, the sightline from the entrance (i.e. the number
+   of squares that can be seen walking straight inwards from the entrance) will
+   be limited to 2 squares (the minimum that makes it possible to push boulders
+   out through the entrance).
+
    The given RNG, if present and non-NULL will be used to randomly reject a
    subset of chambers, to reduce memory usage. In this case, at most 16 chambers
    will be returned, biased towards floor rather than wall. */
 void
 generate_chambers(struct xarray *chambers, int width, int height, int entrypos,
-                  bool storage, int (*rng)(int))
+                  bool storage, bool smallsightline, int (*rng)(int))
 {
     /*
      * We want to iterate over all chambers that are /connected/ with respect to
@@ -119,7 +124,7 @@ generate_chambers(struct xarray *chambers, int width, int height, int entrypos,
     assert((size_t)width < CHAR_BIT * sizeof (unsigned long));
 
     generate_chamber_line(chambers, width, width * height, entrypos,
-                          working + width, 0, INTERIOR, storage,
+                          working + width, 0, INTERIOR, storage, smallsightline,
                           rng ? rng : all_chambers_rng);
 
     qsort(chambers->contents, chambers->length_in_use,
@@ -131,11 +136,10 @@ static void
 generate_chamber_line(struct xarray *chambers, int width, int squares,
                       int entrypos, lpos *working, int squares_generated,
                       lpos highest_cnumber_used, bool storage,
-                      int (*rng)(int))
+                      bool smallsightline, int (*rng)(int))
 {
     /* Have we generated a complete layout? */
     if (squares_generated == squares) {
-
         /* Reject any layouts that still contain disconnected areas. */
         int x, y;
         for (x = 0; x < width; x++)
@@ -164,7 +168,6 @@ generate_chamber_line(struct xarray *chambers, int width, int squares,
 
         if (!left_wall_touched || !right_wall_touched)
             return;
-
 
         /* Now find the locked squares of the layout. (We have a flimsy
            approximation in the working array at the moment; we want an accurate
@@ -237,6 +240,8 @@ generate_chamber_line(struct xarray *chambers, int width, int squares,
 
         bool unlocked_connection_seen = false;
         bool blocked_dead_end = false;
+        bool excessive_sightline = smallsightline &&
+            (squares_generated == width * 2);
         int squares_seen = 0;
         lpos current_cnumber = highest_cnumber_used;
         int x, x2;
@@ -263,6 +268,9 @@ generate_chamber_line(struct xarray *chambers, int width, int squares,
 
                 /* It's a wall. */
                 working[x + squares_generated] = WALL;
+
+                if (x == entrypos)
+                    excessive_sightline = false;
 
                 /* Did we just block a dead end? */
                 /* Check leftwards, rightwards, upwards dead ends. */
@@ -301,6 +309,8 @@ generate_chamber_line(struct xarray *chambers, int width, int squares,
             continue; /* also no good */
         if (blocked_dead_end)
             continue; /* also no good */
+        if (excessive_sightline)
+            continue; /* the caller doesn't want these */
 
         /* For each component in the previous line, ensure it is represented in
            the current line (and in an unlocked way, if it was unlocked in the
@@ -401,7 +411,8 @@ generate_chamber_line(struct xarray *chambers, int width, int squares,
         /* Recursively produce the other lines. */
         generate_chamber_line(chambers, width, squares, entrypos,
                               working, squares_generated + width,
-                              current_cnumber, storage, rng);
+                              current_cnumber, storage,
+                              smallsightline, rng);
 
         if (rng != all_chambers_rng && chambers->length_in_use >= 16)
             break;
@@ -468,7 +479,8 @@ generate_directed_chamber(int capacity, int (*rng)(int), int *layoutindex)
            we'll be using them more like feed chambers (storage chambers are a
            subset of feed chambers). */
         while (!chambers.length_in_use)
-            generate_chambers(&chambers, width, height, entrypos, true, rng);
+            generate_chambers(&chambers, width, height, entrypos, true,
+                              false, rng);
 
         /* For each of the chambers, add an annex in the positive-y direction.
            The idea is that if a feed chamber is solvable, but not solvable if
@@ -601,7 +613,7 @@ generate_directed_chamber(int capacity, int (*rng)(int), int *layoutindex)
    so it'll never reach the higher difficulties). */
 struct chamber *
 generate_difficult_chamber(long long difficulty, int (*rng)(int),
-                           int *layoutindex)
+                           int *layoutindex, bool lockedentrance)
 {
     int width = 4;
     int height = 3;
@@ -613,10 +625,11 @@ generate_difficult_chamber(long long difficulty, int (*rng)(int),
         struct xarray chambers = {0, 0, 0};
 
         /* Generate a random selection of chambers of this size, for us to work
-           from. */
+           from. If we need a locked entrance, use small-sightline chambers;
+           this increases the chance we'll find a suitable chamber. */
         while (!chambers.length_in_use)
             generate_chambers(&chambers, width, height, entrypos,
-                              !layoutindex, rng);
+                              !layoutindex, lockedentrance, rng);
 
         int maxchambers = chambers.length_in_use;
         int chamberindex = rng(4);
@@ -627,22 +640,26 @@ generate_difficult_chamber(long long difficulty, int (*rng)(int),
             struct chamber *chamber = ((struct chamber *)chambers.contents) +
                 chamberindex;
 
-            /* Find all appropriate layouts for this chamber. */
-            if (!layoutindex) {
-                find_layouts_from(chamber, 0);
-            } else {
-                *layoutindex = furthest_layout(chamber, INT_MAX, 0);
-                if (*layoutindex != -1)
-                    find_layouts_from(chamber, *layoutindex);
+            long long cdiff = -1; /* sentinel for "this won't work" */
+
+            /* Do we have an appropriate sort of entrance? */
+            if (!lockedentrance ||
+                nth_layout(chamber, 0)->locations[
+                    chamber->width + chamber->entrypos] & LOCKED) {
+
+                /* Find all appropriate layouts for this chamber. */
+                if (!layoutindex) {
+                    find_layouts_from(chamber, 0);
+                } else {
+                    *layoutindex = furthest_layout(chamber, INT_MAX, 0);
+                    if (*layoutindex != -1)
+                        find_layouts_from(chamber, *layoutindex);
+                }
+
+                if (!layoutindex || *layoutindex != -1)
+                    cdiff = nth_layout(chamber, layoutindex ? *layoutindex : 0)
+                        ->solution->difficulty;
             }
-
-            long long cdiff;
-
-            if (layoutindex && *layoutindex == -1)
-                cdiff = -1;
-            else
-                cdiff = nth_layout(chamber, layoutindex ? *layoutindex : 0)
-                    ->solution->difficulty;
 
             if (difficulty <= cdiff && difficulty * 10 > cdiff) {
                 rv = memdup(chamber, sizeof *chamber);
@@ -662,7 +679,10 @@ generate_difficult_chamber(long long difficulty, int (*rng)(int),
                         if (height < width)
                             width = height;
                     }
-                    entrypos = rng((width - 1) / 2) + 1;
+                    if (!layoutindex)
+                        entrypos = rng((width - 1) / 2) + 1;
+                    else
+                        entrypos = rng((width + 1) / 2);
 
                     if (width * height > 32) {
                         /* This is too large to calculate in a reasonable
@@ -697,7 +717,7 @@ generate_remcap_chamber(long long difficulty, int remcap,
     bool found = false;
     struct chamber *chamber;
     while (!found) {
-        chamber = generate_difficult_chamber(difficulty, rng, NULL);
+        chamber = generate_difficult_chamber(difficulty, rng, NULL, false);
 
         int maxcap =
             nth_layout(chamber, max_capacity_layout(chamber))->cratecount;

@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2015-02-10 */
+/* Last modified by Alex Smith, 2017-07-10 */
 /* Copyright (c) 2014 Alex Smith. */
 /* This Sokoban puzzle generator may be distributed under either of the
  * following licenses:
@@ -59,7 +59,7 @@ main(int argc, char **argv)
         if (!strcmp(argv[1], "storage") && argc == 3) {
 
             struct chamber *chamber = generate_difficult_chamber(
-                difficulty, rng, NULL);
+                difficulty, rng, NULL, false);
             output_chambers(chamber, 1, debug, debug, stdout);
             free_chamber_internals(chamber);
             free(chamber);
@@ -68,7 +68,17 @@ main(int argc, char **argv)
 
             int layoutindex;
             struct chamber *chamber = generate_difficult_chamber(
-                difficulty, rng, &layoutindex);
+                difficulty, rng, &layoutindex, false);
+            output_one_layout(chamber, layoutindex, debug, debug,
+                              with_solution, n_across, stdout);
+            free_chamber_internals(chamber);
+            free(chamber);
+
+        } else if (!strcmp(argv[1], "lockedfeed") && argc == 3) {
+
+            int layoutindex;
+            struct chamber *chamber = generate_difficult_chamber(
+                difficulty, rng, &layoutindex, true);
             output_one_layout(chamber, layoutindex, debug, debug,
                               with_solution, n_across, stdout);
             free_chamber_internals(chamber);
