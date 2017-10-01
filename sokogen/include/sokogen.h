@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2017-07-10 */
+/* Last modified by Alex Smith, 2017-10-01 */
 /* Copyright (c) 2014 Alex Smith. */
 /* This Sokoban puzzle generator may be distributed under either of the
  * following licenses:
@@ -19,7 +19,7 @@
 
 /*********** Typedefs ************/
 
-typedef uint16_t lpos; /* one map square */
+typedef uint16_t lpos; /* one map square while generating */
 
 /* Why is there no "inline const"? These are global, never change, and are the
    same for each file, so you'd think there'd be a way to get them to work as
@@ -44,9 +44,27 @@ typedef uint16_t lpos; /* one map square */
 typedef uint32_t layouthash;
 #define LAYOUTHASH_TOPBIT (((layouthash)1)<<31)
 
+typedef uint8_t ppos; /* one map square in a completed puzzle */
+
+/* The bottom 2 bits determine what's on the "ground" of the square. The others
+   are single bits that can be combined with them. */
+#define PP_FLOOR  ((ppos)0x00)
+#define PP_WALL   ((ppos)0x01)
+#define PP_TARGET ((ppos)0x02)
+#define PP_EXIT   ((ppos)0x03)
+#define PP_PLAYER ((ppos)0x04)
+#define PP_CRATE  ((ppos)0x08)
+#define PP_LOCKED ((ppos)0x10)
+
+#define PP_GROUNDMASK ((ppos)0x03)
+
 /************ Constants ************/
 
 #define HASHSIZE 523
+#define CONNMAX 4
+
+/* the order here is significant; some files care about orthogonals before
+   diagonals, output.c cares about this order specifically */
 static const int xyoffsets[8][2] =
     {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
 
@@ -75,7 +93,7 @@ struct xarray {
     size_t allocsize;
 };
 
-/************ Sokoban-related types ************/
+/************ Types used while generating puzzles ************/
 
 /* Mutable part of a layout. */
 struct layout_solution {
@@ -127,6 +145,10 @@ struct layout {
     struct layout_solution *solution; /* owned pointer */
 };
 
+/* Structure used to represent a chamber while generating the chamber. (After
+   generation, the chamber is converted to a puzzle-subset and stored in a
+   struct puzzlerect.) To keep these smaller, the chamber is surrounded
+   implicitly by walls (except for a gap at x = entrypos, y = -1). */
 struct chamber {
     int width, height;
 
@@ -149,6 +171,30 @@ struct chamber {
     struct xarray layout_index[HASHSIZE];
 };
 
+/************ Types used for composing puzzles ************/
+
+/* Coordinates within a puzzle. */
+struct coord {
+    int x, y;
+};
+
+/* A rectangular subset of a puzzle. This includes an entire puzzle as a
+   special case. Unlike with chambers, these do not have an implicit boundary;
+   the external wall must be included explicitly in the puzzle. There's an
+   invariant that the puzzle is /always/ bounded by wall; however, "connections"
+   can be specified, which are locations where holes can be punched in the wall
+   in order to connect two puzzles together. (Unlike with a chamber, which
+   always has just the entrypos as a connection, a puzzlerect can have anywhere
+   frome 0 to CONNMAX connections inclusive.)
+
+   These structures are always dynamically allocated. */
+struct puzzlerect {
+    int top, left;              /* where is the rectangle? */
+    int width, height;          /* size of the rectangle */
+    struct coord conn[CONNMAX]; /* places where connections can be made */
+    int conncount;              /* 0 to CONNMAX */
+    ppos data[];                /* data in row-major format */
+};
 
 /************ Globals ************/
 
@@ -213,6 +259,18 @@ nth_layout(const struct chamber *chamber, int layoutindex) {
     return ((struct layout *)chamber->layouts.contents) + layoutindex;
 }
 
+/* Bounds-checking accessor for a puzzlerect.
+
+   The "official" definition is in puzzle.c. */
+inline ppos data_bounds_check(const struct puzzlerect *, int, int);
+inline ppos
+data_bounds_check(const struct puzzlerect *puzzle, int x, int y)
+{
+    if (x < 0 || y < 0 || x >= puzzle->width || y >= puzzle->height)
+        return PP_WALL;
+    return puzzle->data[y * puzzle->width + x];
+}
+
 
 /************ Externs ************/
 
@@ -258,6 +316,8 @@ extern void free_layout_internals(struct layout *);
 
 /* output.c */
 
+extern void output_puzzles(struct puzzlerect *const *,
+                           int, int, bool, FILE *);
 extern void output_layouts(const struct chamber *, size_t,
                            bool, bool, FILE *);
 extern void output_one_layout(const struct chamber *, int,
@@ -270,3 +330,8 @@ extern void output_chambers(const struct chamber *, size_t,
 /* parse.c */
 
 extern struct chamber *parse_chamber(FILE *);
+
+/* puzzle.c */
+
+extern struct puzzlerect *puzzle_from_layout(
+    const struct chamber *, int, int (*)(int));

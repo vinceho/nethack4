@@ -11,6 +11,7 @@
 
 #include "sokogen.h"
 #include <time.h>
+#include <locale.h>
 
 bool diagonals = false;    /* are we in diagonals mode? */
 
@@ -30,6 +31,11 @@ main(int argc, char **argv)
     const int n_across = 10;
 
     srand(time(NULL));
+
+    /* Determine which character encoding that stdout expects.
+       Note: we're assuming that wide characters are Unicode, but not making
+       assumptions about what narrow characters are. */
+    setlocale(LC_ALL, "");
 
     if (argc >= 2 && !strcmp(argv[1], "--diagonals")) {
         argv[1] = argv[0];
