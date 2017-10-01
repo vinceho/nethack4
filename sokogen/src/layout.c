@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2014-11-13 */
+/* Last modified by Alex Smith, 2017-10-01 */
 /* Copyright (c) 2014 Alex Smith. */
 /* This Sokoban puzzle generator may be distributed under either of the
  * following licenses:
@@ -79,7 +79,7 @@ init_layout(struct layout *layout, int w, int h, int entrypos, int annexcap,
             layout->locations[i] = /* clear regions */
                 (layout->locations[i] & LOCKED) | SENTINEL;
         else if (layout->maxlpos < (layout->locations[i] & ~LOCKED))
-            layout->maxlpos = layout->locations[i] & LOCKED;
+            layout->maxlpos = layout->locations[i] & ~LOCKED;
     }
 
     layout->solution = memdup(&(struct layout_solution){
