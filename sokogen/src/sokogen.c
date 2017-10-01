@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2017-07-10 */
+/* Last modified by Alex Smith, 2017-10-01 */
 /* Copyright (c) 2014 Alex Smith. */
 /* This Sokoban puzzle generator may be distributed under either of the
  * following licenses:
@@ -135,7 +135,7 @@ main(int argc, char **argv)
     }
 
     if (argc == 2 && !strcmp(argv[1], "--version")) {
-        puts("Sokoban puzzle generator. Copyright (C) 2014 Alex Smith.");
+        puts("Sokoban puzzle generator. Copyright (C) 2014, 2017 Alex Smith.");
         return EXIT_SUCCESS;
     }
 
@@ -166,6 +166,7 @@ options_failure:
          "Commands are as follows:\n");
     puts("storage     Generate a storage chamber [difficulty]");
     puts("feed        Generate a feed chamber [difficulty]");
+    puts("lockedfeed  Generate a locked feed chamber [difficulty]");
     puts("directed    Generate a directed chamber [capacity]");
     puts("remcap      Generate a storage chamber with the given");
     puts("            remaining capacity [difficulty, capacity]");
