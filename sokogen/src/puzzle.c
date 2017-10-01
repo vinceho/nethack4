@@ -68,9 +68,8 @@ puzzle_from_layout(const struct chamber *chamber, int layoutindex,
                 l = WALL;
             else
                 l = layout->locations[(y-1) * chamber->width + x-1];
-            l &= ~LOCKED;
 
-            switch (l) {
+            switch (l & ~LOCKED) {
             case ANNEX:
             case WALL:
                 p = PP_WALL;
@@ -83,11 +82,14 @@ puzzle_from_layout(const struct chamber *chamber, int layoutindex,
                 break;
             default:
                 p = PP_FLOOR;
-                if (l == layout->playerpos) {
+                if ((l & ~LOCKED) == layout->playerpos) {
                     p |= PP_PLAYER;
                     ppos_count++;
                 }
             }
+
+            if (l & LOCKED)
+                p |= PP_LOCKED;
 
             rv->data[y * rv->width + x] = p;
         }
