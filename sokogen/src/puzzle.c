@@ -118,3 +118,137 @@ puzzle_from_layout(const struct chamber *chamber, int layoutindex,
 
     return rv;
 }
+
+/* Calculates the minimum possible distance between two points, based only
+   on their coordinates. */
+static int
+distance_estimator(int from_x, int from_y, struct coord to)
+{
+    int dx = to.x - from_x;
+    int dy = to.y - from_y;
+    if (dx < 0)
+        dx = -dx;
+    if (dy < 0)
+        dy = -dy;
+
+    if (diagonals) {
+        return (dx > dy) ? dx : dy;
+    } else {
+        return dx + dy;
+    }
+}
+
+/* Finds a path from one square to another in a puzzle. Returns -1 if there
+   is no path, otherwise the coordinates of the first step on the path (as an
+   index into xyoffsets).
+
+   The caller can specify whether the pathfind should avoid crates (other than
+   on from and to). Targets and exits will be treated as blocked. From and to
+   will never be treated as blocked, regardless of what is there. */
+int
+puzzle_pathfind(struct puzzlerect *puzzle, bool crates_block,
+                int from_x, int from_y, int to_x, int to_y)
+{
+    /* Return value. Initially -1, changed if we find a path.*/
+    int rv = -1;
+
+    /* When we add a coordinate to good_coords or bad_coords for the first
+       time, we then replace that in the puzzle with a wall (so that we don't
+       get stuck in a routing loop). We have to replace them all with floor
+       again later, so this xarray remembers the coordinates that need
+       replacing. */
+    struct xarray torestore = {0, 0, 0};
+
+    /* This array stores coordinates that are connected to to_xy, sorted by the
+       number of squares that they are off the most direct route (mod 3; a
+       movement can't take us more than 2 squares off the most direct route and
+       we always exhaust one length before trying the next, so mod 3 is
+       sufficient). */
+    struct xarray working[3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+    int indirectness_mod_3 = 0;
+
+    /* The return value. -1 by default, we set it to a coordinate if we
+       find a path. */
+
+    struct xarray *cur_coords = working + indirectness_mod_3; //
+
+    *NEW_IN_XARRAY(cur_coords, struct coord) =
+        (struct coord){.x = to_x, .y = to_y};
+
+    while (cur_coords->length_in_use) {
+
+        const int i = --cur_coords->length_in_use;
+        struct coord cur = ((struct coord *)(cur_coords->contents))[i];
+
+        *NEW_IN_XARRAY(&torestore, struct coord) = cur;
+        puzzle->data[puzzle->width * cur.y + cur.x] |= PP_WALL;
+
+        const int old_de = distance_estimator(from_x, from_y, cur);
+
+        for (int j = 0; j < (diagonals ? 8 : 4); j++) {
+            struct coord prev = {.x = cur.x - xyoffsets[j][0],
+                                 .y = cur.y - xyoffsets[j][1]};
+
+            /* Have we found a path? */
+            if (prev.x == from_x && prev.y == from_y) {
+                rv = j;
+                goto path_found;
+            }
+
+            /* Is this a legal square? */
+            if (prev.x < 0 || prev.y < 0 ||
+                prev.x >= puzzle->width || prev.y >= puzzle->height)
+                continue; /* can happen if to is on a wall */
+
+            ppos p = puzzle->data[puzzle->width * prev.y + prev.x];
+            if ((p & PP_GROUNDMASK) != PP_FLOOR)
+                continue;
+            if (crates_block && p & PP_CRATE)
+                continue;
+
+            const int new_de = distance_estimator(from_x, from_y, prev);
+
+            /* Ideally, new_de would equal old_de - 1 (i.e. we're going from
+               somewhere closer to from). Howevere, old_de + 0 and old_de + 1
+               are also possible. */
+            const int de_diff = new_de - (old_de - 1);
+
+            struct xarray *const into_coords = working +
+                ((indirectness_mod_3 + de_diff) % 3);
+
+            *NEW_IN_XARRAY(into_coords, struct coord) = prev;
+        }
+
+        if (cur_coords->length_in_use == 0) {
+            /* OK, we've proven that the previous lower bound doesn't work.
+               Try the next value up. */
+            indirectness_mod_3++;
+            indirectness_mod_3 %= 3;
+            cur_coords = working + indirectness_mod_3;
+
+            if (cur_coords->length_in_use == 0) {
+                /* We have one more value to try before giving up. */
+                indirectness_mod_3++;
+                indirectness_mod_3 %= 3;
+                cur_coords = working + indirectness_mod_3;
+            }
+        }
+    }
+
+path_found: /* or found not to exist */
+
+    /* Restore the puzzle. */
+    while (torestore.length_in_use) {
+        const int i = --torestore.length_in_use;
+        struct coord cur = ((struct coord *)(torestore.contents))[i];
+        puzzle->data[puzzle->width * cur.y + cur.x] &= ~PP_WALL;
+    }
+
+    /* Free our xarrays. */
+    if (torestore.allocsize) free(torestore.contents);
+    if (working[0].allocsize) free(working[0].contents);
+    if (working[1].allocsize) free(working[1].contents);
+    if (working[2].allocsize) free(working[2].contents);
+
+    return rv;
+}

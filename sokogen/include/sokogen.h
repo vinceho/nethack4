@@ -280,7 +280,7 @@ data_bounds_check(const struct puzzlerect *puzzle, int x, int y)
 extern void alloc(struct xarray *, size_t, size_t);
 extern size_t new_in_xarray(struct xarray *, size_t);
 
-/* other allocation (this deallocates with free */
+/* other allocation (this deallocates with free) */
 extern void *memdup(void *, size_t);
 extern void *padrealloc(void *, size_t, size_t, size_t, const void *);
 
@@ -335,3 +335,5 @@ extern struct chamber *parse_chamber(FILE *);
 
 extern struct puzzlerect *puzzle_from_layout(
     const struct chamber *, int, int (*)(int));
+
+extern int puzzle_pathfind(struct puzzlerect *, bool, int, int, int, int);
