@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2017-10-01 */
+/* Last modified by Alex Smith, 2017-10-03 */
 /* Copyright (c) 2014 Alex Smith. */
 /* This Sokoban puzzle generator may be distributed under either of the
  * following licenses:
@@ -22,7 +22,7 @@ const wchar_t wallchars[16] = {
 /* Draws puzzles to the screen or a file. */
 void
 output_puzzles(struct puzzlerect *const *puzzles, int count, int across,
-               bool show_locked, FILE *fp)
+               FILE *fp)
 {
     /* Calculate the maximum width and height of a puzzle. */
     int maxwidth = 0, maxheight = 0;
@@ -48,15 +48,18 @@ output_puzzles(struct puzzlerect *const *puzzles, int count, int across,
                         putc('0', fp);
                     else if (p & PP_PLAYER)
                         putc('>', fp);
-                    else if ((p & ~PP_LOCKED) == PP_EXIT)
+                    else if (p == PP_EXIT)
                         putc('<', fp);
-                    else if ((p & ~PP_LOCKED) == PP_TARGET)
+                    else if (p == PP_TARGET)
                         putc('^', fp);
-                    else if (p & PP_LOCKED && show_locked)
-                        putc('8', fp);
-                    else if ((p & ~PP_LOCKED) == PP_FLOOR)
-                        fprintf(fp, "%lc", 0xB7); /* mid-dot */
-                    else {
+                    else if (p == PP_FLOOR) {
+                        // fprintf(fp, "%lc", 0xB7); /* mid-dot */
+                        /* for testing */
+                        putc(".lhjknuby"[1 + puzzle_pathfind(
+                                     puzzles[pi], true, x, y,
+                                     puzzles[pi]->conn[0].x,
+                                     puzzles[pi]->conn[0].y)], fp);
+                    } else {
                         /* Draw connections as +. */
                         for (int i = 0; i < puzzles[pi]->conncount; i++) {
                             if (x == puzzles[pi]->conn[i].x &&

@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2017-10-01 */
+/* Last modified by Alex Smith, 2017-10-03 */
 /* Copyright (c) 2017 Alex Smith. */
 /* This Sokoban puzzle generator may be distributed under either of the
  * following licenses:
@@ -87,9 +87,6 @@ puzzle_from_layout(const struct chamber *chamber, int layoutindex,
                     ppos_count++;
                 }
             }
-
-            if (l & LOCKED)
-                p |= PP_LOCKED;
 
             rv->data[y * rv->width + x] = p;
         }

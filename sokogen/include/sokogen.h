@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2017-10-01 */
+/* Last modified by Alex Smith, 2017-10-03 */
 /* Copyright (c) 2014 Alex Smith. */
 /* This Sokoban puzzle generator may be distributed under either of the
  * following licenses:
@@ -47,14 +47,15 @@ typedef uint32_t layouthash;
 typedef uint8_t ppos; /* one map square in a completed puzzle */
 
 /* The bottom 2 bits determine what's on the "ground" of the square. The others
-   are single bits that can be combined with them. */
-#define PP_FLOOR  ((ppos)0x00)
-#define PP_WALL   ((ppos)0x01)
-#define PP_TARGET ((ppos)0x02)
-#define PP_EXIT   ((ppos)0x03)
-#define PP_PLAYER ((ppos)0x04)
-#define PP_CRATE  ((ppos)0x08)
-#define PP_LOCKED ((ppos)0x10)
+   are single bits that can be combined with them. Note that some code assumes
+   that PP_FLOOR is 0, so that floor can be changed to other sorts of things via
+   bitwise operations. */
+#define PP_FLOOR    ((ppos)0x00)
+#define PP_WALL     ((ppos)0x01)
+#define PP_TARGET   ((ppos)0x02)
+#define PP_EXIT     ((ppos)0x03)
+#define PP_PLAYER   ((ppos)0x04)
+#define PP_CRATE    ((ppos)0x08)
 
 #define PP_GROUNDMASK ((ppos)0x03)
 
@@ -317,7 +318,7 @@ extern void free_layout_internals(struct layout *);
 /* output.c */
 
 extern void output_puzzles(struct puzzlerect *const *,
-                           int, int, bool, FILE *);
+                           int, int, FILE *);
 extern void output_layouts(const struct chamber *, size_t,
                            bool, bool, FILE *);
 extern void output_one_layout(const struct chamber *, int,
