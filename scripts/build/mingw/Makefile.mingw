@@ -157,7 +157,7 @@ endif
 override CXXFLAGS += -DNETCLIENT -D_REENTRANT -fvisibility=hidden
 override CXXFLAGS += -Wall -Wextra -Wmissing-declarations
 override CFLAGS += -DNETCLIENT -D_REENTRANT -DAIMAKE_NORETURN=_Noreturn -fno-common -fvisibility=hidden
-override CFLAGS += -fdiagnostics-show-option -Wall -Wextra -Wno-missing-field-initializers -Wno-unused-parameter -Wno-sign-compare -Wold-style-definition -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wpointer-arith
+override CFLAGS += -fdiagnostics-show-option -Wall -Wextra -Wno-missing-field-initializers -Wno-implicit-fallthrough -Wno-unused-parameter -Wno-sign-compare -Wold-style-definition -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wpointer-arith
 
 #
 #==========================================
@@ -579,7 +579,7 @@ define GET_TILECOMPILE_ARGS =
 	$(subst ',\',$(shell $(call GET_TILECOMPILE_ARGS_SCRIPT,$(1),$(2),$(3),$(4))))
 endef
 
-tilesets: tilecompile $(TILESETS_DAT)/fonts/font14.png $(TILESETS_DAT)/text/base.txt $(TILESETS_DAT)/palettes/dawnlike.txt $(subst /catalogues/,/,$(patsubst %.txt,%.nh4ct,$(wildcard $(TILESETS_DAT)/catalogues/*.txt)))
+tilesets: tilecompile $(patsubst %.txt,%.png,$(wildcard $(TILESETS_DAT)/fonts/font*.txt)) $(TILESETS_DAT)/text/base.txt $(TILESETS_DAT)/palettes/dawnlike.txt $(subst /catalogues/,/,$(patsubst %.txt,%.nh4ct,$(wildcard $(TILESETS_DAT)/catalogues/*.txt)))
 	@:
 
 tilesets_install: tilesets
@@ -590,7 +590,7 @@ tilesets_install: tilesets
 tilesets_clean:
 	@rm -f $(TILESETS_DAT)/text/base.txt
 	@rm -f $(TILESETS_DAT)/palettes/dawnlike.txt
-	@rm -f $(TILESETS_DAT)/fonts/font14.png
+	@rm -f $(TILESETS_DAT)/fonts/font*.png
 	@rm -f $(TILESETS_DAT)/*.nh4ct
 
 $(TILESETS_DAT)/text/base.txt:
@@ -599,8 +599,8 @@ $(TILESETS_DAT)/text/base.txt:
 $(TILESETS_DAT)/palettes/dawnlike.txt:
 	$(TILESETS_ROOT)/tilecompile.exe -t palette -o $(TILESETS_DAT)/palettes/dawnlike.txt $(TILESETS_DAT)/tiles/dawnlike-dragons.txt
 
-$(TILESETS_DAT)/fonts/font14.png:
-	$(TILESETS_ROOT)/tilecompile.exe -z 8 14 -b 0 0 0 -t image -u -o $(TILESETS_DAT)/fonts/font14.png $(TILESETS_DAT)/fonts/font14.txt
+$(TILESETS_DAT)/fonts/%.png: $(TILESETS_DAT)/fonts/%.txt
+	$(TILESETS_ROOT)/tilecompile.exe -b 0 0 0 -t image -u -o $@ $<
 
 $(TILESETS_DAT)/%.nh4ct: $(TILESETS_DAT)/catalogues/%.txt $(TILESETS_DAT)/text/base.txt $(TILESETS_DAT)/palettes/dawnlike.txt
 	$(TILESETS_ROOT)/tilecompile.exe $(call GET_TILECOMPILE_ARGS,$(TILESETS_DAT),$<,$@,$(TILESETS_DAT)/text/base.txt)
