@@ -1,5 +1,5 @@
 /* vim:set cin ft=c sw=4 sts=4 ts=8 et ai cino=Ls\:0t0(0 : -*- mode:c;fill-column:80;tab-width:8;c-basic-offset:4;indent-tabs-mode:nil;c-file-style:"k&r" -*-*/
-/* Last modified by Alex Smith, 2015-11-11 */
+/* Last modified by Alex Smith, 2018-01-15 */
 /* Copyright (c) Stichting Mathematisch Centrum, Amsterdam, 1985. */
 /* NetHack may be freely redistributed.  See license for details. */
 
@@ -293,7 +293,7 @@ nh_create_game(int fd, struct nh_option_desc *opts_orig)
     init_data(TRUE);
     startup_common(TRUE);
 
-    struct newgame_options ngo;
+    struct newgame_options ngo = {"", "", "", 0};
 
     /* Set defaults in case list of options from client was incomplete. */
     struct nh_option_desc *defaults = default_options();
@@ -749,6 +749,7 @@ you_moved(void)
             /* turn boundary handling starts here */
             /**************************************/
 
+            checkformail();
             mcalcdistress();    /* adjust monsters' trap, blind, etc */
 
             /* No actions have happened yet this turn. (Combined with the change
